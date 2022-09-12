@@ -40,3 +40,38 @@ func TestUnitsParseInt(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitsParseFloat(t *testing.T) {
+	testMatrix := map[string]struct {
+		input    string
+		units    schema.Units
+		expected float64
+	}{
+		"5m5s": {
+			"5m5.1s",
+			schema.UnitDurationSeconds,
+			305.1,
+		},
+		"1.1%": {
+			"1.1%",
+			schema.UnitPercentage,
+			1.1,
+		},
+	}
+
+	for testCase, testData := range testMatrix {
+		t.Run(testCase, func(t *testing.T) {
+			result, err := testData.units.ParseFloat(testData.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result != testData.expected {
+				t.Fatalf("Result mismatch, expected: %f, got: %f", testData.expected, result)
+			}
+			formatted := testData.units.FormatShortFloat(result)
+			if formatted != testData.input {
+				t.Fatalf("Formatted result doesn't match input, expected: %s, got: %s", testData.input, formatted)
+			}
+		})
+	}
+}

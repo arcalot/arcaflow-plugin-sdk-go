@@ -49,11 +49,11 @@ func FormatNumberUnitShort[T NumberType](amount T, unit Unit, displayZero bool) 
 	}
 	switch {
 	case amount == 1 || amount == -1:
-		return fmt.Sprintf(formatString, amount) + unit.NameShortSingular
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortSingular
 	case amount != 0:
-		return fmt.Sprintf(formatString, amount) + unit.NameShortPlural
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortPlural
 	case displayZero:
-		return fmt.Sprintf(formatString, amount) + unit.NameShortPlural
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortPlural
 	default:
 		return ""
 	}
