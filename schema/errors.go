@@ -16,7 +16,11 @@ type ConstraintError struct {
 
 // Error returns the error message.
 func (c ConstraintError) Error() string {
-	result := fmt.Sprintf("Validation failed for '%s': %s", strings.Join(c.Path, "' -> '"), c.Message)
+	pathDescriptor := ""
+	if len(c.Path) > 0 {
+		pathDescriptor = " for '" + strings.Join(c.Path, "' -> '") + "'"
+	}
+	result := fmt.Sprintf("Validation failed%s: %s", pathDescriptor, c.Message)
 	if c.Cause != nil {
 		result += " (" + c.Cause.Error() + ")"
 	}

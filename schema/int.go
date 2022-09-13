@@ -1,5 +1,11 @@
 package schema
 
+import (
+	"fmt"
+	"math"
+	"strconv"
+)
+
 // IntSchema holds the schema information for 64-bit integers. This dataclass only has the ability to hold the
 // configuration but cannot serialize, unserialize or validate. For that functionality please use IntType.
 type IntSchema interface {
@@ -38,4 +44,44 @@ func (i intSchema) Max() *int64 {
 
 func (i intSchema) Units() *Units {
 	return i.UnitsValue
+}
+
+func intInputMapper(data any, u *Units) (int64, error) {
+	switch v := data.(type) {
+	case string:
+		if u != nil {
+			return (*u).ParseInt(v)
+		}
+		return strconv.ParseInt(v, 10, 64)
+	case int64:
+		return v, nil
+	case uint64:
+		if v > math.MaxInt64 {
+			return 0, fmt.Errorf("number is too large for an int64: %d", v)
+		}
+		return int64(v), nil
+	case int:
+		return int64(v), nil
+	case uint:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case bool:
+		if v {
+			return 1, nil
+		}
+		return 0, nil
+	default:
+		return 0, fmt.Errorf("%T cannot be converted to an int64", data)
+	}
 }

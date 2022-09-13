@@ -40,8 +40,11 @@ type AbstractSchema interface {
 }
 
 // AbstractType describes the common methods all types need to implement.
-type AbstractType interface {
-	ValidateSerialized(data any, path []string) error
+type AbstractType[T any] interface {
+	AbstractSchema
+	Unserialize(data any) (T, error)
+	Validate(data T) error
+	Serialize(data T) (any, error)
 }
 
 // MapKeyType are types that can be used as map keys.

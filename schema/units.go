@@ -57,23 +57,22 @@ func (u unit) NameLongPlural() string {
 }
 
 func (u unit) FormatShortInt(amount int64, displayZero bool) string {
-	return FormatNumberUnitShort(amount, u, displayZero)
+	return formatNumberUnitShort(amount, u, displayZero)
 }
 
 func (u unit) FormatShortFloat(amount float64, displayZero bool) string {
-	return FormatNumberUnitShort(amount, u, displayZero)
+	return formatNumberUnitShort(amount, u, displayZero)
 }
 
 func (u unit) FormatLongInt(amount int64, displayZero bool) string {
-	return FormatNumberUnitLong(amount, u, displayZero)
+	return formatNumberUnitLong(amount, u, displayZero)
 }
 
 func (u unit) FormatLongFloat(amount float64, displayZero bool) string {
-	return FormatNumberUnitLong(amount, u, displayZero)
+	return formatNumberUnitLong(amount, u, displayZero)
 }
 
-// FormatNumberUnitShort formats a number with a single unit.
-func FormatNumberUnitShort[T NumberType](amount T, unit Unit, displayZero bool) string {
+func formatNumberUnitShort[T NumberType](amount T, unit Unit, displayZero bool) string {
 	var formatString string
 	switch any(amount).(type) {
 	case int64:
@@ -93,8 +92,7 @@ func FormatNumberUnitShort[T NumberType](amount T, unit Unit, displayZero bool) 
 	}
 }
 
-// FormatNumberUnitLong formats a number with a single unit.
-func FormatNumberUnitLong[T NumberType](amount T, unit Unit, displayZero bool) string {
+func formatNumberUnitLong[T NumberType](amount T, unit Unit, displayZero bool) string {
 	var formatString string
 	switch any(amount).(type) {
 	case int64:
@@ -162,9 +160,9 @@ func (u *units) FormatShortInt(data int64) string {
 	for _, multiplier := range u.getSortedMultipliersCache() {
 		base := int64(math.Floor(float64(remainder) / float64(multiplier)))
 		remainder -= base * multiplier
-		output += FormatNumberUnitShort(base, u.Multipliers()[multiplier], false)
+		output += formatNumberUnitShort(base, u.Multipliers()[multiplier], false)
 	}
-	output += FormatNumberUnitShort(remainder, u.BaseUnit(), false)
+	output += formatNumberUnitShort(remainder, u.BaseUnit(), false)
 	return output
 }
 
