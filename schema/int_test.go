@@ -8,12 +8,28 @@ import (
 )
 
 var testIntSerializationDataSet = map[string]serializationTestCase[int64]{
+	"tooSmallInt": {
+		SerializedValue: int(4),
+		ExpectError:     true,
+	},
+	"tooLargeInt": {
+		SerializedValue: int(11),
+		ExpectError:     true,
+	},
 	"tooSmallInt64": {
 		SerializedValue: int64(4),
 		ExpectError:     true,
 	},
 	"tooLargeInt64": {
 		SerializedValue: int64(11),
+		ExpectError:     true,
+	},
+	"tooSmallUInt": {
+		SerializedValue: uint(4),
+		ExpectError:     true,
+	},
+	"tooLargeUInt": {
+		SerializedValue: uint(11),
 		ExpectError:     true,
 	},
 	"tooSmallUInt64": {
@@ -87,6 +103,16 @@ var testIntSerializationDataSet = map[string]serializationTestCase[int64]{
 	"tooLargeStringUnit": {
 		SerializedValue: "1kB",
 		ExpectError:     true,
+	},
+	"validInt": {
+		SerializedValue:         int(5),
+		ExpectUnserializedValue: int64(5),
+		ExpectedSerializedValue: int64(5),
+	},
+	"validUInt": {
+		SerializedValue:         uint(5),
+		ExpectUnserializedValue: int64(5),
+		ExpectedSerializedValue: int64(5),
 	},
 	"validInt64": {
 		SerializedValue:         int64(5),
