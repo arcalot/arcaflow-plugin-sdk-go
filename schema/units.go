@@ -11,30 +11,64 @@ import (
 
 // Unit is a description of a single scale of measurement, such as a "second". If there are multiple scales, such as
 // "minute", "second", etc. then multiple of these unit classes can be composed into units.
-type Unit struct {
-	NameShortSingular string `json:"name_short_singular" name:"Short name (singular)" description:"Short name that can be printed in a few characters, singular form." examples:"[\"B\", \"char\"]"`
-	NameShortPlural   string `json:"name_short_plural" name:"Short name (plural)" description:"Short name that can be printed in a few characters, plural form." examples:"[\"B\", \"chars\"]"`
-	NameLongSingular  string `json:"name_long_singular" name:"Long name (singular)" description:"Longer name for this unit in singular form." examples:"[\"byte\", \"character\"]"`
-	NameLongPlural    string `json:"name_long_plural" name:"Long name (plural)" description:"Longer name for this unit in plural form." examples:"[\"bytes\", \"characters\"]"`
+type Unit interface {
+	NameShortSingular() string
+	NameShortPlural() string
+	NameLongSingular() string
+	NameLongPlural() string
+
+	FormatShortInt(amount int64, displayZero bool) string
+	FormatShortFloat(amount float64, displayZero bool) string
+	FormatLongInt(amount int64, displayZero bool) string
+	FormatLongFloat(amount float64, displayZero bool) string
 }
 
-// FormatShortInt formats an amount according to this unit.
-func (u Unit) FormatShortInt(amount int64, displayZero bool) string {
+// NewUnit defines a new unit with the given parameters.
+func NewUnit(nameSortSingular string, nameShortPlural string, nameLongSingular string, nameLongPlural string) Unit {
+	return &unit{
+		nameSortSingular,
+		nameShortPlural,
+		nameLongSingular,
+		nameLongPlural,
+	}
+}
+
+type unit struct {
+	NameShortSingularValue string `json:"name_short_singular"`
+	NameShortPluralValue   string `json:"name_short_plural"`
+	NameLongSingularValue  string `json:"name_long_singular"`
+	NameLongPluralValue    string `json:"name_long_plural"`
+}
+
+func (u unit) NameShortSingular() string {
+	return u.NameShortSingularValue
+}
+
+func (u unit) NameShortPlural() string {
+	return u.NameShortPluralValue
+}
+
+func (u unit) NameLongSingular() string {
+	return u.NameLongSingularValue
+}
+
+func (u unit) NameLongPlural() string {
+	return u.NameLongPluralValue
+}
+
+func (u unit) FormatShortInt(amount int64, displayZero bool) string {
 	return FormatNumberUnitShort(amount, u, displayZero)
 }
 
-// FormatShortFloat formats an amount according to this unit.
-func (u Unit) FormatShortFloat(amount float64, displayZero bool) string {
+func (u unit) FormatShortFloat(amount float64, displayZero bool) string {
 	return FormatNumberUnitShort(amount, u, displayZero)
 }
 
-// FormatLongInt formats an amount according to this unit.
-func (u Unit) FormatLongInt(amount int64, displayZero bool) string {
+func (u unit) FormatLongInt(amount int64, displayZero bool) string {
 	return FormatNumberUnitLong(amount, u, displayZero)
 }
 
-// FormatLongFloat formats an amount according to this unit.
-func (u Unit) FormatLongFloat(amount float64, displayZero bool) string {
+func (u unit) FormatLongFloat(amount float64, displayZero bool) string {
 	return FormatNumberUnitLong(amount, u, displayZero)
 }
 
@@ -49,11 +83,11 @@ func FormatNumberUnitShort[T NumberType](amount T, unit Unit, displayZero bool) 
 	}
 	switch {
 	case amount == 1 || amount == -1:
-		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortSingular
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0.") + unit.NameShortSingular()
 	case amount != 0:
-		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortPlural
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0.") + unit.NameShortPlural()
 	case displayZero:
-		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0") + unit.NameShortPlural
+		return strings.TrimRight(fmt.Sprintf(formatString, amount), "0.") + unit.NameShortPlural()
 	default:
 		return ""
 	}
@@ -70,81 +104,122 @@ func FormatNumberUnitLong[T NumberType](amount T, unit Unit, displayZero bool) s
 	}
 	switch {
 	case amount == 1 || amount == -1:
-		return fmt.Sprintf(formatString, amount) + unit.NameLongSingular
+		return fmt.Sprintf(formatString, amount) + unit.NameLongSingular()
 	case amount != 0:
-		return fmt.Sprintf(formatString, amount) + unit.NameLongPlural
+		return fmt.Sprintf(formatString, amount) + unit.NameLongPlural()
 	case displayZero:
-		return fmt.Sprintf(formatString, amount) + unit.NameLongPlural
+		return fmt.Sprintf(formatString, amount) + unit.NameLongPlural()
 	default:
 		return ""
 	}
 }
 
 // Units holds several scales of magnitude of the same unit, for example 5m30s.
-type Units struct {
-	BaseUnit               Unit
-	Multipliers            map[int64]Unit
+type Units interface {
+	BaseUnit() Unit
+	Multipliers() map[int64]Unit
+
+	ParseInt(data string) (int64, error)
+	ParseFloat(data string) (float64, error)
+
+	FormatShortInt(data int64) string
+	FormatShortFloat(data float64) string
+	FormatLongInt(data int64) string
+	FormatLongFloat(data float64) string
+}
+
+// NewUnits defines a new set of units with the given parameters.
+func NewUnits(baseUnit Unit, multipliers map[int64]Unit) Units {
+	return &units{
+		BaseUnitValue:    baseUnit,
+		MultipliersValue: multipliers,
+	}
+}
+
+type units struct {
+	BaseUnitValue          Unit           `json:"base_unit"`
+	MultipliersValue       map[int64]Unit `json:"multipliers"`
 	sortedMultipliersCache []int64
 	reCache                *regexp.Regexp
 	reSubExpNames          map[string]int
 }
 
+func (u *units) BaseUnit() Unit {
+	return u.BaseUnitValue
+}
+
+func (u *units) Multipliers() map[int64]Unit {
+	return u.MultipliersValue
+}
+
 // FormatShortInt formats the passed int according to the unit multipliers.
-func (u *Units) FormatShortInt(data int64) string {
-	return FormatNumberUnitsShort(data, *u)
+func (u *units) FormatShortInt(data int64) string {
+	if data == 0 {
+		return u.BaseUnit().FormatShortInt(data, true)
+	}
+	remainder := data
+	output := ""
+	for _, multiplier := range u.getSortedMultipliersCache() {
+		base := int64(math.Floor(float64(remainder) / float64(multiplier)))
+		remainder -= base * multiplier
+		output += FormatNumberUnitShort(base, u.Multipliers()[multiplier], false)
+	}
+	output += FormatNumberUnitShort(remainder, u.BaseUnit(), false)
+	return output
 }
 
 // FormatShortFloat formats the passed float according to the unit multipliers.
-func (u *Units) FormatShortFloat(data float64) string {
-	return FormatNumberUnitsShort(data, *u)
+func (u *units) FormatShortFloat(data float64) string {
+	if data == 0 {
+		return u.BaseUnit().FormatShortFloat(data, true)
+	}
+	remainder := data
+	output := ""
+	for _, multiplier := range u.getSortedMultipliersCache() {
+		base := int64(math.Floor(remainder / float64(multiplier)))
+		remainder -= float64(base * multiplier)
+		output += u.Multipliers()[multiplier].FormatShortFloat(float64(base), false)
+	}
+	output += u.BaseUnit().FormatShortFloat(remainder, false)
+	return output
 }
 
 // FormatLongInt formats the passed int according to the unit multipliers.
-func (u *Units) FormatLongInt(data int64) string {
-	return FormatNumberUnitsLong(data, *u)
+func (u *units) FormatLongInt(data int64) string {
+	if data == 0 {
+		return u.BaseUnitValue.FormatLongInt(data, true)
+	}
+	remainder := data
+	output := ""
+	for _, multiplier := range u.getSortedMultipliersCache() {
+		base := int64(math.Floor(float64(remainder) / float64(multiplier)))
+		remainder -= base * multiplier
+		output += u.Multipliers()[multiplier].FormatLongInt(remainder, false)
+	}
+	output += u.BaseUnit().FormatLongInt(remainder, false)
+	return output
 }
 
 // FormatLongFloat formats the passed float according to the unit multipliers.
-func (u *Units) FormatLongFloat(data float64) string {
-	return FormatNumberUnitsLong(data, *u)
-}
-
-// FormatNumberUnitsShort is a generic way to format a number with a unit.
-func FormatNumberUnitsShort[T NumberType](data T, units Units) string {
+func (u *units) FormatLongFloat(data float64) string {
 	if data == 0 {
-		return FormatNumberUnitShort(data, units.BaseUnit, true)
+		return u.BaseUnitValue.FormatLongFloat(data, true)
 	}
 	remainder := data
 	output := ""
-	for _, multiplier := range units.getSortedMultipliersCache() {
-		base := int64(math.Floor(float64(remainder) / float64(multiplier)))
-		remainder -= T(base * multiplier)
-		output += FormatNumberUnitShort(base, units.Multipliers[multiplier], false)
+	for _, multiplier := range u.getSortedMultipliersCache() {
+		base := int64(math.Floor(remainder / float64(multiplier)))
+		remainder -= float64(base * multiplier)
+		output += u.Multipliers()[multiplier].FormatLongFloat(float64(base), false)
 	}
-	output += FormatNumberUnitShort(remainder, units.BaseUnit, false)
+	output += u.BaseUnit().FormatLongFloat(remainder, false)
 	return output
 }
 
-// FormatNumberUnitsLong is a generic way to format a number with a unit.
-func FormatNumberUnitsLong[T NumberType](data T, units Units) string {
-	if data == 0 {
-		return FormatNumberUnitLong(data, units.BaseUnit, true)
-	}
-	remainder := data
-	output := ""
-	for _, multiplier := range units.getSortedMultipliersCache() {
-		base := int64(math.Floor(float64(remainder) / float64(multiplier)))
-		remainder -= T(base * multiplier)
-		output += FormatNumberUnitLong(remainder, units.Multipliers[multiplier], false)
-	}
-	output += FormatNumberUnitLong(remainder, units.BaseUnit, false)
-	return output
-}
-
-func (u *Units) getSortedMultipliersCache() []int64 {
+func (u *units) getSortedMultipliersCache() []int64 {
 	if u.sortedMultipliersCache == nil {
 		var multipliers []int64
-		for multiplier := range u.Multipliers {
+		for multiplier := range u.MultipliersValue {
 			multipliers = append(multipliers, multiplier)
 		}
 		sort.SliceStable(multipliers, func(i, j int) bool {
@@ -155,11 +230,11 @@ func (u *Units) getSortedMultipliersCache() []int64 {
 	return u.sortedMultipliersCache
 }
 
-func (u *Units) parse(data string) (any, error) {
+func (u *units) parse(data string) (any, error) {
 	data = strings.TrimSpace(data)
 	if data == "" {
 		return 0, &UnitParseError{
-			Message: "Empty string cannot be parsed as " + u.BaseUnit.NameLongPlural,
+			Message: "Empty string cannot be parsed as " + u.BaseUnitValue.NameLongPlural(),
 		}
 	}
 	if u.reCache == nil {
@@ -206,7 +281,7 @@ func (u *Units) parse(data string) (any, error) {
 	return intNumber, nil
 }
 
-func (u *Units) handleParseMultiplier(
+func (u *units) handleParseMultiplier(
 	result string,
 	multiplier int64,
 	intNumber int64,
@@ -240,27 +315,27 @@ func (u *Units) handleParseMultiplier(
 	return intNumber, floatNumber, isFloat, nil
 }
 
-func (u *Units) updateReCache() {
+func (u *units) updateReCache() {
 	var parts []string
-	if u.Multipliers != nil {
+	if u.MultipliersValue != nil {
 		for _, multiplier := range u.getSortedMultipliersCache() {
-			unit := u.Multipliers[multiplier]
+			unit := u.MultipliersValue[multiplier]
 			parts = append(parts, fmt.Sprintf(
 				"(?:|(?P<g%s>[0-9]+)\\s*(%s|%s|%s|%s))",
 				regexp.QuoteMeta(fmt.Sprintf("%d", multiplier)),
-				regexp.QuoteMeta(unit.NameShortSingular),
-				regexp.QuoteMeta(unit.NameShortPlural),
-				regexp.QuoteMeta(unit.NameLongSingular),
-				regexp.QuoteMeta(unit.NameLongPlural),
+				regexp.QuoteMeta(unit.NameShortSingular()),
+				regexp.QuoteMeta(unit.NameShortPlural()),
+				regexp.QuoteMeta(unit.NameLongSingular()),
+				regexp.QuoteMeta(unit.NameLongPlural()),
 			))
 		}
 	}
 	parts = append(parts, fmt.Sprintf(
 		"(?:|(?P<g1>[0-9]+(|.[0-9]+))\\s*(|%s|%s|%s|%s))",
-		regexp.QuoteMeta(u.BaseUnit.NameShortSingular),
-		regexp.QuoteMeta(u.BaseUnit.NameShortPlural),
-		regexp.QuoteMeta(u.BaseUnit.NameLongSingular),
-		regexp.QuoteMeta(u.BaseUnit.NameLongPlural),
+		regexp.QuoteMeta(u.BaseUnitValue.NameShortSingular()),
+		regexp.QuoteMeta(u.BaseUnitValue.NameShortPlural()),
+		regexp.QuoteMeta(u.BaseUnitValue.NameLongSingular()),
+		regexp.QuoteMeta(u.BaseUnitValue.NameLongPlural()),
 	))
 	regex := "^\\s*" + strings.Join(parts, "\\s*") + "\\s*$"
 	u.reCache = regexp.MustCompile(regex)
@@ -270,34 +345,34 @@ func (u *Units) updateReCache() {
 	}
 }
 
-func (u *Units) buildUnitParseError(data string) (any, error) {
+func (u *units) buildUnitParseError(data string) (any, error) {
 	validUnits := []string{
-		u.BaseUnit.NameShortSingular,
-		u.BaseUnit.NameShortPlural,
-		u.BaseUnit.NameLongSingular,
-		u.BaseUnit.NameLongPlural,
+		u.BaseUnitValue.NameShortSingular(),
+		u.BaseUnitValue.NameShortPlural(),
+		u.BaseUnitValue.NameLongSingular(),
+		u.BaseUnitValue.NameLongPlural(),
 	}
 	for _, multiplier := range u.getSortedMultipliersCache() {
 		validUnits = append(
 			validUnits,
-			u.Multipliers[multiplier].NameShortSingular,
-			u.Multipliers[multiplier].NameShortPlural,
-			u.Multipliers[multiplier].NameLongSingular,
-			u.Multipliers[multiplier].NameLongPlural,
+			u.MultipliersValue[multiplier].NameShortSingular(),
+			u.MultipliersValue[multiplier].NameShortPlural(),
+			u.MultipliersValue[multiplier].NameLongSingular(),
+			u.MultipliersValue[multiplier].NameLongPlural(),
 		)
 	}
 	return 0, UnitParseError{
 		Message: fmt.Sprintf(
 			"Cannot parse '%s' as '%s': invalid format, valid unit types are: '%s",
 			data,
-			u.BaseUnit.NameLongPlural,
+			u.BaseUnitValue.NameLongPlural(),
 			strings.Join(validUnits, "', '"),
 		),
 	}
 }
 
 // ParseInt parses a string into an integer.
-func (u *Units) ParseInt(data string) (int64, error) {
+func (u *units) ParseInt(data string) (int64, error) {
 	result, err := u.parse(data)
 	if err != nil {
 		return 0, err
@@ -311,7 +386,7 @@ func (u *Units) ParseInt(data string) (int64, error) {
 }
 
 // ParseFloat parses a string into a floating point number.
-func (u *Units) ParseFloat(data string) (float64, error) {
+func (u *units) ParseFloat(data string) (float64, error) {
 	result, err := u.parse(data)
 	if err != nil {
 		return 0, err
@@ -323,135 +398,137 @@ func (u *Units) ParseFloat(data string) (float64, error) {
 }
 
 // UnitBytes is scaling, byte-based unit.
-var UnitBytes = Units{
-	BaseUnit: Unit{
+var UnitBytes = NewUnits(
+	NewUnit(
 		"B",
 		"B",
 		"byte",
 		"bytes",
-	},
-	Multipliers: map[int64]Unit{
-		1024: {
+	),
+	map[int64]Unit{
+		1024: NewUnit(
 			"kB",
 			"kB",
 			"kilobyte",
 			"kilobytes",
-		},
-		1048576: {
+		),
+		1048576: NewUnit(
 			"MB",
 			"MB",
 			"megabyte",
 			"megabytes",
-		},
-		1073741824: {
+		),
+		1073741824: NewUnit(
 			"GB",
 			"GB",
 			"gigabyte",
 			"gigabytes",
-		},
-		1099511627776: {
+		),
+		1099511627776: NewUnit(
 			"TB",
 			"TB",
 			"terabyte",
 			"terabytes",
-		},
-		1125899906842624: {
+		),
+		1125899906842624: NewUnit(
 			"PB",
 			"PB",
 			"petabyte",
 			"petabytes",
-		},
+		),
 	},
-}
+)
 
 // UnitDurationNanoseconds is a nanosecond-based unit for time durations.
-var UnitDurationNanoseconds = Units{
-	BaseUnit: Unit{
+var UnitDurationNanoseconds = NewUnits(
+	NewUnit(
 		"ns",
 		"ns",
 		"nanosecond",
 		"nanoseconds",
-	},
-	Multipliers: map[int64]Unit{
-		1000: {
+	),
+	map[int64]Unit{
+		1000: NewUnit(
 			"ms",
 			"ms",
 			"microsecond",
 			"microseconds",
-		},
-		1000000: {
+		),
+		1000000: NewUnit(
 			"s",
 			"s",
 			"second",
 			"seconds",
-		},
-		60000000: {
+		),
+		60000000: NewUnit(
 			"m",
 			"m",
 			"minute",
 			"minutes",
-		},
-		3600000000: {
+		),
+		3600000000: NewUnit(
 			"H",
 			"H",
 			"hour",
 			"hours",
-		},
-		86400000000: {
+		),
+		86400000000: NewUnit(
 			"d",
 			"d",
 			"day",
 			"days",
-		},
+		),
 	},
-}
+)
 
 // UnitDurationSeconds is a second-based unit for time durations.
-var UnitDurationSeconds = Units{
-	BaseUnit: Unit{
+var UnitDurationSeconds = NewUnits(
+	NewUnit(
 		"s",
 		"s",
 		"second",
 		"seconds",
-	},
-	Multipliers: map[int64]Unit{
-		60: {
+	),
+	map[int64]Unit{
+		60: NewUnit(
 			"m",
 			"m",
 			"minute",
 			"minutes",
-		},
-		3600: {
+		),
+		3600: NewUnit(
 			"H",
 			"H",
 			"hour",
 			"hours",
-		},
-		86400: {
+		),
+		86400: NewUnit(
 			"d",
 			"d",
 			"day",
 			"days",
-		},
+		),
 	},
-}
+)
 
 // UnitCharacters is a single unit for characters.
-var UnitCharacters = Units{
-	BaseUnit: Unit{
+var UnitCharacters = NewUnits(
+	NewUnit(
 		"char",
 		"chars",
 		"character",
 		"characters",
-	},
-}
+	),
+	nil,
+)
 
 // UnitPercentage is a single unit for percentages.
-var UnitPercentage = Units{
-	BaseUnit: Unit{
+var UnitPercentage = NewUnits(
+	NewUnit(
 		"%",
 		"%",
 		"percent",
 		"percent",
-	},
-}
+	),
+	nil,
+)

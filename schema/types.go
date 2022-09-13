@@ -1,36 +1,47 @@
 package schema
 
+// TypeID is the identifier for types supported in the type system.
+type TypeID string
+
+const (
+	// TypeIDStringEnum is a type that satisfies the StringEnumSchema.
+	TypeIDStringEnum TypeID = "enum_string"
+	// TypeIDIntEnum is a type that satisfies the StringIntSchema.
+	TypeIDIntEnum TypeID = "enum_integer"
+	// TypeIDString is a type that satisfies the StringSchema.
+	TypeIDString TypeID = "string"
+	// TypeIDPattern is a type that satisfies the PatternSchema.
+	TypeIDPattern TypeID = "pattern"
+	// TypeIDInt is a type that satisfies the IntSchema.
+	TypeIDInt TypeID = "integer"
+	// TypeIDFloat is a type that satisfies the FloatSchema.
+	TypeIDFloat TypeID = "float"
+	// TypeIDBool is a type that satisfies the BoolSchema.
+	TypeIDBool TypeID = "bool"
+	// TypeIDList is a type that satisfies the ListSchema.
+	TypeIDList TypeID = "list"
+	// TypeIDMap is a type that satisfies the MapSchema.
+	TypeIDMap TypeID = "map"
+	// TypeIDScope is a type that satisfies the ScopeSchema.
+	TypeIDScope TypeID = "scope"
+	// TypeIDObject is a type that satisfies the ObjectSchema.
+	TypeIDObject TypeID = "object"
+	// TypeIDOneOfString is a type that satisfies the OneOfStringSchema.
+	TypeIDOneOfString TypeID = "one_of_string"
+	// TypeIDOneOfInt is a type that satisfies the OneOfIntSchema.
+	TypeIDOneOfInt TypeID = "one_of_string"
+	// TypeIDRef is a type that references an object in a ScopeSchema.
+	TypeIDRef TypeID = "ref"
+)
+
+// AbstractSchema is the minimum functionality types need to implement.
+type AbstractSchema interface {
+	TypeID() TypeID
+}
+
 // AbstractType describes the common methods all types need to implement.
 type AbstractType interface {
 	ValidateSerialized(data any, path []string) error
-}
-
-// DisplayValue holds the data related to displaying fields.
-type DisplayValue struct {
-	Name        *string `json:"name" name:"Name" description:"Short text serving as a name or title for this item." examples:"[\"Fruit\"]" min:"1"`
-	Description *string `json:"description" name:"Description" description:"Description for this item if needed." examples:"[\"Please select the fruit you would like.\"]" min:"1"`
-	Icon        *string `json:"icon" name:"Icon" description:"SVG icon for this item. Must have the declared size of 64x64, must not include additional namespaces, and must not reference external resources." examples:"[\"<svg ...></svg>\"]" min:"1"`
-}
-
-type enumValueType interface {
-	int | string
-}
-
-type enumType[T enumValueType] struct {
-}
-
-func (e enumType[T]) ValidateSerialized(data any, path []string) error {
-	return nil
-}
-
-// EnumStringType is an enum type with string values.
-type EnumStringType struct {
-	enumType[string]
-}
-
-// EnumIntType is an enum type with integer values.
-type EnumIntType struct {
-	enumType[int]
 }
 
 // MapKeyType are types that can be used as map keys.
