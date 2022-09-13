@@ -183,3 +183,8 @@ func TestBoolJSONMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestBoolType(t *testing.T) {
+	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
+	assertEqual(t, schema.NewBoolType().TypeID(), schema.TypeIDBool)
+}

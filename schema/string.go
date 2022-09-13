@@ -11,11 +11,11 @@ type StringSchema interface {
 	AbstractSchema
 	Min() *int64
 	Max() *int64
-	Pattern() *regexp.Regexp
+	Pattern() **regexp.Regexp
 }
 
 // NewStringSchema creates a new string schema.
-func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) StringSchema {
+func NewStringSchema(min *int64, max *int64, pattern **regexp.Regexp) StringSchema {
 	return &stringSchema{
 		min,
 		max,
@@ -24,9 +24,9 @@ func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) StringSchem
 }
 
 type stringSchema struct {
-	MinValue     *int64         `json:"min"`
-	MaxValue     *int64         `json:"max"`
-	PatternValue *regexp.Regexp `json:"pattern"`
+	MinValue     *int64          `json:"min"`
+	MaxValue     *int64          `json:"max"`
+	PatternValue **regexp.Regexp `json:"pattern"`
 }
 
 func (s stringSchema) TypeID() TypeID {
@@ -41,7 +41,7 @@ func (s stringSchema) Max() *int64 {
 	return s.MaxValue
 }
 
-func (s stringSchema) Pattern() *regexp.Regexp {
+func (s stringSchema) Pattern() **regexp.Regexp {
 	return s.PatternValue
 }
 
@@ -52,7 +52,7 @@ type StringType interface {
 }
 
 // NewStringType creates a new string type definition with the given constraints.
-func NewStringType(min *int64, max *int64, pattern *regexp.Regexp) StringType {
+func NewStringType(min *int64, max *int64, pattern **regexp.Regexp) StringType {
 	return &stringType{
 		stringSchema{min, max, pattern},
 	}
@@ -81,9 +81,9 @@ func (s stringType) Validate(data string) error {
 			Message: fmt.Sprintf("String must be at most %d characters, %d given", *s.MaxValue, int64(len(data))),
 		}
 	}
-	if s.PatternValue != nil && !s.PatternValue.MatchString(data) {
+	if s.PatternValue != nil && !(*s.PatternValue).MatchString(data) {
 		return ConstraintError{
-			Message: fmt.Sprintf("String must match the pattern %s", s.PatternValue.String()),
+			Message: fmt.Sprintf("String must match the pattern %s", (*s.PatternValue).String()),
 		}
 	}
 	return nil

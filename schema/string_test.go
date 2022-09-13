@@ -9,7 +9,11 @@ import (
 )
 
 func ExampleStringType() {
-	stringType := schema.NewStringType(schema.Optional(int64(5)), schema.Optional(int64(16)), regexp.MustCompile("^[a-z]+$"))
+	stringType := schema.NewStringType(
+		schema.PointerTo(int64(5)),
+		schema.PointerTo(int64(16)),
+		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
+	)
 
 	// This will fail because it's too short:
 	_, err := stringType.Unserialize("abcd")
@@ -45,7 +49,7 @@ func ExampleStringType() {
 }
 
 func TestStringMinValidation(t *testing.T) {
-	stringType := schema.NewStringType(schema.Optional(int64(5)), nil, nil)
+	stringType := schema.NewStringType(schema.PointerTo(int64(5)), nil, nil)
 
 	const invalidValue = "asdf"
 	const validValue = "asdfg"
@@ -55,7 +59,7 @@ func TestStringMinValidation(t *testing.T) {
 }
 
 func TestStringMaxValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, schema.Optional(int64(4)), nil)
+	stringType := schema.NewStringType(nil, schema.PointerTo(int64(4)), nil)
 
 	const invalidValue = "asdfg"
 	const validValue = "asdf"
@@ -65,7 +69,7 @@ func TestStringMaxValidation(t *testing.T) {
 }
 
 func TestStringPatternValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, nil, regexp.MustCompile("^[a-z]+$"))
+	stringType := schema.NewStringType(nil, nil, schema.PointerTo(regexp.MustCompile("^[a-z]+$")))
 
 	const invalidValue = "asdf1"
 	const validValue = "asdf"
@@ -88,6 +92,8 @@ func TestStringTypeUnserialization(t *testing.T) {
 		uint16(3),
 		int8(3),
 		uint8(3),
+		float32(3),
+		float64(3),
 	} {
 		t.Run(fmt.Sprintf("%v", v), func(t *testing.T) {
 			_, err := stringType.Unserialize(v)
@@ -135,4 +141,25 @@ func testStringSerialization(
 	if val2 != validValue {
 		t.Fatalf("Incorrect value after unserialize: %s", val)
 	}
+}
+
+func TestStringParameters(t *testing.T) {
+	stringType := schema.NewStringType(nil, nil, nil)
+	assertEqual(t, stringType.Min(), nil)
+	assertEqual(t, stringType.Max(), nil)
+	assertEqual(t, stringType.Pattern(), nil)
+
+	stringType = schema.NewStringType(
+		schema.PointerTo(int64(1)),
+		schema.PointerTo(int64(2)),
+		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
+	)
+	assertEqual(t, *stringType.Min(), int64(1))
+	assertEqual(t, *stringType.Max(), int64(2))
+	assertEqual(t, (*stringType.Pattern()).String(), "^[a-z]+$")
+}
+
+func TestStringID(t *testing.T) {
+	assertEqual(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
+	assertEqual(t, schema.NewStringType(nil, nil, nil).TypeID(), schema.TypeIDString)
 }

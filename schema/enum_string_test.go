@@ -1,7 +1,9 @@
 package schema_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
@@ -37,4 +39,69 @@ func ExampleStringEnumType_unserialize() {
 
 	// Output: Validation failed: '' is not a valid value, must be one of: 'large', 'small'
 	// small
+}
+
+var testStringEnumSerializationDataSet = map[string]serializationTestCase[string]{
+	"validString": {
+		"small",
+		false,
+		"small",
+		"small",
+	},
+	"invalidString": {
+		"xs",
+		true,
+		"small",
+		"small",
+	},
+	"invalidType": {
+		struct{}{},
+		true,
+		"small",
+		"small",
+	},
+}
+
+func TestStringEnumSerialization(t *testing.T) {
+	performSerializationTest[string](
+		t,
+		schema.NewStringEnumType(map[string]string{
+			"small": "Small",
+			"large": "Large",
+		}),
+		testStringEnumSerializationDataSet,
+		func(a string, b string) bool {
+			return a == b
+		},
+		func(a any, b any) bool {
+			return a == b
+		},
+	)
+}
+
+func TestStringEnumJSONMarshal(t *testing.T) {
+	typeUnderTest := schema.NewStringEnumType(map[string]string{
+		"small": "Small",
+		"large": "Large",
+	})
+
+	marshalled, err := json.Marshal(typeUnderTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(marshalled) != `{"valid_values":{"large":"Large","small":"Small"}}` {
+		t.Fatalf("Invalid marshalled JSON output: %s", marshalled)
+	}
+	typeUnderTest = schema.NewStringEnumType(map[string]string{})
+	if err := json.Unmarshal(marshalled, &typeUnderTest); err != nil {
+		t.Fatal(err)
+	}
+	if typeUnderTest.ValidValues()["small"] != "Small" {
+		t.Fatalf("Unmarshalling failed.")
+	}
+}
+
+func TestStringEnumType(t *testing.T) {
+	assertEqual(t, schema.NewStringEnumSchema(map[string]string{}).TypeID(), schema.TypeIDStringEnum)
+	assertEqual(t, schema.NewStringEnumType(map[string]string{}).TypeID(), schema.TypeIDStringEnum)
 }
