@@ -36,13 +36,22 @@ jobs:
         run: |
           set -euo pipefail
           go generate
-          go test -json -v ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -coverprofile /tmp/coverage.out -json -v ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          echo "# Code coverage summary" > /tmp/coverage.md
+          echo "|File|Package|Coverage|" >> /tmp/coverage.md
+          echo "|----|-------|--------|" >> /tmp/coverage.md
+          go tool cover -func coverage.out | sed -e 's/\s\s*/|/g' -e 's/^/|/g' -e 's/$/|/g' >> /tmp/coverage.md
+          cat /tmp/coverage.md
+          cat /tmp/coverage.md >> $GITHUB_STEP_SUMMARY
       - name: Upload test log
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: test-log
-          path: /tmp/gotest.log
+          name: test-results
+          path: |
+            /tmp/gotest.log
+            /tmp/coverage.out
+            /tmp/coverage.md
           if-no-files-found: error
   generate:
     name: go generate
