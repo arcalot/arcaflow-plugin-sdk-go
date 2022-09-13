@@ -40,7 +40,7 @@ jobs:
           echo "# Code coverage summary" > /tmp/coverage.md
           echo "|File|Package|Coverage|" >> /tmp/coverage.md
           echo "|----|-------|--------|" >> /tmp/coverage.md
-          go tool cover -func coverage.out | sed -e 's/\s\s*/|/g' -e 's/^/|/g' -e 's/$/|/g' >> /tmp/coverage.md
+          go tool cover -func /tmp/coverage.out | sed -e 's/\s\s*/|/g' -e 's/^/|/g' -e 's/$/|/g' >> /tmp/coverage.md
           cat /tmp/coverage.md
           cat /tmp/coverage.md >> $GITHUB_STEP_SUMMARY
       - name: Upload test log
