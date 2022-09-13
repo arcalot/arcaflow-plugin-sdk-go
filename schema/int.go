@@ -46,6 +46,57 @@ func (i intSchema) Units() *Units {
 	return i.UnitsValue
 }
 
+// IntType is the version of the IntSchema that supports serialization.
+type IntType interface {
+	AbstractType[int64]
+	IntSchema
+}
+
+// NewIntType defines a serializable integer representation.
+func NewIntType(min *int64, max *int64, units *Units) IntType {
+	return &intType{
+		intSchema{
+			min,
+			max,
+			units,
+		},
+	}
+}
+
+type intType struct {
+	intSchema `json:",inline"`
+}
+
+func (i intType) TypeID() TypeID {
+	return TypeIDInt
+}
+
+func (i intType) Unserialize(data any) (int64, error) {
+	unserialized, err := intInputMapper(data, i.UnitsValue)
+	if err != nil {
+		return 0, err
+	}
+	return unserialized, i.Validate(unserialized)
+}
+
+func (i intType) Validate(data int64) error {
+	if i.MinValue != nil && data < *i.MinValue {
+		return ConstraintError{
+			Message: fmt.Sprintf("Must be at least %d", *i.MinValue),
+		}
+	}
+	if i.MaxValue != nil && data > *i.MaxValue {
+		return ConstraintError{
+			Message: fmt.Sprintf("Must be at most %d", *i.MaxValue),
+		}
+	}
+	return nil
+}
+
+func (i intType) Serialize(data int64) (any, error) {
+	return data, i.Validate(data)
+}
+
 func intInputMapper(data any, u *Units) (int64, error) {
 	switch v := data.(type) {
 	case string:
