@@ -1,7 +1,9 @@
 package schema
 
-// PropertySchema holds the schema definition for a single object property. It is usable in conjunction with ``ObjectSchema``.
-// This dataclass only has the ability to hold the configuration but cannot serialize, unserialize or validate. For
+// PropertySchema holds the schema definition for a single object property. It is usable in conjunction with
+// ObjectSchema.
+//
+// This schema only has the ability to hold the configuration but cannot serialize, unserialize or validate. For
 // that functionality please use PropertyType.
 type PropertySchema interface {
 	Type() AbstractSchema
