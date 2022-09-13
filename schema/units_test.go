@@ -22,6 +22,16 @@ func TestUnitsParseInt(t *testing.T) {
 			schema.UnitPercentage,
 			1,
 		},
+		"1kB": {
+			"1kB",
+			schema.UnitBytes,
+			1024,
+		},
+		"1char": {
+			"1char",
+			schema.UnitCharacters,
+			1,
+		},
 	}
 
 	for testCase, testData := range testMatrix {
