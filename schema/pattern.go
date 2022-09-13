@@ -45,7 +45,7 @@ func (p patternType) Unserialize(data any) (*regexp.Regexp, error) {
 	}
 	pattern, err := regexp.Compile(str)
 	if err != nil {
-		return nil, ConstraintError{
+		return nil, &ConstraintError{
 			Message: "Invalid pattern",
 			Cause:   err,
 		}
@@ -55,7 +55,7 @@ func (p patternType) Unserialize(data any) (*regexp.Regexp, error) {
 
 func (p patternType) Validate(data *regexp.Regexp) error {
 	if data == nil {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: "Pattern value should not be nil.",
 		}
 	}

@@ -46,7 +46,7 @@ type stringEnumType struct {
 func (s stringEnumType) Unserialize(data any) (string, error) {
 	typedData, err := stringInputMapper(data)
 	if err != nil {
-		return "", ConstraintError{
+		return "", &ConstraintError{
 			Message: fmt.Sprintf("'%v' (type %T) is not a valid type for a '%T' enum", data, data, typedData),
 		}
 	}

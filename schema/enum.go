@@ -66,7 +66,7 @@ func (e *enumType[T, K]) Validate(data T) error {
 	sort.SliceStable(validValues, func(i, j int) bool {
 		return validValues[i] < validValues[j]
 	})
-	return ConstraintError{
+	return &ConstraintError{
 		Message: fmt.Sprintf(
 			"'%v' is not a valid value, must be one of: '%s'",
 			data,

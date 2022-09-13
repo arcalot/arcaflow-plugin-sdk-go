@@ -82,12 +82,12 @@ func (f floatType) Unserialize(data any) (float64, error) {
 
 func (f floatType) Validate(data float64) error {
 	if f.MinValue != nil && data < *f.MinValue {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: fmt.Sprintf("Must be at least %f", *f.MinValue),
 		}
 	}
 	if f.MaxValue != nil && data > *f.MaxValue {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: fmt.Sprintf("Must be at most %f", *f.MaxValue),
 		}
 	}

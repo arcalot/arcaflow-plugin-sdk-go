@@ -57,7 +57,7 @@ func (i intEnumType) Units() *Units {
 func (i intEnumType) Unserialize(data any) (int64, error) {
 	typedData, err := intInputMapper(data, i.Units())
 	if err != nil {
-		return 0, ConstraintError{
+		return 0, &ConstraintError{
 			Message: fmt.Sprintf("'%v' (type %T) is not a valid type for a '%T' enum", data, data, typedData),
 		}
 	}

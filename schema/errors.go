@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -15,7 +16,7 @@ type ConstraintError struct {
 }
 
 // Error returns the error message.
-func (c ConstraintError) Error() string {
+func (c *ConstraintError) Error() string {
 	pathDescriptor := ""
 	if len(c.Path) > 0 {
 		pathDescriptor = " for '" + strings.Join(c.Path, "' -> '") + "'"
@@ -27,9 +28,24 @@ func (c ConstraintError) Error() string {
 	return result
 }
 
+// AddPathSegment adds a path segment to the constraint error.
+func (c *ConstraintError) AddPathSegment(pathSegment string) error {
+	c.Path = append([]string{pathSegment}, c.Path...)
+	return c
+}
+
 // Unwrap returns the underlying error if any.
-func (c ConstraintError) Unwrap() error {
+func (c *ConstraintError) Unwrap() error {
 	return c.Cause
+}
+
+// ConstraintErrorAddPathSegment adds a path segment if a ConstraintError is found.
+func ConstraintErrorAddPathSegment(err error, pathSegment string) error {
+	var c *ConstraintError
+	if errors.As(err, &c) {
+		return c.AddPathSegment(pathSegment)
+	}
+	return err
 }
 
 // NoSuchStepError indicates that the given step is not supported by the plugin.

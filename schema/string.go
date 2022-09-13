@@ -72,17 +72,17 @@ func (s stringType) Unserialize(data any) (string, error) {
 
 func (s stringType) Validate(data string) error {
 	if s.MinValue != nil && int64(len(data)) < *s.MinValue {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: fmt.Sprintf("String must be at least %d characters, %d given", *s.MinValue, int64(len(data))),
 		}
 	}
 	if s.MaxValue != nil && int64(len(data)) > *s.MaxValue {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: fmt.Sprintf("String must be at most %d characters, %d given", *s.MaxValue, int64(len(data))),
 		}
 	}
 	if s.PatternValue != nil && !(*s.PatternValue).MatchString(data) {
-		return ConstraintError{
+		return &ConstraintError{
 			Message: fmt.Sprintf("String must match the pattern %s", (*s.PatternValue).String()),
 		}
 	}
