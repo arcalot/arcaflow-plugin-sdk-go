@@ -7,33 +7,33 @@ package schema
 //
 // This schema only has the ability to hold the configuration but cannot serialize, unserialize or validate. For
 // that functionality please use ScopeType.
-type ScopeSchema interface {
+type ScopeSchema[P PropertySchema, T ObjectSchema[P]] interface {
 	AbstractSchema
-	Objects() map[string]ObjectSchema
+	Objects() map[string]T
 	Root() *string
 }
 
 // NewScopeSchema returns a new scope.
-func NewScopeSchema(objects map[string]ObjectSchema, root *string) ScopeSchema {
-	return &scopeSchema{
+func NewScopeSchema[P PropertySchema, T ObjectSchema[P]](objects map[string]T, root *string) ScopeSchema[P, T] {
+	return &scopeSchema[P, T]{
 		objects,
 		root,
 	}
 }
 
-type scopeSchema struct {
-	ObjectsValue map[string]ObjectSchema `json:"objects"`
-	RootValue    *string                 `json:"root,omitempty"`
+type scopeSchema[P PropertySchema, T ObjectSchema[P]] struct {
+	ObjectsValue map[string]T `json:"objects"`
+	RootValue    *string      `json:"root,omitempty"`
 }
 
-func (s scopeSchema) TypeID() TypeID {
+func (s scopeSchema[P, T]) TypeID() TypeID {
 	return TypeIDScope
 }
 
-func (s scopeSchema) Objects() map[string]ObjectSchema {
+func (s scopeSchema[P, T]) Objects() map[string]T {
 	return s.ObjectsValue
 }
 
-func (s scopeSchema) Root() *string {
+func (s scopeSchema[P, T]) Root() *string {
 	return s.RootValue
 }
