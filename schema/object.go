@@ -11,25 +11,25 @@ type ObjectSchema interface {
 
 // NewObjectSchema creates a new object definition.
 func NewObjectSchema(id string, properties map[string]PropertySchema) ObjectSchema {
-	return &objectSchema{
+	return &objectSchema[PropertySchema]{
 		id,
 		properties,
 	}
 }
 
-type objectSchema struct {
-	IDValue         string                    `json:"id"`
-	PropertiesValue map[string]PropertySchema `json:"properties"`
+type objectSchema[T PropertySchema] struct {
+	IDValue         string       `json:"id"`
+	PropertiesValue map[string]T `json:"properties"`
 }
 
-func (o objectSchema) TypeID() TypeID {
+func (o objectSchema[T]) TypeID() TypeID {
 	return TypeIDObject
 }
 
-func (o objectSchema) ID() string {
+func (o objectSchema[T]) ID() string {
 	return o.IDValue
 }
 
-func (o objectSchema) Properties() map[string]PropertySchema {
+func (o objectSchema[T]) Properties() map[string]T {
 	return o.PropertiesValue
 }
