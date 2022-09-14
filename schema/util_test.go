@@ -57,7 +57,42 @@ func performSerializationTest[T any](
 }
 
 func assertEqual[T comparable](t *testing.T, got T, expected T) {
+	t.Helper()
 	if expected != got {
 		t.Fatalf("Mismatch, expected: %v, got: %v", expected, got)
+	}
+}
+
+func assertError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("Expected error, no error returned")
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("Unexpected error returned: %v", err)
+	}
+}
+
+func assertError2(t *testing.T) func(_ any, err error) {
+	t.Helper()
+	return func(_ any, err error) {
+		t.Helper()
+		if err == nil {
+			t.Fatalf("Expected error, no error returned")
+		}
+	}
+}
+
+func assertNoError2(t *testing.T) func(_ any, err error) {
+	t.Helper()
+	return func(_ any, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("Unexpected error returned: %v", err)
+		}
 	}
 }
