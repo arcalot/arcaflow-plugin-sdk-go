@@ -134,6 +134,18 @@ func intInputMapper(data any, u *Units) (int64, error) {
 		return int64(v), nil
 	case uint8:
 		return int64(v), nil
+	case float64:
+		i := int64(v)
+		if v != float64(i) {
+			return 0, fmt.Errorf("float64 number %f cannot be converted to an int64", v)
+		}
+		return i, nil
+	case float32:
+		i := int64(v)
+		if v != float32(i) {
+			return 0, fmt.Errorf("float32 number %f cannot be converted to an int64", v)
+		}
+		return i, nil
 	case bool:
 		if v {
 			return 1, nil

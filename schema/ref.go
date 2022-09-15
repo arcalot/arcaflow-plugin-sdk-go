@@ -46,6 +46,9 @@ func (r refSchema) Display() *DisplayValue {
 type RefType[T any] interface {
 	RefSchema
 	AbstractType[T]
+	HasProperty(propertyID string) bool
+
+	Anonymous() RefType[any]
 }
 
 // NewRefType creates a serializable reference to a scope. The ApplyScope function must be called after creation to link
@@ -66,6 +69,11 @@ func NewRefType[T any](
 type refType[T any] struct {
 	refSchema             `json:",inline"`
 	referencedObjectCache ObjectType[any]
+}
+
+func (r *refType[T]) HasProperty(propertyID string) bool {
+	_, ok := r.referencedObjectCache.Properties()[propertyID]
+	return ok
 }
 
 func (r *refType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
@@ -124,4 +132,42 @@ func (r *refType[T]) Serialize(data T) (any, error) {
 		})
 	}
 	return r.referencedObjectCache.Serialize(data)
+}
+
+func (r *refType[T]) Anonymous() RefType[any] {
+	return &anonymousRefType[T]{
+		*r,
+	}
+}
+
+type anonymousRefType[T any] struct {
+	refType[T] `json:",inline"`
+}
+
+func (a *anonymousRefType[T]) UnderlyingType() any {
+	return a.refType.UnderlyingType()
+}
+
+func (a *anonymousRefType[T]) Unserialize(data any) (any, error) {
+	return a.refType.Unserialize(data)
+}
+
+func (a *anonymousRefType[T]) Validate(data any) error {
+	typedData, ok := data.(T)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not usable as %T", data, typedData),
+		}
+	}
+	return a.refType.Validate(typedData)
+}
+
+func (a *anonymousRefType[T]) Serialize(data any) (any, error) {
+	typedData, ok := data.(T)
+	if !ok {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("%T is not usable as %T", data, typedData),
+		}
+	}
+	return a.refType.Serialize(typedData)
 }
