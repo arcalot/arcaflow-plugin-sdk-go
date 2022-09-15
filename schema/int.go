@@ -67,6 +67,13 @@ type intType struct {
 	intSchema `json:",inline"`
 }
 
+func (i intType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
+func (i intType) UnderlyingType() int64 {
+	return int64(0)
+}
+
 func (i intType) TypeID() TypeID {
 	return TypeIDInt
 }

@@ -92,6 +92,15 @@ type mapType[K ~int64 | ~string, V any] struct {
 	mapSchema[AbstractType[K], AbstractType[V]] `json:",inline"`
 }
 
+func (m mapType[K, V]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+	m.KeysValue.ApplyScope(s)
+	m.ValuesValue.ApplyScope(s)
+}
+
+func (m mapType[K, V]) UnderlyingType() map[K]V {
+	return map[K]V{}
+}
+
 func (m mapType[K, V]) Unserialize(data any) (map[K]V, error) {
 	var result map[K]V
 	v := reflect.ValueOf(data)

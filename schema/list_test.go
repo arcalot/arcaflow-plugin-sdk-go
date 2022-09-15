@@ -13,7 +13,7 @@ func TestListMin(t *testing.T) {
 			nil,
 			nil,
 		),
-		schema.PointerTo(int64(2)),
+		schema.IntPointer(2),
 		nil,
 	)
 
@@ -50,7 +50,7 @@ func TestListMax(t *testing.T) {
 			nil,
 		),
 		nil,
-		schema.PointerTo(int64(2)),
+		schema.IntPointer(2),
 	)
 
 	assertEqual(t, listType.Min(), nil)
@@ -91,7 +91,7 @@ func TestListTypeID(t *testing.T) {
 func TestListItemValidation(t *testing.T) {
 	listType := schema.NewListType[string](
 		schema.NewStringType(
-			schema.PointerTo(int64(1)),
+			schema.IntPointer(1),
 			nil,
 			nil,
 		),

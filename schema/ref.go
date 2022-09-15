@@ -1,5 +1,10 @@
 package schema
 
+import (
+	"fmt"
+	"reflect"
+)
+
 // RefSchema holds the definition of a reference to a scope-wide object. The ref must always be inside a scope,
 // either directly or indirectly. If several scopes are embedded within each other, the Ref references the object
 // in the current scope.
@@ -35,4 +40,88 @@ func (r refSchema) ID() string {
 
 func (r refSchema) Display() *DisplayValue {
 	return r.DisplayValue
+}
+
+// RefType is a serializable version of RefSchema.
+type RefType[T any] interface {
+	RefSchema
+	AbstractType[T]
+}
+
+// NewRefType creates a serializable reference to a scope. The ApplyScope function must be called after creation to link
+// it with the scope.
+func NewRefType[T any](
+	id string,
+	display *DisplayValue,
+) RefType[T] {
+	return &refType[T]{
+		refSchema{
+			id,
+			display,
+		},
+		nil,
+	}
+}
+
+type refType[T any] struct {
+	refSchema             `json:",inline"`
+	referencedObjectCache ObjectType[any]
+}
+
+func (r *refType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+	objects := s.Objects()
+	referencedObject, ok := objects[r.IDValue]
+	if !ok {
+		panic(BadArgumentError{
+			Message: fmt.Sprintf("Referenced object %s not found in scope", r.IDValue),
+		})
+	}
+	underlyingType := referencedObject.UnderlyingType()
+	underlyingTypeType := reflect.TypeOf(underlyingType)
+	var defaultValue T
+	defaultValueType := reflect.TypeOf(defaultValue)
+	if underlyingTypeType.Kind() != defaultValueType.Kind() {
+		panic(BadArgumentError{
+			Message: fmt.Sprintf(
+				"Referenced object '%s' underlying type '%T' does not match reference type '%T",
+				r.IDValue,
+				underlyingType,
+				defaultValue,
+			),
+		})
+	}
+	r.referencedObjectCache = referencedObject
+}
+
+func (r *refType[T]) UnderlyingType() T {
+	var defaultValue T
+	return defaultValue
+}
+
+func (r *refType[T]) Unserialize(data any) (T, error) {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+		})
+	}
+	result, err := r.referencedObjectCache.Unserialize(data)
+	return result.(T), err
+}
+
+func (r *refType[T]) Validate(data T) error {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+		})
+	}
+	return r.referencedObjectCache.Validate(data)
+}
+
+func (r *refType[T]) Serialize(data T) (any, error) {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+		})
+	}
+	return r.referencedObjectCache.Serialize(data)
 }

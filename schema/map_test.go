@@ -10,7 +10,7 @@ func TestMapMin(t *testing.T) {
 	mapType := schema.NewMapType[string, string](
 		schema.NewStringType(nil, nil, nil),
 		schema.NewStringType(nil, nil, nil),
-		schema.PointerTo(int64(2)),
+		schema.IntPointer(2),
 		nil,
 	)
 
@@ -44,7 +44,7 @@ func TestMapMax(t *testing.T) {
 		schema.NewStringType(nil, nil, nil),
 		schema.NewStringType(nil, nil, nil),
 		nil,
-		schema.PointerTo(int64(2)),
+		schema.IntPointer(2),
 	)
 
 	assertEqual(t, mapType.Min(), nil)
@@ -95,12 +95,12 @@ func TestMapTypeID(t *testing.T) {
 func TestMapItemValidation(t *testing.T) {
 	mapType := schema.NewMapType[string, string](
 		schema.NewStringType(
-			schema.PointerTo(int64(2)),
+			schema.IntPointer(2),
 			nil,
 			nil,
 		),
 		schema.NewStringType(
-			schema.PointerTo(int64(1)),
+			schema.IntPointer(1),
 			nil,
 			nil,
 		),

@@ -45,6 +45,8 @@ func (o objectSchema[T]) Properties() map[string]T {
 type ObjectType[T any] interface {
 	ObjectSchema[PropertyType]
 	AbstractType[T]
+
+	Anonymous() ObjectType[any]
 }
 
 // NewObjectType creates a serializable representation for an object, for filling structs.
@@ -95,9 +97,10 @@ func buildObjectFieldCache[T any](properties map[string]PropertyType) map[string
 			if !ok {
 				panic(BadArgumentError{
 					Message: fmt.Sprintf(
-						"Cannot find a valid field to set for '%s'. Please name a field identically or "+
-							"provide a `json:\"%s\"` tag.",
+						"Cannot find a valid field to set for '%s' on '%s'. Please name a field identically "+
+							"or provide a `json:\"%s\"` tag.",
 						propertyID,
+						reflectType.Name(),
 						propertyID,
 					),
 				})
@@ -136,6 +139,17 @@ type objectType[T any] struct {
 	objectSchema[PropertyType] `json:",inline"`
 	defaultValues              map[string]any
 	fieldCache                 map[string]reflect.StructField
+}
+
+func (o objectType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+	for _, property := range o.PropertiesValue {
+		property.ApplyScope(s)
+	}
+}
+
+func (o objectType[T]) UnderlyingType() T {
+	var defaultValue T
+	return defaultValue
 }
 
 func (o objectType[T]) Unserialize(data any) (result T, err error) {
@@ -327,7 +341,7 @@ func (o objectType[T]) Serialize(data T) (any, error) {
 	for propertyID, property := range o.PropertiesValue {
 		field := o.fieldCache[propertyID]
 		val := v.FieldByName(field.Name)
-		serializedData, err := property.Unserialize(val.Interface())
+		serializedData, err := property.Serialize(val.Interface())
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, propertyID)
 		}
@@ -338,4 +352,49 @@ func (o objectType[T]) Serialize(data T) (any, error) {
 	}
 
 	return rawData, o.validateFieldInterdependencies(rawData)
+}
+
+func (o objectType[T]) Anonymous() ObjectType[any] {
+	return &objectTypeAnonymous[T]{
+		o,
+	}
+}
+
+type objectTypeAnonymous[T any] struct {
+	objectType[T] `json:",inline"`
+}
+
+func (o objectTypeAnonymous[T]) UnderlyingType() any {
+	return any(o.objectType.UnderlyingType())
+}
+
+func (o objectTypeAnonymous[T]) Unserialize(data any) (any, error) {
+	result, err := o.objectType.Unserialize(data)
+	return any(result), err
+}
+
+func (o objectTypeAnonymous[T]) Validate(data any) error {
+	typedData, ok := data.(T)
+	if !ok {
+		underlyingType := o.objectType.UnderlyingType()
+		return &ConstraintError{
+			Message: fmt.Sprintf("Invalid type %T for %T", data, underlyingType),
+		}
+	}
+	return o.objectType.Validate(typedData)
+}
+
+func (o objectTypeAnonymous[T]) Serialize(data any) (any, error) {
+	typedData, ok := data.(T)
+	if !ok {
+		underlyingType := o.objectType.UnderlyingType()
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("Invalid type %T for %T", data, underlyingType),
+		}
+	}
+	return o.objectType.Serialize(typedData)
+}
+
+func (o objectTypeAnonymous[T]) Anonymous() ObjectType[any] {
+	return o
 }

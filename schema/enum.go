@@ -35,6 +35,9 @@ type enumType[T enumValue, K EnumSchema[T]] struct {
 	schemaType K
 }
 
+func (e *enumType[T, K]) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
 func (e *enumType[T, K]) TypeID() TypeID {
 	return e.schemaType.TypeID()
 }

@@ -62,6 +62,13 @@ type stringType struct {
 	stringSchema `json:",inline"`
 }
 
+func (s stringType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
+func (s stringType) UnderlyingType() string {
+	return ""
+}
+
 func (s stringType) Unserialize(data any) (string, error) {
 	unserialized, err := stringInputMapper(data)
 	if err != nil {

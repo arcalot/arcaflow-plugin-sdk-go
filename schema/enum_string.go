@@ -43,6 +43,10 @@ type stringEnumType struct {
 	enumType[string, StringEnumSchema] `json:",inline"`
 }
 
+func (s stringEnumType) UnderlyingType() string {
+	return ""
+}
+
 func (s stringEnumType) Unserialize(data any) (string, error) {
 	typedData, err := stringInputMapper(data)
 	if err != nil {

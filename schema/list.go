@@ -68,6 +68,15 @@ type listType[T any] struct {
 	listSchema[AbstractType[T]] `json:",inline"`
 }
 
+func (l listType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+	l.ItemsValue.ApplyScope(s)
+}
+
+func (l listType[T]) UnderlyingType() []T {
+	var defaultValue []T
+	return defaultValue
+}
+
 func (l listType[T]) Unserialize(data any) ([]T, error) {
 	var result []T
 	v := reflect.ValueOf(data)

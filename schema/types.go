@@ -42,6 +42,8 @@ type AbstractSchema interface {
 // AbstractType describes the common methods all types need to implement.
 type AbstractType[T any] interface {
 	AbstractSchema
+	ApplyScope(ScopeSchema[PropertyType, ObjectType[any]])
+	UnderlyingType() T
 	Unserialize(data any) (T, error)
 	Validate(data T) error
 	Serialize(data T) (any, error)

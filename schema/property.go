@@ -119,6 +119,14 @@ type propertyType[T any] struct {
 	propertySchema[AbstractType[T]] `json:",inline"`
 }
 
+func (p propertyType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+	p.TypeValue.ApplyScope(s)
+}
+
+func (p propertyType[T]) UnderlyingType() any {
+	return p.TypeValue.UnderlyingType()
+}
+
 func (p propertyType[T]) TypeID() TypeID {
 	return p.TypeValue.TypeID()
 }

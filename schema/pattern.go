@@ -38,6 +38,13 @@ type patternType struct {
 	patternSchema `json:",inline"`
 }
 
+func (p patternType) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
+func (p patternType) UnderlyingType() *regexp.Regexp {
+	return &regexp.Regexp{}
+}
+
 func (p patternType) Unserialize(data any) (*regexp.Regexp, error) {
 	str, err := stringInputMapper(data)
 	if err != nil {

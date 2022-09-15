@@ -41,6 +41,13 @@ type boolType struct {
 	schema BoolSchema
 }
 
+func (b *boolType) UnderlyingType() bool {
+	return false
+}
+
+func (b *boolType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
 func (b *boolType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(b.schema)
 }

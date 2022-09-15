@@ -169,7 +169,7 @@ var testIntSerializationDataSet = map[string]serializationTestCase[int64]{
 func TestIntSerialization(t *testing.T) {
 	performSerializationTest[int64](
 		t,
-		schema.NewIntType(schema.PointerTo(int64(5)), schema.PointerTo(int64(10)), schema.PointerTo(schema.UnitBytes)),
+		schema.NewIntType(schema.IntPointer(5), schema.IntPointer(10), schema.PointerTo(schema.UnitBytes)),
 		testIntSerializationDataSet,
 		func(a int64, b int64) bool {
 			return a == b
@@ -224,7 +224,7 @@ func TestIntSerializationNoValidation(t *testing.T) {
 }
 
 func TestIntParameters(t *testing.T) {
-	intType := schema.NewIntType(schema.PointerTo(int64(1)), schema.PointerTo(int64(2)), schema.PointerTo(schema.UnitBytes))
+	intType := schema.NewIntType(schema.IntPointer(1), schema.IntPointer(2), schema.PointerTo(schema.UnitBytes))
 	assertEqual(t, 1, *intType.Min())
 	assertEqual(t, 2, *intType.Max())
 	assertEqual(t, schema.UnitBytes.BaseUnit().NameShortSingular(), (*intType.Units()).BaseUnit().NameShortSingular())

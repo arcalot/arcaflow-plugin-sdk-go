@@ -50,6 +50,10 @@ type intEnumType struct {
 	enumType[int64, IntEnumSchema] `json:",inline"`
 }
 
+func (i intEnumType) UnderlyingType() int64 {
+	return int64(0)
+}
+
 func (i intEnumType) Units() *Units {
 	return i.schemaType.Units()
 }

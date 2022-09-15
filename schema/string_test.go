@@ -10,8 +10,8 @@ import (
 
 func ExampleStringType() {
 	stringType := schema.NewStringType(
-		schema.PointerTo(int64(5)),
-		schema.PointerTo(int64(16)),
+		schema.IntPointer(5),
+		schema.IntPointer(16),
 		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
 	)
 
@@ -49,7 +49,7 @@ func ExampleStringType() {
 }
 
 func TestStringMinValidation(t *testing.T) {
-	stringType := schema.NewStringType(schema.PointerTo(int64(5)), nil, nil)
+	stringType := schema.NewStringType(schema.IntPointer(5), nil, nil)
 
 	const invalidValue = "asdf"
 	const validValue = "asdfg"
@@ -59,7 +59,7 @@ func TestStringMinValidation(t *testing.T) {
 }
 
 func TestStringMaxValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, schema.PointerTo(int64(4)), nil)
+	stringType := schema.NewStringType(nil, schema.IntPointer(4), nil)
 
 	const invalidValue = "asdfg"
 	const validValue = "asdf"
@@ -150,8 +150,8 @@ func TestStringParameters(t *testing.T) {
 	assertEqual(t, stringType.Pattern(), nil)
 
 	stringType = schema.NewStringType(
-		schema.PointerTo(int64(1)),
-		schema.PointerTo(int64(2)),
+		schema.IntPointer(1),
+		schema.IntPointer(2),
 		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
 	)
 	assertEqual(t, *stringType.Min(), int64(1))

@@ -68,6 +68,13 @@ type floatType struct {
 	floatSchema `json:",inline"`
 }
 
+func (f floatType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
+}
+
+func (f floatType) UnderlyingType() float64 {
+	return float64(0)
+}
+
 func (f floatType) TypeID() TypeID {
 	return TypeIDFloat
 }
