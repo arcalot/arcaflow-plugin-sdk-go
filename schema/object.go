@@ -46,7 +46,7 @@ type ObjectType[T any] interface {
 	ObjectSchema[PropertyType]
 	AbstractType[T]
 
-	Anonymous() ObjectType[any]
+	Any() ObjectType[any]
 }
 
 // NewObjectType creates a serializable representation for an object, for filling structs.
@@ -354,26 +354,26 @@ func (o objectType[T]) Serialize(data T) (any, error) {
 	return rawData, o.validateFieldInterdependencies(rawData)
 }
 
-func (o objectType[T]) Anonymous() ObjectType[any] {
-	return &objectTypeAnonymous[T]{
+func (o objectType[T]) Any() ObjectType[any] {
+	return &objectTypeAny[T]{
 		o,
 	}
 }
 
-type objectTypeAnonymous[T any] struct {
+type objectTypeAny[T any] struct {
 	objectType[T] `json:",inline"`
 }
 
-func (o objectTypeAnonymous[T]) UnderlyingType() any {
+func (o objectTypeAny[T]) UnderlyingType() any {
 	return any(o.objectType.UnderlyingType())
 }
 
-func (o objectTypeAnonymous[T]) Unserialize(data any) (any, error) {
+func (o objectTypeAny[T]) Unserialize(data any) (any, error) {
 	result, err := o.objectType.Unserialize(data)
 	return any(result), err
 }
 
-func (o objectTypeAnonymous[T]) Validate(data any) error {
+func (o objectTypeAny[T]) Validate(data any) error {
 	typedData, ok := data.(T)
 	if !ok {
 		underlyingType := o.objectType.UnderlyingType()
@@ -384,7 +384,7 @@ func (o objectTypeAnonymous[T]) Validate(data any) error {
 	return o.objectType.Validate(typedData)
 }
 
-func (o objectTypeAnonymous[T]) Serialize(data any) (any, error) {
+func (o objectTypeAny[T]) Serialize(data any) (any, error) {
 	typedData, ok := data.(T)
 	if !ok {
 		underlyingType := o.objectType.UnderlyingType()
@@ -395,6 +395,6 @@ func (o objectTypeAnonymous[T]) Serialize(data any) (any, error) {
 	return o.objectType.Serialize(typedData)
 }
 
-func (o objectTypeAnonymous[T]) Anonymous() ObjectType[any] {
+func (o objectTypeAny[T]) Any() ObjectType[any] {
 	return o
 }

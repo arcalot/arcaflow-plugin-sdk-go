@@ -48,7 +48,7 @@ type RefType[T any] interface {
 	AbstractType[T]
 	HasProperty(propertyID string) bool
 
-	Anonymous() RefType[any]
+	Any() RefType[any]
 }
 
 // NewRefType creates a serializable reference to a scope. The ApplyScope function must be called after creation to link
@@ -134,7 +134,7 @@ func (r *refType[T]) Serialize(data T) (any, error) {
 	return r.referencedObjectCache.Serialize(data)
 }
 
-func (r *refType[T]) Anonymous() RefType[any] {
+func (r *refType[T]) Any() RefType[any] {
 	return &anonymousRefType[T]{
 		*r,
 	}

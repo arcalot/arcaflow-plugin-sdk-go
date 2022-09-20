@@ -70,36 +70,9 @@ func (o oneOfType[KeyType]) Unserialize(data any) (any, error) {
 		}
 	}
 	discriminator := discriminatorValue.Interface()
-	var typedDiscriminator KeyType
-	switch any(typedDiscriminator).(type) {
-	case int64:
-		intDiscriminator, err := intInputMapper(discriminator, nil)
-		if err != nil {
-			return nil, &ConstraintError{
-				Message: fmt.Sprintf(
-					"Invalid type %T for field %s, expected %T",
-					discriminator,
-					o.DiscriminatorFieldNameValue,
-					typedDiscriminator,
-				),
-				Cause: err,
-			}
-		}
-		typedDiscriminator = any(intDiscriminator).(KeyType)
-	case string:
-		stringDiscriminator, err := stringInputMapper(discriminator)
-		if err != nil {
-			return nil, &ConstraintError{
-				Message: fmt.Sprintf(
-					"Invalid type %T for field %s, expected %T",
-					discriminator,
-					o.DiscriminatorFieldNameValue,
-					typedDiscriminator,
-				),
-				Cause: err,
-			}
-		}
-		typedDiscriminator = any(stringDiscriminator).(KeyType)
+	typedDiscriminator, err := o.getTypedDiscriminator(discriminator)
+	if err != nil {
+		return nil, err
 	}
 	typedData := data.(map[string]interface{})
 
@@ -125,6 +98,41 @@ func (o oneOfType[KeyType]) Unserialize(data any) (any, error) {
 	}
 
 	return selectedType.Unserialize(typedData)
+}
+
+func (o oneOfType[KeyType]) getTypedDiscriminator(discriminator any) (KeyType, error) {
+	var typedDiscriminator KeyType
+	switch any(typedDiscriminator).(type) {
+	case int64:
+		intDiscriminator, err := intInputMapper(discriminator, nil)
+		if err != nil {
+			return typedDiscriminator, &ConstraintError{
+				Message: fmt.Sprintf(
+					"Invalid type %T for field %s, expected %T",
+					discriminator,
+					o.DiscriminatorFieldNameValue,
+					typedDiscriminator,
+				),
+				Cause: err,
+			}
+		}
+		typedDiscriminator = any(intDiscriminator).(KeyType)
+	case string:
+		stringDiscriminator, err := stringInputMapper(discriminator)
+		if err != nil {
+			return typedDiscriminator, &ConstraintError{
+				Message: fmt.Sprintf(
+					"Invalid type %T for field %s, expected %T",
+					discriminator,
+					o.DiscriminatorFieldNameValue,
+					typedDiscriminator,
+				),
+				Cause: err,
+			}
+		}
+		typedDiscriminator = any(stringDiscriminator).(KeyType)
+	}
+	return typedDiscriminator, nil
 }
 
 func (o oneOfType[KeyType]) Validate(data any) error {

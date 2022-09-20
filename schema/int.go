@@ -104,6 +104,7 @@ func (i intType) Serialize(data int64) (any, error) {
 	return data, i.Validate(data)
 }
 
+//nolint:funlen
 func intInputMapper(data any, u *Units) (int64, error) {
 	switch v := data.(type) {
 	case string:

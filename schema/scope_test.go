@@ -67,7 +67,7 @@ var scopeTestObjectAType = schema.NewScopeType[scopeTestObjectA](
 					nil,
 				),
 			},
-		).Anonymous(),
+		).Any(),
 		"scopeTestObjectB": schema.NewObjectType[scopeTestObjectB](
 			"scopeTestObjectB",
 			map[string]schema.PropertyType{
@@ -82,7 +82,7 @@ var scopeTestObjectAType = schema.NewScopeType[scopeTestObjectA](
 					nil,
 				),
 			},
-		).Anonymous(),
+		).Any(),
 	},
 	"scopeTestObjectA",
 )

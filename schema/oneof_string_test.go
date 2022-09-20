@@ -1,3 +1,5 @@
+// golangci-lint does not accurately detect changes in type parameters.
+//nolint:dupl
 package schema_test
 
 import (
@@ -72,8 +74,8 @@ var oneOfStringTestObjectAType = schema.NewScopeType[oneOfTestObjectA](
 				"s": schema.NewPropertyType[any](
 					schema.NewOneOfStringType(
 						map[string]schema.RefType[any]{
-							"B": schema.NewRefType[oneOfTestObjectB]("B", nil).Anonymous(),
-							"C": schema.NewRefType[oneOfTestObjectC]("C", nil).Anonymous(),
+							"B": schema.NewRefType[oneOfTestObjectB]("B", nil).Any(),
+							"C": schema.NewRefType[oneOfTestObjectC]("C", nil).Any(),
 						},
 						"_type",
 					),
@@ -86,7 +88,7 @@ var oneOfStringTestObjectAType = schema.NewScopeType[oneOfTestObjectA](
 					nil,
 				),
 			},
-		).Anonymous(),
+		).Any(),
 		"B": schema.NewObjectType[oneOfTestObjectB](
 			"B",
 			map[string]schema.PropertyType{
@@ -101,7 +103,7 @@ var oneOfStringTestObjectAType = schema.NewScopeType[oneOfTestObjectA](
 					nil,
 				),
 			},
-		).Anonymous(),
+		).Any(),
 		"C": schema.NewObjectType[oneOfTestObjectC](
 			"C",
 			map[string]schema.PropertyType{
@@ -116,7 +118,7 @@ var oneOfStringTestObjectAType = schema.NewScopeType[oneOfTestObjectA](
 					nil,
 				),
 			},
-		).Anonymous(),
+		).Any(),
 	},
 	"A",
 )

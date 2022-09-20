@@ -47,6 +47,8 @@ func (s scopeSchema[P, T]) Root() string {
 type ScopeType[T any] interface {
 	AbstractType[T]
 	ScopeSchema[PropertyType, ObjectType[any]]
+
+	Any() ScopeType[any]
 }
 
 // NewScopeType declares a new scope that can be unserialized using the passed objects.
@@ -89,6 +91,13 @@ func NewScopeType[T any](objects map[string]ObjectType[any], root string) ScopeT
 type scopeType[T any] struct {
 	scopeSchema[PropertyType, ObjectType[any]] `json:",inline"`
 	rootObject                                 ObjectType[any]
+}
+
+func (s scopeType[T]) Any() ScopeType[any] {
+	return &scopeType[any]{
+		scopeSchema: s.scopeSchema,
+		rootObject:  s.rootObject,
+	}
 }
 
 func (s scopeType[T]) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {

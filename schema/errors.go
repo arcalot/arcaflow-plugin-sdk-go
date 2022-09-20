@@ -86,6 +86,7 @@ type UnitParseError struct {
 	Cause   error
 }
 
+// Error returns the error message.
 func (u UnitParseError) Error() string {
 	result := u.Message
 	if u.Cause != nil {
@@ -97,4 +98,34 @@ func (u UnitParseError) Error() string {
 // Unwrap returns the underlying error if any.
 func (u UnitParseError) Unwrap() error {
 	return u.Cause
+}
+
+// InvalidInputError signals that the input provided for a step was invalid. The underlying error can be unwrapped.
+type InvalidInputError struct {
+	Cause error
+}
+
+// Error returns the error message.
+func (i InvalidInputError) Error() string {
+	return fmt.Sprintf("Invalid step input: %v", i.Cause.Error())
+}
+
+// Unwrap returns the underlying error that explains the input problem.
+func (i InvalidInputError) Unwrap() error {
+	return i.Cause
+}
+
+// InvalidOutputError signals that the step returned an output that does not match the output ID.
+type InvalidOutputError struct {
+	Cause error
+}
+
+// Error returns the error message.
+func (i InvalidOutputError) Error() string {
+	return fmt.Sprintf("Invalid step output: %v", i.Cause.Error())
+}
+
+// Unwrap returns the underlying error that explains the output problem.
+func (i InvalidOutputError) Unwrap() error {
+	return i.Cause
 }
