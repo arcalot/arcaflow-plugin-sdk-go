@@ -89,7 +89,7 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(marshalled) != `{"valid_values":{"large":"Large","small":"Small"}}` {
+	if string(marshalled) != `{"values":{"large":"Large","small":"Small"}}` {
 		t.Fatalf("Invalid marshalled JSON output: %s", marshalled)
 	}
 	typeUnderTest = schema.NewStringEnumType(map[string]string{})

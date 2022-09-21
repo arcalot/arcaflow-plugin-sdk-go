@@ -20,26 +20,31 @@ type ScopeSchema[P PropertySchema, T ObjectSchema[P]] interface {
 
 // NewScopeSchema returns a new scope.
 func NewScopeSchema[P PropertySchema, T ObjectSchema[P]](objects map[string]T, root string) ScopeSchema[P, T] {
-	return &scopeSchema[P, T]{
+	return &abstractScopeSchema[P, T]{
 		objects,
 		root,
 	}
 }
 
-type scopeSchema[P PropertySchema, T ObjectSchema[P]] struct {
+type abstractScopeSchema[P PropertySchema, T ObjectSchema[P]] struct {
 	ObjectsValue map[string]T `json:"objects"`
 	RootValue    string       `json:"root,omitempty"`
 }
 
-func (s scopeSchema[P, T]) TypeID() TypeID {
+//nolint:unused
+type scopeSchema struct {
+	abstractScopeSchema[*propertySchema, *objectSchema] `json:",inline"`
+}
+
+func (s abstractScopeSchema[P, T]) TypeID() TypeID {
 	return TypeIDScope
 }
 
-func (s scopeSchema[P, T]) Objects() map[string]T {
+func (s abstractScopeSchema[P, T]) Objects() map[string]T {
 	return s.ObjectsValue
 }
 
-func (s scopeSchema[P, T]) Root() string {
+func (s abstractScopeSchema[P, T]) Root() string {
 	return s.RootValue
 }
 
@@ -73,7 +78,7 @@ func NewScopeType[T any](objects map[string]ObjectType[any], root string) ScopeT
 		})
 	}
 
-	schema := scopeSchema[PropertyType, ObjectType[any]]{
+	schema := abstractScopeSchema[PropertyType, ObjectType[any]]{
 		objects,
 		root,
 	}
@@ -89,14 +94,14 @@ func NewScopeType[T any](objects map[string]ObjectType[any], root string) ScopeT
 }
 
 type scopeType[T any] struct {
-	scopeSchema[PropertyType, ObjectType[any]] `json:",inline"`
-	rootObject                                 ObjectType[any]
+	abstractScopeSchema[PropertyType, ObjectType[any]] `json:",inline"`
+	rootObject                                         ObjectType[any]
 }
 
 func (s scopeType[T]) Any() ScopeType[any] {
 	return &scopeType[any]{
-		scopeSchema: s.scopeSchema,
-		rootObject:  s.rootObject,
+		abstractScopeSchema: s.abstractScopeSchema,
+		rootObject:          s.rootObject,
 	}
 }
 
@@ -108,9 +113,18 @@ func (s scopeType[T]) UnderlyingType() T {
 	return s.rootObject.UnderlyingType().(T)
 }
 
-func (s scopeType[T]) Unserialize(data any) (T, error) {
+func (s scopeType[T]) Unserialize(data any) (typedResult T, err error) {
 	result, err := s.rootObject.Unserialize(data)
-	return result.(T), err
+	if err != nil {
+		return typedResult, err
+	}
+	typedResult, ok := result.(T)
+	if !ok {
+		return typedResult, &ConstraintError{
+			Message: fmt.Sprintf("Failed to convert %T to %T", result, typedResult),
+		}
+	}
+	return typedResult, nil
 }
 
 func (s scopeType[T]) Validate(data T) error {

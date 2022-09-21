@@ -15,6 +15,10 @@ type scopeTestObjectA struct {
 	B scopeTestObjectB `json:"b"`
 }
 
+type scopeTestObjectAPtr struct {
+	B *scopeTestObjectB `json:"b"`
+}
+
 var scopeTestObjectASchema = schema.NewScopeSchema[schema.PropertySchema, schema.ObjectSchema[schema.PropertySchema]](
 	map[string]schema.ObjectSchema[schema.PropertySchema]{
 		"scopeTestObjectA": schema.NewObjectSchema(
@@ -87,6 +91,42 @@ var scopeTestObjectAType = schema.NewScopeType[scopeTestObjectA](
 	"scopeTestObjectA",
 )
 
+var scopeTestObjectATypePtr = schema.NewScopeType[*scopeTestObjectAPtr](
+	map[string]schema.ObjectType[any]{
+		"scopeTestObjectA": schema.NewObjectType[*scopeTestObjectAPtr](
+			"scopeTestObjectA",
+			map[string]schema.PropertyType{
+				"b": schema.NewPropertyType[*scopeTestObjectB](
+					schema.NewRefType[*scopeTestObjectB]("scopeTestObjectB", nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		).Any(),
+		"scopeTestObjectB": schema.NewObjectType[*scopeTestObjectB](
+			"scopeTestObjectB",
+			map[string]schema.PropertyType{
+				"c": schema.NewPropertyType[string](
+					schema.NewStringType(nil, nil, nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		).Any(),
+	},
+	"scopeTestObjectA",
+)
+
 func TestScopeConstructor(t *testing.T) {
 	assertEqual(t, scopeTestObjectASchema.TypeID(), schema.TypeIDScope)
 	assertEqual(t, scopeTestObjectAType.TypeID(), schema.TypeIDScope)
@@ -96,9 +136,16 @@ func TestUnserialization(t *testing.T) {
 	data := `{"b":{"c": "Hello world!"}}`
 	var input any
 	assertNoError(t, json.Unmarshal([]byte(data), &input))
+
 	result, err := scopeTestObjectAType.Unserialize(input)
 	assertNoError(t, err)
+	assertInstanceOf[scopeTestObjectA](t, result)
 	assertEqual(t, result.B.C, "Hello world!")
+
+	resultPtr, err := scopeTestObjectATypePtr.Unserialize(input)
+	assertNoError(t, err)
+	assertInstanceOf[*scopeTestObjectAPtr](t, resultPtr)
+	assertEqual(t, resultPtr.B.C, "Hello world!")
 }
 
 func TestValidation(t *testing.T) {

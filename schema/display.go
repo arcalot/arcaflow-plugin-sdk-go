@@ -7,7 +7,7 @@ type DisplayValue interface {
 	Icon() *string
 }
 
-// NewDisplayValue creates a new DisplayValue from the given parameters.
+// NewDisplayValue creates a new display from the given parameters.
 func NewDisplayValue(name *string, description *string, icon *string) DisplayValue {
 	return &displayValue{
 		NameValue:        name,

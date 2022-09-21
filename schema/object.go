@@ -18,26 +18,31 @@ type ObjectSchema[T PropertySchema] interface {
 
 // NewObjectSchema creates a new object definition.
 func NewObjectSchema(id string, properties map[string]PropertySchema) ObjectSchema[PropertySchema] {
-	return &objectSchema[PropertySchema]{
+	return &abstractObjectSchema[PropertySchema]{
 		id,
 		properties,
 	}
 }
 
-type objectSchema[T PropertySchema] struct {
+type abstractObjectSchema[T PropertySchema] struct {
 	IDValue         string       `json:"id"`
 	PropertiesValue map[string]T `json:"properties"`
 }
 
-func (o objectSchema[T]) TypeID() TypeID {
+//nolint:unused
+type objectSchema struct {
+	abstractObjectSchema[*propertySchema]
+}
+
+func (o abstractObjectSchema[T]) TypeID() TypeID {
 	return TypeIDObject
 }
 
-func (o objectSchema[T]) ID() string {
+func (o abstractObjectSchema[T]) ID() string {
 	return o.IDValue
 }
 
-func (o objectSchema[T]) Properties() map[string]T {
+func (o abstractObjectSchema[T]) Properties() map[string]T {
 	return o.PropertiesValue
 }
 
@@ -54,7 +59,7 @@ func NewObjectType[T any](id string, properties map[string]PropertyType) ObjectT
 	validateObjectIsStruct[T]()
 
 	return &objectType[T]{
-		objectSchema[PropertyType]{
+		abstractObjectSchema[PropertyType]{
 			id,
 			properties,
 		},
@@ -65,7 +70,10 @@ func NewObjectType[T any](id string, properties map[string]PropertyType) ObjectT
 
 func validateObjectIsStruct[T any]() {
 	var defaultValue T
-	reflectValue := reflect.ValueOf(defaultValue)
+	reflectValue := reflect.TypeOf(defaultValue)
+	if reflectValue.Kind() == reflect.Pointer {
+		reflectValue = reflectValue.Elem()
+	}
 	if reflectValue.Kind() != reflect.Struct {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
@@ -80,6 +88,9 @@ func buildObjectFieldCache[T any](properties map[string]PropertyType) map[string
 	var defaultValue T
 	fieldCache := make(map[string]reflect.StructField, len(properties))
 	reflectType := reflect.TypeOf(defaultValue)
+	if reflectType.Kind() == reflect.Pointer {
+		reflectType = reflectType.Elem()
+	}
 	for propertyID := range properties {
 		field, ok := reflectType.FieldByNameFunc(func(s string) bool {
 			fieldType, _ := reflectType.FieldByName(s)
@@ -136,9 +147,9 @@ func extractObjectDefaultValues(properties map[string]PropertyType) map[string]a
 }
 
 type objectType[T any] struct {
-	objectSchema[PropertyType] `json:",inline"`
-	defaultValues              map[string]any
-	fieldCache                 map[string]reflect.StructField
+	abstractObjectSchema[PropertyType] `json:",inline"`
+	defaultValues                      map[string]any
+	fieldCache                         map[string]reflect.StructField
 }
 
 func (o objectType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
@@ -152,6 +163,7 @@ func (o objectType[T]) UnderlyingType() T {
 	return defaultValue
 }
 
+//nolint:funlen
 func (o objectType[T]) Unserialize(data any) (result T, err error) {
 	v := reflect.ValueOf(data)
 	if v.Kind() != reflect.Map {
@@ -159,37 +171,27 @@ func (o objectType[T]) Unserialize(data any) (result T, err error) {
 			Message: fmt.Sprintf("Must be a map, %T given", data),
 		}
 	}
-	tempData := make(map[string]any, v.Len())
-	for _, key := range v.MapKeys() {
-		stringKey, ok := key.Interface().(string)
-		if !ok {
-			return result, o.invalidKeyError(key.Interface())
-		}
-		property, ok := o.PropertiesValue[stringKey]
-		if !ok {
-			return result, o.invalidKeyError(stringKey)
-		}
-		unserializedData, err := property.Unserialize(v.MapIndex(key).Interface())
-		if err != nil {
-			return result, ConstraintErrorAddPathSegment(err, stringKey)
-		}
-		tempData[stringKey] = unserializedData
-	}
-	for propertyID := range o.PropertiesValue {
-		_, isSet := tempData[propertyID]
-		if !isSet {
-			if defaultValue, ok := o.defaultValues[propertyID]; ok {
-				tempData[propertyID] = defaultValue
-			}
-		}
+	tempData, err := o.convertData(v)
+	if err != nil {
+		return result, err
 	}
 	if err := o.validateFieldInterdependencies(tempData); err != nil {
 		return result, err
 	}
 
-	reflectValue := reflect.ValueOf(&result)
+	reflectType := reflect.TypeOf(result)
+	var reflectedValue reflect.Value
+	if reflectType.Kind() != reflect.Pointer {
+		reflectedValue = reflect.New(reflectType)
+	} else {
+		reflectedValue = reflect.New(reflectType.Elem())
+	}
 	for key, value := range tempData {
-		v := reflect.ValueOf(value)
+		val := value
+		elem := reflectedValue.Elem()
+		field := elem.FieldByIndex(o.fieldCache[key].Index)
+		f := field
+		v := reflect.ValueOf(val)
 		var recoveredError error
 		func() {
 			defer func() {
@@ -202,7 +204,13 @@ func (o objectType[T]) Unserialize(data any) (result T, err error) {
 					}
 				}
 			}()
-			reflectValue.Elem().FieldByName(o.fieldCache[key].Name).Set(v)
+			if field.Kind() == reflect.Pointer && v.Kind() != reflect.Pointer {
+				f = reflect.New(f.Type().Elem())
+				f.Elem().Set(v)
+				field.Set(f)
+			} else {
+				f.Set(v)
+			}
 		}()
 		if recoveredError != nil {
 			return result, &ConstraintError{
@@ -212,7 +220,41 @@ func (o objectType[T]) Unserialize(data any) (result T, err error) {
 			}
 		}
 	}
+	reflectType = reflect.TypeOf(result)
+	if reflectType.Kind() != reflect.Pointer {
+		result = reflectedValue.Elem().Interface().(T)
+	} else {
+		result = reflectedValue.Interface().(T)
+	}
 	return result, nil
+}
+
+func (o objectType[T]) convertData(v reflect.Value) (map[string]any, error) {
+	tempData := make(map[string]any, v.Len())
+	for _, key := range v.MapKeys() {
+		stringKey, ok := key.Interface().(string)
+		if !ok {
+			return nil, o.invalidKeyError(key.Interface())
+		}
+		property, ok := o.PropertiesValue[stringKey]
+		if !ok {
+			return nil, o.invalidKeyError(stringKey)
+		}
+		unserializedData, err := property.Unserialize(v.MapIndex(key).Interface())
+		if err != nil {
+			return nil, ConstraintErrorAddPathSegment(err, stringKey)
+		}
+		tempData[stringKey] = unserializedData
+	}
+	for propertyID := range o.PropertiesValue {
+		_, isSet := tempData[propertyID]
+		if !isSet {
+			if defaultValue, ok := o.defaultValues[propertyID]; ok {
+				tempData[propertyID] = defaultValue
+			}
+		}
+	}
+	return tempData, nil
 }
 
 func (o objectType[T]) validateFieldInterdependencies(rawData map[string]any) error {

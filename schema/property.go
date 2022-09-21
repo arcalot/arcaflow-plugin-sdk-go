@@ -9,7 +9,7 @@ import "fmt"
 // that functionality please use PropertyType.
 type PropertySchema interface {
 	Type() AbstractSchema
-	Display() *DisplayValue
+	Display() DisplayValue
 	Default() *string
 	Required() bool
 	RequiredIf() []string
@@ -21,7 +21,7 @@ type PropertySchema interface {
 // NewPropertySchema creates a new object property schema.
 func NewPropertySchema(
 	t AbstractSchema,
-	displayValue *DisplayValue,
+	displayValue DisplayValue,
 	required bool,
 	requiredIf []string,
 	requiredIfNot []string,
@@ -29,7 +29,7 @@ func NewPropertySchema(
 	defaultValue *string,
 	examples []string,
 ) PropertySchema {
-	return &propertySchema[AbstractSchema]{
+	return &abstractPropertySchema[AbstractSchema]{
 		t,
 		displayValue,
 		required,
@@ -41,46 +41,51 @@ func NewPropertySchema(
 	}
 }
 
-type propertySchema[T AbstractSchema] struct {
-	TypeValue          T             `json:"type"`
-	DisplayValue       *DisplayValue `json:"display,omitempty"`
-	RequiredValue      bool          `json:"required"`
-	RequiredIfValue    []string      `json:"required_if,omitempty"`
-	RequiredIfNotValue []string      `json:"required_if_not,omitempty"`
-	ConflictsValue     []string      `json:"conflicts,omitempty"`
-	DefaultValue       *string       `json:"default,omitempty"`
-	ExamplesValue      []string      `json:"examples,omitempty"`
+type abstractPropertySchema[T AbstractSchema] struct {
+	TypeValue          T            `json:"type"`
+	DisplayValue       DisplayValue `json:"display,omitempty"`
+	RequiredValue      bool         `json:"required"`
+	RequiredIfValue    []string     `json:"required_if,omitempty"`
+	RequiredIfNotValue []string     `json:"required_if_not,omitempty"`
+	ConflictsValue     []string     `json:"conflicts,omitempty"`
+	DefaultValue       *string      `json:"default,omitempty"`
+	ExamplesValue      []string     `json:"examples,omitempty"`
 }
 
-func (p propertySchema[T]) Default() *string {
+//nolint:unused
+type propertySchema struct {
+	abstractPropertySchema[AbstractSchema] `json:",inline"`
+}
+
+func (p abstractPropertySchema[T]) Default() *string {
 	return p.DefaultValue
 }
 
-func (p propertySchema[T]) Type() AbstractSchema {
+func (p abstractPropertySchema[T]) Type() AbstractSchema {
 	return p.TypeValue
 }
 
-func (p propertySchema[T]) Display() *DisplayValue {
+func (p abstractPropertySchema[T]) Display() DisplayValue {
 	return p.DisplayValue
 }
 
-func (p propertySchema[T]) Required() bool {
+func (p abstractPropertySchema[T]) Required() bool {
 	return p.RequiredValue
 }
 
-func (p propertySchema[T]) RequiredIf() []string {
+func (p abstractPropertySchema[T]) RequiredIf() []string {
 	return p.RequiredIfValue
 }
 
-func (p propertySchema[T]) RequiredIfNot() []string {
+func (p abstractPropertySchema[T]) RequiredIfNot() []string {
 	return p.RequiredIfNotValue
 }
 
-func (p propertySchema[T]) Conflicts() []string {
+func (p abstractPropertySchema[T]) Conflicts() []string {
 	return p.ConflictsValue
 }
 
-func (p propertySchema[T]) Examples() []string {
+func (p abstractPropertySchema[T]) Examples() []string {
 	return p.ExamplesValue
 }
 
@@ -93,7 +98,7 @@ type PropertyType interface {
 // NewPropertyType defines a new property to be used in an object.
 func NewPropertyType[T any](
 	t AbstractType[T],
-	displayValue *DisplayValue,
+	displayValue DisplayValue,
 	required bool,
 	requiredIf []string,
 	requiredIfNot []string,
@@ -102,7 +107,7 @@ func NewPropertyType[T any](
 	examples []string,
 ) PropertyType {
 	return &propertyType[T]{
-		propertySchema[AbstractType[T]]{
+		abstractPropertySchema[AbstractType[T]]{
 			t,
 			displayValue,
 			required,
@@ -116,7 +121,7 @@ func NewPropertyType[T any](
 }
 
 type propertyType[T any] struct {
-	propertySchema[AbstractType[T]] `json:",inline"`
+	abstractPropertySchema[AbstractType[T]] `json:",inline"`
 }
 
 func (p propertyType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {

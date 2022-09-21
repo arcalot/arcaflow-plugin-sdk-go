@@ -18,7 +18,7 @@ func NewSchema(
 			ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]],
 	],
 ) Schema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]], StepSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]]]] {
-	return &schema[
+	return &abstractSchema[
 		PropertySchema,
 		ObjectSchema[PropertySchema],
 		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
@@ -36,11 +36,16 @@ func NewSchema(
 	}
 }
 
-type schema[P PropertySchema, O ObjectSchema[P], IS ScopeSchema[P, O], OSC ScopeSchema[P, O], OS StepOutputSchema[P, O, OSC], ST StepSchema[P, O, IS, OSC, OS]] struct {
+type abstractSchema[P PropertySchema, O ObjectSchema[P], IS ScopeSchema[P, O], OSC ScopeSchema[P, O], OS StepOutputSchema[P, O, OSC], ST StepSchema[P, O, IS, OSC, OS]] struct {
 	StepsValue map[string]ST `json:"steps"`
 }
 
-func (s schema[P, O, IS, OSC, OS, ST]) Steps() map[string]ST {
+//nolint:unused
+type schema struct {
+	abstractSchema[*propertySchema, *objectSchema, *scopeSchema, *scopeSchema, *stepOutputSchema, *stepSchema] `json:",inline"`
+}
+
+func (s abstractSchema[P, O, IS, OSC, OS, ST]) Steps() map[string]ST {
 	return s.StepsValue
 }
 
@@ -60,14 +65,14 @@ func NewSchemaType(
 	steps map[string]StepType[any],
 ) SchemaType {
 	return &schemaType{
-		schema: schema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]]{
+		abstractSchema: abstractSchema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]]{
 			StepsValue: steps,
 		},
 	}
 }
 
 type schemaType struct {
-	schema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]] `json:",inline"`
+	abstractSchema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]] `json:",inline"`
 }
 
 func (s schemaType) Call(

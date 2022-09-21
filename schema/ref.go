@@ -14,11 +14,11 @@ import (
 type RefSchema interface {
 	AbstractSchema
 	ID() string
-	Display() *DisplayValue
+	Display() DisplayValue
 }
 
 // NewRefSchema creates a new reference to an object in a wrapping ScopeSchema by ID.
-func NewRefSchema(id string, display *DisplayValue) RefSchema {
+func NewRefSchema(id string, display DisplayValue) RefSchema {
 	return &refSchema{
 		id,
 		display,
@@ -26,8 +26,8 @@ func NewRefSchema(id string, display *DisplayValue) RefSchema {
 }
 
 type refSchema struct {
-	IDValue      string        `json:"id"`
-	DisplayValue *DisplayValue `json:"display"`
+	IDValue      string       `json:"id"`
+	DisplayValue DisplayValue `json:"display"`
 }
 
 func (r refSchema) TypeID() TypeID {
@@ -38,7 +38,7 @@ func (r refSchema) ID() string {
 	return r.IDValue
 }
 
-func (r refSchema) Display() *DisplayValue {
+func (r refSchema) Display() DisplayValue {
 	return r.DisplayValue
 }
 
@@ -55,7 +55,7 @@ type RefType[T any] interface {
 // it with the scope.
 func NewRefType[T any](
 	id string,
-	display *DisplayValue,
+	display DisplayValue,
 ) RefType[T] {
 	return &refType[T]{
 		refSchema{

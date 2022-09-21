@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"reflect"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -54,6 +55,18 @@ func performSerializationTest[T any](
 			}
 		})
 	}
+}
+
+func assertInstanceOf[T any](_ *testing.T, _ T) {
+
+}
+
+func assertNotNil[T any](t *testing.T, value T) T {
+	t.Helper()
+	if reflect.ValueOf(value).IsNil() {
+		t.Fatalf("Unexpected nil value")
+	}
+	return value
 }
 
 func assertEqual[T comparable](t *testing.T, got T, expected T) {

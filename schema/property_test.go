@@ -9,11 +9,11 @@ import (
 func TestPropertySchemaParameters(t *testing.T) {
 	propertySchema := schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
-		schema.PointerTo(schema.NewDisplayValue(
+		schema.NewDisplayValue(
 			schema.PointerTo("Greeting"),
 			schema.PointerTo("Hello world!"),
 			schema.PointerTo("<svg></svg>"),
-		)),
+		),
 		true,
 		[]string{"somefield1"},
 		[]string{"somefield2"},
@@ -23,7 +23,7 @@ func TestPropertySchemaParameters(t *testing.T) {
 	)
 
 	assertEqual(t, propertySchema.Type().TypeID(), schema.TypeIDString)
-	assertEqual(t, *(*propertySchema.Display()).Name(), "Greeting")
+	assertEqual(t, *(propertySchema.Display().Name()), "Greeting")
 	assertEqual(t, propertySchema.Required(), true)
 	assertEqual(t, propertySchema.RequiredIf()[0], "somefield1")
 	assertEqual(t, propertySchema.RequiredIfNot()[0], "somefield2")
@@ -35,11 +35,11 @@ func TestPropertySchemaParameters(t *testing.T) {
 func TestPropertyTypeParameters(t *testing.T) {
 	propertySchema := schema.NewPropertyType[string](
 		schema.NewStringType(nil, nil, nil),
-		schema.PointerTo(schema.NewDisplayValue(
+		schema.NewDisplayValue(
 			schema.PointerTo("Greeting"),
 			schema.PointerTo("Hello world!"),
 			schema.PointerTo("<svg></svg>"),
-		)),
+		),
 		true,
 		[]string{"somefield1"},
 		[]string{"somefield2"},
@@ -49,7 +49,7 @@ func TestPropertyTypeParameters(t *testing.T) {
 	)
 
 	assertEqual(t, propertySchema.Type().TypeID(), schema.TypeIDString)
-	assertEqual(t, *(*propertySchema.Display()).Name(), "Greeting")
+	assertEqual(t, *(propertySchema.Display().Name()), "Greeting")
 	assertEqual(t, propertySchema.Required(), true)
 	assertEqual(t, propertySchema.RequiredIf()[0], "somefield1")
 	assertEqual(t, propertySchema.RequiredIfNot()[0], "somefield2")

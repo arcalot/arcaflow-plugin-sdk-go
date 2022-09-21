@@ -16,32 +16,37 @@ type ListSchema interface {
 
 // NewListSchema creates a new list schema from the specified values.
 func NewListSchema(items AbstractSchema, min *int64, max *int64) ListSchema {
-	return &listSchema[AbstractSchema]{
+	return &abstractListSchema[AbstractSchema]{
 		items,
 		min,
 		max,
 	}
 }
 
-type listSchema[T AbstractSchema] struct {
-	ItemsValue T
-	MinValue   *int64
-	MaxValue   *int64
+type abstractListSchema[T AbstractSchema] struct {
+	ItemsValue T      `json:"items"`
+	MinValue   *int64 `json:"min"`
+	MaxValue   *int64 `json:"max"`
 }
 
-func (l listSchema[T]) TypeID() TypeID {
+//nolint:unused
+type listSchema struct {
+	abstractListSchema[AbstractSchema] `json:",inline"`
+}
+
+func (l abstractListSchema[T]) TypeID() TypeID {
 	return TypeIDList
 }
 
-func (l listSchema[T]) Items() AbstractSchema {
+func (l abstractListSchema[T]) Items() AbstractSchema {
 	return l.ItemsValue
 }
 
-func (l listSchema[T]) Min() *int64 {
+func (l abstractListSchema[T]) Min() *int64 {
 	return l.MinValue
 }
 
-func (l listSchema[T]) Max() *int64 {
+func (l abstractListSchema[T]) Max() *int64 {
 	return l.MaxValue
 }
 
@@ -56,7 +61,7 @@ type ListType[T any] interface {
 // NewListType defines a serializable list.
 func NewListType[T any](items AbstractType[T], min *int64, max *int64) ListType[T] {
 	return &listType[T]{
-		listSchema[AbstractType[T]]{
+		abstractListSchema[AbstractType[T]]{
 			items,
 			min,
 			max,
@@ -65,7 +70,7 @@ func NewListType[T any](items AbstractType[T], min *int64, max *int64) ListType[
 }
 
 type listType[T any] struct {
-	listSchema[AbstractType[T]] `json:",inline"`
+	abstractListSchema[AbstractType[T]] `json:",inline"`
 }
 
 func (l listType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {

@@ -34,14 +34,57 @@ var testStructSchema = schema.NewObjectType[testStruct]("testStruct", map[string
 	),
 })
 
+type testStructPtr struct {
+	Field1 *int64
+	Field2 *string `json:"field3"`
+}
+
+var testStructSchemaPtr = schema.NewObjectType[*testStructPtr]("testStruct", map[string]schema.PropertyType{
+	"Field1": schema.NewPropertyType[int64](
+		schema.NewIntType(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"field3": schema.NewPropertyType[string](
+		schema.NewStringType(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+})
+
 func TestObjectUnserialization(t *testing.T) {
-	unserializedData, err := testStructSchema.Unserialize(map[string]any{
+	data := map[string]any{
 		"Field1": 42,
 		"field3": "Hello world!",
+	}
+
+	t.Run("noptr", func(t *testing.T) {
+		unserializedData, err := testStructSchema.Unserialize(data)
+		assertNoError(t, err)
+		assertInstanceOf[testStruct](t, unserializedData)
+		assertEqual(t, unserializedData.Field1, int64(42))
+		assertEqual(t, unserializedData.Field2, "Hello world!")
 	})
-	assertNoError(t, err)
-	assertEqual(t, unserializedData.Field1, int64(42))
-	assertEqual(t, unserializedData.Field2, "Hello world!")
+
+	t.Run("ptr", func(t *testing.T) {
+		unserializedDataPtr, err := testStructSchemaPtr.Unserialize(data)
+		assertNoError(t, err)
+		assertInstanceOf[*testStructPtr](t, unserializedDataPtr)
+		assertNotNil(t, unserializedDataPtr.Field1)
+		assertNotNil(t, unserializedDataPtr.Field2)
+		assertEqual(t, *unserializedDataPtr.Field1, int64(42))
+		assertEqual(t, *unserializedDataPtr.Field2, "Hello world!")
+	})
 }
 
 type embeddedTestStruct struct {

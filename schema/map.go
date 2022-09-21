@@ -28,7 +28,7 @@ func NewMapSchema(keys AbstractSchema, values AbstractSchema, min *int64, max *i
 		})
 	}
 
-	return &mapSchema[AbstractSchema, AbstractSchema]{
+	return &abstractMapSchema[AbstractSchema, AbstractSchema]{
 		keys,
 		values,
 		min,
@@ -36,30 +36,35 @@ func NewMapSchema(keys AbstractSchema, values AbstractSchema, min *int64, max *i
 	}
 }
 
-type mapSchema[K AbstractSchema, V AbstractSchema] struct {
-	KeysValue   K
-	ValuesValue V
-	MinValue    *int64
-	MaxValue    *int64
+type abstractMapSchema[K AbstractSchema, V AbstractSchema] struct {
+	KeysValue   K      `json:"keys"`
+	ValuesValue V      `json:"values"`
+	MinValue    *int64 `json:"min"`
+	MaxValue    *int64 `json:"max"`
 }
 
-func (m mapSchema[K, V]) TypeID() TypeID {
+//nolint:unused
+type mapSchema struct {
+	abstractMapSchema[AbstractSchema, AbstractSchema] `json:",inline"`
+}
+
+func (m abstractMapSchema[K, V]) TypeID() TypeID {
 	return TypeIDMap
 }
 
-func (m mapSchema[K, V]) Keys() AbstractSchema {
+func (m abstractMapSchema[K, V]) Keys() AbstractSchema {
 	return m.KeysValue
 }
 
-func (m mapSchema[K, V]) Values() AbstractSchema {
+func (m abstractMapSchema[K, V]) Values() AbstractSchema {
 	return m.ValuesValue
 }
 
-func (m mapSchema[K, V]) Min() *int64 {
+func (m abstractMapSchema[K, V]) Min() *int64 {
 	return m.MinValue
 }
 
-func (m mapSchema[K, V]) Max() *int64 {
+func (m abstractMapSchema[K, V]) Max() *int64 {
 	return m.MaxValue
 }
 
@@ -79,7 +84,7 @@ func NewMapType[K ~int64 | ~string, V any](
 	min *int64, max *int64,
 ) MapType[K, V] {
 	return &mapType[K, V]{
-		mapSchema[AbstractType[K], AbstractType[V]]{
+		abstractMapSchema[AbstractType[K], AbstractType[V]]{
 			KeysValue:   keys,
 			ValuesValue: values,
 			MinValue:    min,
@@ -89,7 +94,7 @@ func NewMapType[K ~int64 | ~string, V any](
 }
 
 type mapType[K ~int64 | ~string, V any] struct {
-	mapSchema[AbstractType[K], AbstractType[V]] `json:",inline"`
+	abstractMapSchema[AbstractType[K], AbstractType[V]] `json:",inline"`
 }
 
 func (m mapType[K, V]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {

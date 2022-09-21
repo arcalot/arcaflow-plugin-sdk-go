@@ -12,7 +12,7 @@ func ExampleStringType() {
 	stringType := schema.NewStringType(
 		schema.IntPointer(5),
 		schema.IntPointer(16),
-		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
+		regexp.MustCompile("^[a-z]+$"),
 	)
 
 	// This will fail because it's too short:
@@ -69,7 +69,7 @@ func TestStringMaxValidation(t *testing.T) {
 }
 
 func TestStringPatternValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, nil, schema.PointerTo(regexp.MustCompile("^[a-z]+$")))
+	stringType := schema.NewStringType(nil, nil, regexp.MustCompile("^[a-z]+$"))
 
 	const invalidValue = "asdf1"
 	const validValue = "asdf"
@@ -152,7 +152,7 @@ func TestStringParameters(t *testing.T) {
 	stringType = schema.NewStringType(
 		schema.IntPointer(1),
 		schema.IntPointer(2),
-		schema.PointerTo(regexp.MustCompile("^[a-z]+$")),
+		regexp.MustCompile("^[a-z]+$"),
 	)
 	assertEqual(t, *stringType.Min(), int64(1))
 	assertEqual(t, *stringType.Max(), int64(2))

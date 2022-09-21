@@ -13,7 +13,7 @@ type StepSchema[
 	ID() string
 	Input() InputSchema
 	Outputs() map[string]OutputSchema
-	Display() *DisplayValue
+	Display() DisplayValue
 }
 
 // NewStepSchema defines a new step.
@@ -25,7 +25,7 @@ func NewStepSchema(
 		ObjectSchema[PropertySchema],
 		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
 	],
-	display *DisplayValue,
+	display DisplayValue,
 ) StepSchema[
 	PropertySchema,
 	ObjectSchema[PropertySchema],
@@ -37,7 +37,7 @@ func NewStepSchema(
 		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
 	],
 ] {
-	return &stepSchema[
+	return &abstractStepSchema[
 		PropertySchema,
 		ObjectSchema[PropertySchema],
 		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
@@ -55,7 +55,7 @@ func NewStepSchema(
 	}
 }
 
-type stepSchema[
+type abstractStepSchema[
 	P PropertySchema,
 	O ObjectSchema[P],
 	InputScopeSchema ScopeSchema[P, O],
@@ -65,18 +65,23 @@ type stepSchema[
 	IDValue      string                  `json:"id"`
 	InputValue   InputScopeSchema        `json:"input"`
 	OutputsValue map[string]OutputSchema `json:"outputs"`
-	DisplayValue *DisplayValue           `json:"display,omitempty"`
+	DisplayValue DisplayValue            `json:"display,omitempty"`
 }
 
-func (s stepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) ID() string {
+//nolint:unused
+type stepSchema struct {
+	abstractStepSchema[*propertySchema, *objectSchema, *scopeSchema, *scopeSchema, *stepOutputSchema] `json:",inline"`
+}
+
+func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) ID() string {
 	return s.IDValue
 }
 
-func (s stepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Input() InputScopeSchema {
+func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Input() InputScopeSchema {
 	return s.InputValue
 }
 
-func (s stepSchema[
+func (s abstractStepSchema[
 	P,
 	O,
 	IS,
@@ -86,7 +91,7 @@ func (s stepSchema[
 	return s.OutputsValue
 }
 
-func (s stepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Display() *DisplayValue {
+func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Display() DisplayValue {
 	return s.DisplayValue
 }
 
@@ -103,11 +108,11 @@ func NewStepType[InputType any](
 	id string,
 	input ScopeType[InputType],
 	outputs map[string]StepOutputType[any],
-	display *DisplayValue,
+	display DisplayValue,
 	handler func(InputType) (string, any),
 ) StepType[InputType] {
 	return &stepType[InputType]{
-		stepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]]{
+		abstractStepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]]{
 			IDValue:      id,
 			InputValue:   input,
 			OutputsValue: outputs,
@@ -118,7 +123,7 @@ func NewStepType[InputType any](
 }
 
 type stepType[InputType any] struct {
-	stepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]] `json:",inline"`
+	abstractStepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]] `json:",inline"`
 
 	handler func(InputType) (string, any)
 }

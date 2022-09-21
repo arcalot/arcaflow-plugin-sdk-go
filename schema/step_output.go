@@ -6,21 +6,21 @@ package schema
 // that functionality please use StepOutputType.
 type StepOutputSchema[P PropertySchema, O ObjectSchema[P], S ScopeSchema[P, O]] interface {
 	Schema() S
-	Display() *DisplayValue
+	Display() DisplayValue
 	Error() bool
 }
 
 // NewStepOutputSchema defines a new output for a step.
 func NewStepOutputSchema(
 	schema ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	display *DisplayValue,
+	display DisplayValue,
 	error bool,
 ) StepOutputSchema[
 	PropertySchema,
 	ObjectSchema[PropertySchema],
 	ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
 ] {
-	return &stepOutputSchema[
+	return &abstractStepOutputSchema[
 		PropertySchema,
 		ObjectSchema[PropertySchema],
 		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
@@ -31,35 +31,40 @@ func NewStepOutputSchema(
 	}
 }
 
-type stepOutputSchema[P PropertySchema, O ObjectSchema[P], S ScopeSchema[P, O]] struct {
-	schema  S
-	display *DisplayValue
-	error   bool
+type abstractStepOutputSchema[P PropertySchema, O ObjectSchema[P], S ScopeSchema[P, O]] struct {
+	SchemaValue  S            `json:"schema"`
+	DisplayValue DisplayValue `json:"display"`
+	ErrorValue   bool         `json:"error"`
 }
 
-func (s stepOutputSchema[P, O, S]) Schema() S {
-	return s.schema
+//nolint:unused
+type stepOutputSchema struct {
+	abstractStepOutputSchema[*propertySchema, *objectSchema, *scopeSchema] `json:",inline"`
 }
 
-func (s stepOutputSchema[P, O, S]) Display() *DisplayValue {
-	return s.display
+func (s abstractStepOutputSchema[P, O, S]) Schema() S {
+	return s.SchemaValue
 }
 
-func (s stepOutputSchema[P, O, S]) Error() bool {
-	return s.error
+func (s abstractStepOutputSchema[P, O, S]) Display() DisplayValue {
+	return s.DisplayValue
+}
+
+func (s abstractStepOutputSchema[P, O, S]) Error() bool {
+	return s.ErrorValue
 }
 
 // NewStepOutputType defines a typed step output.
 func NewStepOutputType[T any](
 	schema ScopeType[T],
-	display *DisplayValue,
+	display DisplayValue,
 	error bool,
 ) StepOutputType[T] {
 	return &stepOutputType[T]{
-		stepOutputSchema[PropertyType, ObjectType[any], ScopeType[T]]{
-			schema:  schema,
-			display: display,
-			error:   error,
+		abstractStepOutputSchema[PropertyType, ObjectType[any], ScopeType[T]]{
+			SchemaValue:  schema,
+			DisplayValue: display,
+			ErrorValue:   error,
 		},
 	}
 }
@@ -72,19 +77,19 @@ type StepOutputType[T any] interface {
 }
 
 type stepOutputType[T any] struct {
-	stepOutputSchema[PropertyType, ObjectType[any], ScopeType[T]]
+	abstractStepOutputSchema[PropertyType, ObjectType[any], ScopeType[T]]
 }
 
 func (s stepOutputType[T]) Schema() ScopeType[T] {
-	return s.schema
+	return s.SchemaValue
 }
 
 func (s stepOutputType[T]) Any() StepOutputType[any] {
 	return &stepOutputType[any]{
-		stepOutputSchema[PropertyType, ObjectType[any], ScopeType[any]]{
-			schema:  s.schema.Any(),
-			display: s.display,
-			error:   s.error,
+		abstractStepOutputSchema[PropertyType, ObjectType[any], ScopeType[any]]{
+			SchemaValue:  s.SchemaValue.Any(),
+			DisplayValue: s.DisplayValue,
+			ErrorValue:   s.ErrorValue,
 		},
 	}
 }

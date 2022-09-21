@@ -79,6 +79,7 @@ linters-settings:
     include-go-root: false
     packages:
       - go.flow.arcalot.io/pluginsdk/schema
+      - gopkg.in/yaml.v3
   govet:
     enable-all: true
     check-shadowing: false
