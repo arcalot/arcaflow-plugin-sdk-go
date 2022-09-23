@@ -52,7 +52,6 @@ func (s abstractSchema[P, O, IS, OSC, OS, ST]) Steps() map[string]ST {
 // SchemaType defines a complete callable schema.
 //
 // Disable linting, this is intentional:
-//nolint:revive
 //goland:noinspection GoNameStartsWithPackageName
 type SchemaType interface {
 	Schema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]]

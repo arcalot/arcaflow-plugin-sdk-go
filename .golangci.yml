@@ -74,6 +74,8 @@ linters:
 
     # endregion
 linters-settings:
+  revive:
+    severity: error
   depguard:
     list-type: whitelist
     include-go-root: false
