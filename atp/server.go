@@ -8,6 +8,7 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
+// RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
 func RunATPServer(
 	ctx context.Context,
 	stdin io.ReadCloser,
