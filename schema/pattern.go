@@ -1,51 +1,38 @@
 package schema
 
-import "regexp"
+import (
+	"fmt"
+	"reflect"
+	"regexp"
+)
 
-// PatternSchema holds the schema information for regular expression patterns. This dataclass only has the ability to
+// Pattern holds the schema information for regular expression patterns. This dataclass only has the ability to
 // hold the configuration but cannot serialize, unserialize or validate. For that functionality please use
 // PatternType.
-type PatternSchema interface {
-	AbstractSchema
+type Pattern interface {
+	TypedType[*regexp.Regexp]
 }
 
 // NewPatternSchema creates a new pattern schema.
-func NewPatternSchema() PatternSchema {
-	return &patternSchema{}
+func NewPatternSchema() *PatternSchema {
+	return &PatternSchema{}
 }
 
-type patternSchema struct {
+type PatternSchema struct {
 }
 
-func (p patternSchema) TypeID() TypeID {
+func (p PatternSchema) TypeID() TypeID {
 	return TypeIDPattern
 }
 
-// PatternType is the serializable version of PatternSchema.
-type PatternType interface {
-	PatternSchema
-	AbstractType[*regexp.Regexp]
+func (p PatternSchema) ApplyScope(scope Scope) {
 }
 
-// NewPatternType creates a new pattern type for serialization/unserialization.
-func NewPatternType() PatternType {
-	return &patternType{
-		patternSchema{},
-	}
+func (p PatternSchema) ReflectedType() reflect.Type {
+	return reflect.TypeOf(&regexp.Regexp{})
 }
 
-type patternType struct {
-	patternSchema `json:",inline"`
-}
-
-func (p patternType) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
-}
-
-func (p patternType) UnderlyingType() *regexp.Regexp {
-	return &regexp.Regexp{}
-}
-
-func (p patternType) Unserialize(data any) (*regexp.Regexp, error) {
+func (p PatternSchema) Unserialize(data any) (any, error) {
 	str, err := stringInputMapper(data)
 	if err != nil {
 		return nil, err
@@ -60,18 +47,41 @@ func (p patternType) Unserialize(data any) (*regexp.Regexp, error) {
 	return pattern, nil
 }
 
-func (p patternType) Validate(data *regexp.Regexp) error {
-	if data == nil {
+func (p PatternSchema) Validate(d any) error {
+	if d == nil {
 		return &ConstraintError{
 			Message: "Pattern value should not be nil.",
+		}
+	}
+
+	_, ok := d.(*regexp.Regexp)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for a float schema.", d),
 		}
 	}
 	return nil
 }
 
-func (p patternType) Serialize(data *regexp.Regexp) (any, error) {
+func (p PatternSchema) Serialize(data any) (any, error) {
 	if err := p.Validate(data); err != nil {
 		return nil, err
 	}
-	return data.String(), nil
+	return data.(*regexp.Regexp).String(), nil
+}
+
+func (p PatternSchema) UnserializeType(data any) (*regexp.Regexp, error) {
+	result, err := p.Unserialize(data)
+	if err != nil {
+		return nil, err
+	}
+	return result.(*regexp.Regexp), nil
+}
+
+func (p PatternSchema) ValidateType(data *regexp.Regexp) error {
+	return p.Validate(data)
+}
+
+func (p PatternSchema) SerializeType(data *regexp.Regexp) (any, error) {
+	return p.Serialize(data)
 }

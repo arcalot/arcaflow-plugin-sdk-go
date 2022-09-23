@@ -108,11 +108,15 @@ steps:
 func TestSchemaUnserialization(t *testing.T) {
 	data := map[string]any{}
 	assertNoError(t, yaml.Unmarshal([]byte(examplePluginSchema), &data))
-	unserializedData, err := schema.SchemaSchema.Unserialize(data)
+	unserializedData, err := schema.UnserializeSchema(data)
 	assertNoError(t, err)
 	steps := assertNotNil(t, unserializedData.Steps())
 	helloWorldStep := assertNotNil(t, steps["hello-world"])
 	display := assertNotNil(t, helloWorldStep.Display())
 	name := assertNotNil(t, display.Name())
 	assertEqual(t, *name, "Hello world!")
+
+	_, err = unserializedData.SelfSerialize()
+	assertNoError(t, err)
+
 }

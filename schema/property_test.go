@@ -6,6 +6,7 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
+//nolint:dupl
 func TestPropertySchemaParameters(t *testing.T) {
 	propertySchema := schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
@@ -32,9 +33,10 @@ func TestPropertySchemaParameters(t *testing.T) {
 	assertEqual(t, *propertySchema.Default(), `"Hello world!"`)
 }
 
+//nolint:dupl
 func TestPropertyTypeParameters(t *testing.T) {
-	propertySchema := schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	propertySchema := schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		schema.NewDisplayValue(
 			schema.PointerTo("Greeting"),
 			schema.PointerTo("Hello world!"),
@@ -59,8 +61,8 @@ func TestPropertyTypeParameters(t *testing.T) {
 }
 
 func TestPropertyTypeTypeID(t *testing.T) {
-	propertyType := schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	propertyType := schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		false,
 		nil,
@@ -73,8 +75,8 @@ func TestPropertyTypeTypeID(t *testing.T) {
 }
 
 func TestPropertyTypeInvalidTypes(t *testing.T) {
-	propertyType := schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	propertyType := schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		false,
 		nil,
@@ -85,37 +87,4 @@ func TestPropertyTypeInvalidTypes(t *testing.T) {
 	)
 	assertError(t, propertyType.Validate(struct{}{}))
 	assertError2(t)(propertyType.Serialize(struct{}{}))
-}
-
-func TestPropertyTypeSerialization(t *testing.T) {
-	performSerializationTest[any](
-		t,
-		schema.NewPropertyType[string](
-			schema.NewStringType(nil, nil, nil),
-			nil,
-			false,
-			nil,
-			nil,
-			nil,
-			nil,
-			nil,
-		),
-		map[string]serializationTestCase[any]{
-			"emptyString": {
-				SerializedValue:         "",
-				ExpectUnserializedValue: "",
-				ExpectedSerializedValue: "",
-			},
-			"incorrectType": {
-				SerializedValue: struct{}{},
-				ExpectError:     true,
-			},
-		},
-		func(a any, b any) bool {
-			return a == b
-		},
-		func(a any, b any) bool {
-			return a == b
-		},
-	)
 }

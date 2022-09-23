@@ -2,8 +2,8 @@ package schema
 
 import "regexp"
 
-var unitsProperty = NewPropertyType[*units](
-	NewRefType[*units]("Units", nil),
+var unitsProperty = NewPropertySchema(
+	NewRefSchema("Units", nil),
 	NewDisplayValue(
 		PointerTo("Units"),
 		PointerTo("Units this number represents."),
@@ -25,42 +25,42 @@ var unitsProperty = NewPropertyType[*units](
 			"}",
 	},
 )
-var idType = NewStringType(
+var idType = NewStringSchema(
 	IntPointer(1),
 	IntPointer(255),
 	regexp.MustCompile("^[$@a-zA-Z0-9-_]+$"),
 )
-var mapKeyType = NewOneOfStringType(
-	map[string]RefType[any]{
-		"integer": NewRefType[*intSchema](
-			"IntSchema",
+var mapKeyType = NewOneOfStringSchema[any](
+	map[string]*RefSchema{
+		"integer": NewRefSchema(
+			"Int",
 			NewDisplayValue(
 				PointerTo("Integer"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"string": NewRefType[*stringSchema](
-			"StringSchema",
+		),
+		"string": NewRefSchema(
+			"String",
 			NewDisplayValue(
 				PointerTo("String"),
 				nil,
 				nil,
 			),
-		).Any(),
+		),
 	},
 	"type_id",
 )
 var displayType = NewDisplayValue(
-	PointerTo("DisplayValue"),
+	PointerTo("Display"),
 	PointerTo(
 		"Name, description and icon.",
 	),
 	nil,
 )
-var displayProperty = NewPropertyType[*displayValue](
-	NewRefType[*displayValue](
-		"DisplayValue",
+var displayProperty = NewPropertySchema(
+	NewRefSchema(
+		"Display",
 		nil,
 	),
 	displayType,
@@ -71,218 +71,141 @@ var displayProperty = NewPropertyType[*displayValue](
 	nil,
 	nil,
 )
-var valueType = NewOneOfStringType(
-	map[string]RefType[any]{
-		"bool": NewRefType[*boolSchema](
+var valueType = NewOneOfStringSchema[any](
+	map[string]*RefSchema{
+		"bool": NewRefSchema(
 			"BoolSchema",
 			NewDisplayValue(
 				PointerTo("Bool"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"enum_integer": NewRefType[*intEnumSchema](
-			"IntEnumSchema",
+		),
+		"enum_integer": NewRefSchema(
+			"IntEnum",
 			NewDisplayValue(
 				PointerTo("Integer enum"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"enum_string": NewRefType[*stringEnumSchema](
-			"StringEnumSchema",
+		),
+		"enum_string": NewRefSchema(
+			"StringEnum",
 			NewDisplayValue(
 				PointerTo("String enum"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"float": NewRefType[*floatSchema](
-			"FloatSchema",
+		),
+		"float": NewRefSchema(
+			"Float",
 			NewDisplayValue(
 				PointerTo("Float"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"integer": NewRefType[*intSchema](
-			"IntSchema",
+		),
+		"integer": NewRefSchema(
+			"Int",
 			NewDisplayValue(
 				PointerTo("Integer"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"list": NewRefType[*abstractListSchema[AbstractSchema]](
-			"ListSchema",
+		),
+		"list": NewRefSchema(
+			"List",
 			NewDisplayValue(
 				PointerTo("List"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"map": NewRefType[*mapSchema](
-			"MapSchema",
+		),
+		"map": NewRefSchema(
+			"Map",
 			NewDisplayValue(
 				PointerTo("Map"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"object": NewRefType[*objectSchema](
-			"ObjectSchema",
+		),
+		"object": NewRefSchema(
+			"Object",
 			NewDisplayValue(
 				PointerTo("Object"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"one_of_int": NewRefType[*oneOfSchema[int64, *refSchema]](
-			"OneOfIntSchema",
+		),
+		"one_of_int": NewRefSchema(
+			"OneOfInt",
 			NewDisplayValue(
 				PointerTo("Multiple with int key"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"one_of_string": NewRefType[*oneOfSchema[string, *refSchema]](
+		),
+		"one_of_string": NewRefSchema(
 			"OneOfStringSchema",
 			NewDisplayValue(
 				PointerTo("Multiple with string key"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"pattern": NewRefType[*patternSchema](
-			"PatternSchema",
+		),
+		"pattern": NewRefSchema(
+			"Pattern",
 			NewDisplayValue(
 				PointerTo("Pattern"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"ref": NewRefType[*refSchema](
-			"RefSchema",
+		),
+		"ref": NewRefSchema(
+			"Ref",
 			NewDisplayValue(
 				PointerTo("Object reference"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"scope": NewRefType[*scopeSchema](
-			"ScopeSchema",
+		),
+		"scope": NewRefSchema(
+			"Scope",
 			NewDisplayValue(
 				PointerTo("Scope"),
 				nil,
 				nil,
 			),
-		).Any(),
-		"string": NewRefType[*stringSchema](
-			"StringSchema",
+		),
+		"string": NewRefSchema(
+			"String",
 			NewDisplayValue(
 				PointerTo("String"),
 				nil,
 				nil,
 			),
-		).Any(),
+		),
 	},
 	"type_id",
 )
 
-// SchemaSchema is the definition of a schema itself.
-var SchemaSchema = NewScopeType[*schema](
-	map[string]ObjectType[any]{
-		"BoolSchema": NewObjectType[*boolSchema]("BoolSchema", map[string]PropertyType{}).Any(),
-		"DisplayValue": NewObjectType[*displayValue]("DisplayValue", map[string]PropertyType{
-			"name": NewPropertyType[string](
-				NewStringType(IntPointer(1), nil, nil),
-				NewDisplayValue(
-					PointerTo("Name"),
-					PointerTo("Short text serving as a name or title for this item."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				nil,
-				[]string{"\"Fruit\""},
-			),
-			"description": NewPropertyType[string](
-				NewStringType(IntPointer(1), nil, nil),
-				NewDisplayValue(
-					PointerTo("Description"),
-					PointerTo("Description for this item if needed."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				nil,
-				[]string{"\"Please select the fruit you would like.\""},
-			),
-			"icon": NewPropertyType[string](
-				NewStringType(IntPointer(1), nil, nil),
-				NewDisplayValue(
-					PointerTo("Icon"),
-					PointerTo("SVG icon for this item. Must have the declared size of 64x64, must not include "+
-						"additional namespaces, and must not reference external resources."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				nil,
-				[]string{"\"<svg ...></svg>\""},
-			),
-		}).Any(),
-		"FloatSchema": NewObjectType[*floatSchema]("FloatSchema", map[string]PropertyType{
-			"min": NewPropertyType[float64](
-				NewFloatType(nil, nil, nil),
-				NewDisplayValue(
-					PointerTo("Minimum"),
-					PointerTo("Minimum value for this float (inclusive)."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				nil,
-				[]string{"5.0"},
-			),
-			"max": NewPropertyType[float64](
-				NewFloatType(nil, nil, nil),
-				NewDisplayValue(
-					PointerTo("Maximum"),
-					PointerTo("Maximum value for this float (inclusive)."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				nil,
-				[]string{"16.0"},
-			),
-			"units": unitsProperty,
-		}).Any(),
-		"IntEnumSchema": NewObjectType[*intEnumSchema]("IntEnumSchema", map[string]PropertyType{
-			"values": NewPropertyType[map[int64]*displayValue](
-				NewMapType[int64, *displayValue](
-					NewIntType(nil, nil, nil),
-					NewRefType[*displayValue](
-						"DisplayValue",
+var schemaSchema = NewScopeSchema(
+	NewStructMappedObjectSchema[*SchemaSchema](
+		"Schema",
+		map[string]*PropertySchema{
+			"steps": NewPropertySchema(
+				NewMapSchema(
+					idType,
+					NewRefSchema(
+						"Step",
 						nil,
 					),
-					IntPointer(1),
+					nil,
 					nil,
 				),
 				NewDisplayValue(
-					PointerTo("Values"),
-					PointerTo("Possible values for this field."),
+					PointerTo("Steps"),
+					PointerTo("Steps this schema supports."),
 					nil,
 				),
 				true,
@@ -290,801 +213,882 @@ var SchemaSchema = NewScopeType[*schema](
 				nil,
 				nil,
 				nil,
-				[]string{"{\"1024\": {\"name\": \"kB\"}, \"1048576\": {\"name\": \"MB\"}}"},
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*BoolSchema]("BoolSchema", map[string]*PropertySchema{}),
+	NewStructMappedObjectSchema[*DisplayValue]("Display", map[string]*PropertySchema{
+		"name": NewPropertySchema(
+			NewStringSchema(IntPointer(1), nil, nil),
+			NewDisplayValue(
+				PointerTo("Name"),
+				PointerTo("Short text serving as a name or title for this item."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"\"Fruit\""},
+		),
+		"description": NewPropertySchema(
+			NewStringSchema(IntPointer(1), nil, nil),
+			NewDisplayValue(
+				PointerTo("Description"),
+				PointerTo("Description for this item if needed."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"\"Please select the fruit you would like.\""},
+		),
+		"icon": NewPropertySchema(
+			NewStringSchema(IntPointer(1), nil, nil),
+			NewDisplayValue(
+				PointerTo("Icon"),
+				PointerTo("SVG icon for this item. Must have the declared size of 64x64, must not include "+
+					"additional namespaces, and must not reference external resources."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"\"<svg ...></svg>\""},
+		),
+	}),
+	NewStructMappedObjectSchema[*FloatSchema]("Float", map[string]*PropertySchema{
+		"min": NewPropertySchema(
+			NewFloatSchema(nil, nil, nil),
+			NewDisplayValue(
+				PointerTo("Minimum"),
+				PointerTo("Minimum value for this float (inclusive)."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"5.0"},
+		),
+		"max": NewPropertySchema(
+			NewFloatSchema(nil, nil, nil),
+			NewDisplayValue(
+				PointerTo("Maximum"),
+				PointerTo("Maximum value for this float (inclusive)."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"16.0"},
+		),
+		"units": unitsProperty,
+	}),
+	NewStructMappedObjectSchema[*IntEnumSchema]("IntEnum", map[string]*PropertySchema{
+		"values": NewPropertySchema(
+			NewMapSchema(
+				NewIntSchema(nil, nil, nil),
+				NewRefSchema(
+					"Display",
+					nil,
+				),
+				IntPointer(1),
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Values"),
+				PointerTo("Possible values for this field."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			[]string{"{\"1024\": {\"name\": \"kB\"}, \"1048576\": {\"name\": \"MB\"}}"},
+		),
+		"units": unitsProperty,
+	}),
+	NewStructMappedObjectSchema[*IntSchema](
+		"Int",
+		map[string]*PropertySchema{
+			"min": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Minimum"),
+					PointerTo("Minimum value for this int (inclusive)."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"5"},
+			),
+			"max": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Maximum"),
+					PointerTo("Maximum value for this int (inclusive)."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"16"},
 			),
 			"units": unitsProperty,
-		}).Any(),
-		"IntSchema": NewObjectType[*intSchema](
-			"IntSchema",
-			map[string]PropertyType{
-				"min": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Minimum"),
-						PointerTo("Minimum value for this int (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"5"},
-				),
-				"max": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Maximum"),
-						PointerTo("Maximum value for this int (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"16"},
-				),
-				"units": unitsProperty,
-			},
-		).Any(),
-		"ListSchema": NewObjectType[*listSchema](
-			"ListSchema",
-			map[string]PropertyType{
-				"items": NewPropertyType[any](
-					valueType,
-					NewDisplayValue(
-						PointerTo("Items"),
-						PointerTo("Type definition for items in this list."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
+		},
+	),
+	NewStructMappedObjectSchema[*ListSchema](
+		"List",
+		map[string]*PropertySchema{
+			"items": NewPropertySchema(
+				valueType,
+				NewDisplayValue(
+					PointerTo("Items"),
+					PointerTo("ReflectedType definition for items in this list."),
 					nil,
 				),
-				"min": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Minimum"),
-						PointerTo("Minimum number of items in this list.."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"5"},
-				),
-				"max": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Maximum"),
-						PointerTo("Maximum value for this int (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"16"},
-				),
-			},
-		).Any(),
-		"MapSchema": NewObjectType[*mapSchema](
-			"MapSchema",
-			map[string]PropertyType{
-				"keys": NewPropertyType[any](
-					mapKeyType,
-					NewDisplayValue(
-						PointerTo("Keys"),
-						PointerTo("Type definition for keys in this map."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"min": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Minimum"),
+					PointerTo("Minimum number of items in this list.."),
 					nil,
 				),
-				"values": NewPropertyType[any](
-					valueType,
-					NewDisplayValue(
-						PointerTo("Values"),
-						PointerTo("Type definition for values in this map."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"min": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Minimum"),
-						PointerTo("Minimum number of items in this list.."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"5"},
-				),
-				"max": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, nil),
-					NewDisplayValue(
-						PointerTo("Maximum"),
-						PointerTo("Maximum value for this int (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"16"},
-				),
-			},
-		).Any(),
-		"ObjectSchema": NewObjectType[*objectSchema](
-			"ObjectSchema",
-			map[string]PropertyType{
-				"id": NewPropertyType[string](
-					idType,
-					NewDisplayValue(
-						PointerTo("ID"),
-						PointerTo("Unique identifier for this object within the current scope."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"5"},
+			),
+			"max": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Maximum"),
+					PointerTo("Maximum value for this int (inclusive)."),
 					nil,
 				),
-				"properties": NewPropertyType[map[string]*propertySchema](
-					NewMapType[string, *propertySchema](
-						NewStringType(
-							IntPointer(1),
-							nil,
-							nil,
-						),
-						NewRefType[*propertySchema](
-							"PropertySchema",
-							nil,
-						),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Properties"),
-						PointerTo("Properties of this object."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"16"},
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*MapSchema[Type, Type]](
+		"Map",
+		map[string]*PropertySchema{
+			"keys": NewPropertySchema(
+				mapKeyType,
+				NewDisplayValue(
+					PointerTo("Keys"),
+					PointerTo("ReflectedType definition for keys in this map."),
 					nil,
 				),
-			},
-		).Any(),
-		"OneOfIntSchema": NewObjectType[*oneOfSchema[int64, *refSchema]](
-			"OneOfIntSchema",
-			map[string]PropertyType{
-				"discriminator_field_name": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Discriminator field name"),
-						PointerTo("Name of the field used to discriminate between possible values. If this "+
-							"field is present on any of the component objects it must also be an int."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"_type\""},
-				),
-				"types": NewPropertyType[map[int64]*refType[any]](
-					NewMapType[int64, *refType[any]](
-						NewIntType(nil, nil, nil),
-						NewRefType[*refType[any]]("RefSchema", nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Types"),
-						nil,
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"values": NewPropertySchema(
+				valueType,
+				NewDisplayValue(
+					PointerTo("Values"),
+					PointerTo("ReflectedType definition for values in this map."),
 					nil,
 				),
-			},
-		).Any(),
-		"OneOfStringSchema": NewObjectType[*oneOfSchema[string, *refSchema]](
-			"OneOfStringSchema",
-			map[string]PropertyType{
-				"discriminator_field_name": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Discriminator field name"),
-						PointerTo("Name of the field used to discriminate between possible values. If this "+
-							"field is present on any of the component objects it must also be an int."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"_type\""},
-				),
-				"types": NewPropertyType[map[string]*refSchema](
-					NewMapType[string, *refSchema](
-						NewStringType(nil, nil, nil),
-						NewRefType[*refSchema]("RefSchema", nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Types"),
-						nil,
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"min": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Minimum"),
+					PointerTo("Minimum number of items in this list.."),
 					nil,
 				),
-			},
-		).Any(),
-		"PatternSchema": NewObjectType[*patternSchema](
-			"PatternSchema",
-			map[string]PropertyType{},
-		).Any(),
-		"PropertySchema": NewObjectType[*propertySchema](
-			"PropertySchema",
-			map[string]PropertyType{
-				"type": NewPropertyType[any](
-					valueType,
-					NewDisplayValue(
-						PointerTo("Type"),
-						PointerTo(
-							"Type definition for this field.",
-						),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"5"},
+			),
+			"max": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, nil),
+				NewDisplayValue(
+					PointerTo("Maximum"),
+					PointerTo("Maximum value for this int (inclusive)."),
 					nil,
 				),
-				"display": displayProperty,
-				"required": NewPropertyType[bool](
-					NewBoolType(),
-					NewDisplayValue(
-						PointerTo("Required"),
-						PointerTo(
-							"When set to true, the value for this field must be provided under all circumstances.",
-						),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					PointerTo("true"),
-					nil,
-				),
-				"required_if_not": NewPropertyType[[]string](
-					NewListType[string](
-						NewStringType(nil, nil, nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Required if not"),
-						PointerTo(
-							"Sets the current property to be required if none of the properties in this list "+
-								"are set.",
-						),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"16"},
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*ObjectSchema](
+		"Object",
+		map[string]*PropertySchema{
+			"id": NewPropertySchema(
+				idType,
+				NewDisplayValue(
+					PointerTo("ID"),
+					PointerTo("Unique identifier for this object within the current scope."),
 					nil,
 				),
-				"required_if": NewPropertyType[[]string](
-					NewListType[string](
-						NewStringType(nil, nil, nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Required if"),
-						PointerTo(
-							"Sets the current property to required if any of the properties in this list are set.",
-						),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"conflicts": NewPropertyType[[]string](
-					NewListType[string](
-						NewStringType(nil, nil, nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Conflicts"),
-						PointerTo("The current property cannot be set if any of the listed properties are set."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"default": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Default"),
-						PointerTo(
-							"Default value for this property in JSON encoding. The value must be "+
-								"unserializable by the type specified in the type field.",
-						),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"examples": NewPropertyType[[]string](
-					NewListType[string](
-						NewStringType(nil, nil, nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Examples"),
-						PointerTo("Example values for this property, encoded as JSON."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"RefSchema": NewObjectType[*refSchema](
-			"RefSchema",
-			map[string]PropertyType{
-				"id": NewPropertyType[string](
-					idType,
-					NewDisplayValue(
-						PointerTo("ID"),
-						PointerTo("Referenced object ID."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"display": displayProperty,
-			},
-		).Any(),
-		"Schema": NewObjectType[*schema](
-			"Schema",
-			map[string]PropertyType{
-				"steps": NewPropertyType[map[string]*stepSchema](
-					NewMapType[string, *stepSchema](
-						idType,
-						NewRefType[*stepSchema](
-							"StepSchema",
-							nil,
-						),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Steps"),
-						PointerTo("Steps this schema supports."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"ScopeSchema": NewObjectType[*scopeSchema](
-			"ScopeSchema",
-			map[string]PropertyType{
-				"objects": NewPropertyType[map[string]*objectSchema](
-					NewMapType[string, *objectSchema](
-						idType,
-						NewRefType[*objectSchema](
-							"ObjectSchema",
-							nil,
-						),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Objects"),
-						PointerTo("A set of referencable objects. These objects may contain references themselves."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"root": NewPropertyType[string](
-					idType,
-					NewDisplayValue(
-						PointerTo("Root object"),
-						PointerTo("ID of the root object of the scope."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"StepOutputSchema": NewObjectType[*stepOutputSchema](
-			"StepOutputSchema",
-			map[string]PropertyType{
-				"display": displayProperty,
-				"error": NewPropertyType[bool](
-					NewBoolType(),
-					NewDisplayValue(
-						PointerTo("Error"),
-						PointerTo("If set to true, this output will be treated as an error output."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					PointerTo("false"),
-					nil,
-				),
-				"schema": NewPropertyType[*scopeSchema](
-					NewRefType[*scopeSchema](
-						"ScopeSchema",
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Schema"),
-						PointerTo("Data schema for this particular output."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"StepSchema": NewObjectType[*stepSchema](
-			"StepSchema",
-			map[string]PropertyType{
-				"display": displayProperty,
-				"id": NewPropertyType[string](
-					idType,
-					NewDisplayValue(
-						PointerTo("ID"),
-						PointerTo("Machine identifier for this step."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"input": NewPropertyType[*scopeSchema](
-					NewRefType[*scopeSchema](
-						"ScopeSchema",
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Input"),
-						PointerTo("Input data schema."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"outputs": NewPropertyType[map[string]*stepOutputSchema](
-					NewMapType[string, *stepOutputSchema](
-						idType,
-						NewRefType[*stepOutputSchema](
-							"StepOutputSchema",
-							nil,
-						),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Input"),
-						PointerTo("Input data schema."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"StringEnumSchema": NewObjectType[*stringEnumSchema](
-			"StringEnumSchema",
-			map[string]PropertyType{
-				"values": NewPropertyType[map[int64]*displayValue](
-					NewMapType[int64, *displayValue](
-						NewIntType(nil, nil, nil),
-						NewRefType[*displayValue](
-							"DisplayValue",
-							nil,
-						),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"properties": NewPropertySchema(
+				NewMapSchema(
+					NewStringSchema(
 						IntPointer(1),
 						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Values"),
-						PointerTo("Mapping where the left side of the map holds the possible value and the "+
-							"right side holds the display value for forms, etc."),
 						nil,
 					),
-					true,
+					NewRefSchema(
+						"Property",
+						nil,
+					),
 					nil,
 					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Properties"),
+					PointerTo("Properties of this object."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*OneOfSchema[int64, *RefSchema]](
+		"OneOfInt",
+		map[string]*PropertySchema{
+			"discriminator_field_name": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Discriminator field name"),
+					PointerTo("Name of the field used to discriminate between possible values. If this "+
+						"field is present on any of the component objects it must also be an int."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"_type\""},
+			),
+			"types": NewPropertySchema(
+				NewMapSchema(
+					NewIntSchema(nil, nil, nil),
+					NewRefSchema("Ref", nil),
 					nil,
 					nil,
-					[]string{"{\n" +
-						"  \"apple\": {\n" +
-						"    \"name\": \"Apple\"\n" +
+				),
+				NewDisplayValue(
+					PointerTo("Types"),
+					nil,
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*OneOfSchema[string, *RefSchema]](
+		"OneOfStringSchema",
+		map[string]*PropertySchema{
+			"discriminator_field_name": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Discriminator field name"),
+					PointerTo("Name of the field used to discriminate between possible values. If this "+
+						"field is present on any of the component objects it must also be an int."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"_type\""},
+			),
+			"types": NewPropertySchema(
+				NewMapSchema(
+					NewStringSchema(nil, nil, nil),
+					NewRefSchema("Ref", nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Types"),
+					nil,
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*PatternSchema](
+		"Pattern",
+		map[string]*PropertySchema{},
+	),
+	NewStructMappedObjectSchema[*PropertySchema](
+		"Property",
+		map[string]*PropertySchema{
+			"type": NewPropertySchema(
+				valueType,
+				NewDisplayValue(
+					PointerTo("ReflectedType"),
+					PointerTo(
+						"ReflectedType definition for this field.",
+					),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"display": displayProperty,
+			"required": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Required"),
+					PointerTo(
+						"When set to true, the value for this field must be provided under all circumstances.",
+					),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				PointerTo("true"),
+				nil,
+			),
+			"required_if_not": NewPropertySchema(
+				NewListSchema(
+					NewStringSchema(nil, nil, nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Required if not"),
+					PointerTo(
+						"Sets the current property to be required if none of the properties in this list "+
+							"are set.",
+					),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"required_if": NewPropertySchema(
+				NewListSchema(
+					NewStringSchema(nil, nil, nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Required if"),
+					PointerTo(
+						"Sets the current property to required if any of the properties in this list are set.",
+					),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"conflicts": NewPropertySchema(
+				NewListSchema(
+					NewStringSchema(nil, nil, nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Conflicts"),
+					PointerTo("The current property cannot be set if any of the listed properties are set."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"default": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Default"),
+					PointerTo(
+						"Default value for this property in JSON encoding. The value must be "+
+							"unserializable by the type specified in the type field.",
+					),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"examples": NewPropertySchema(
+				NewListSchema(
+					NewStringSchema(nil, nil, nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Examples"),
+					PointerTo("Example values for this property, encoded as JSON."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*RefSchema](
+		"Ref",
+		map[string]*PropertySchema{
+			"id": NewPropertySchema(
+				idType,
+				NewDisplayValue(
+					PointerTo("ID"),
+					PointerTo("Referenced object ID."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"display": displayProperty,
+		},
+	),
+	NewStructMappedObjectSchema[*ScopeSchema](
+		"Scope",
+		map[string]*PropertySchema{
+			"objects": NewPropertySchema(
+				NewMapSchema(
+					idType,
+					NewRefSchema(
+						"Object",
+						nil,
+					),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Objects"),
+					PointerTo("A set of referencable objects. These objects may contain references themselves."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"root": NewPropertySchema(
+				idType,
+				NewDisplayValue(
+					PointerTo("Root object"),
+					PointerTo("ID of the root object of the scope."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*StepOutputSchema](
+		"StepOutput",
+		map[string]*PropertySchema{
+			"display": displayProperty,
+			"error": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Error"),
+					PointerTo("If set to true, this output will be treated as an error output."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				PointerTo("false"),
+				nil,
+			),
+			"schema": NewPropertySchema(
+				NewRefSchema(
+					"Scope",
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Schema"),
+					PointerTo("Data schema for this particular output."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*StepSchema](
+		"Step",
+		map[string]*PropertySchema{
+			"display": displayProperty,
+			"id": NewPropertySchema(
+				idType,
+				NewDisplayValue(
+					PointerTo("ID"),
+					PointerTo("Machine identifier for this step."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"input": NewPropertySchema(
+				NewRefSchema(
+					"Scope",
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Input"),
+					PointerTo("Input data schema."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"outputs": NewPropertySchema(
+				NewMapSchema(
+					idType,
+					NewRefSchema(
+						"StepOutput",
+						nil,
+					),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Input"),
+					PointerTo("Input data schema."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*StringEnumSchema](
+		"StringEnum",
+		map[string]*PropertySchema{
+			"values": NewPropertySchema(
+				NewMapSchema(
+					NewIntSchema(nil, nil, nil),
+					NewRefSchema(
+						"Display",
+						nil,
+					),
+					IntPointer(1),
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Values"),
+					PointerTo("Mapping where the left side of the map holds the possible value and the "+
+						"right side holds the display value for forms, etc."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"{\n" +
+					"  \"apple\": {\n" +
+					"    \"name\": \"Apple\"\n" +
+					"  },\n" +
+					"  \"orange\": {\n" +
+					"    \"name\": \"Orange\"\n" +
+					"  }\n" +
+					"}"},
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*StringSchema](
+		"String",
+		map[string]*PropertySchema{
+			"min": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, PointerTo(UnitCharacters)),
+				NewDisplayValue(
+					PointerTo("Minimum"),
+					PointerTo("Minimum length for this string (inclusive)."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"5"},
+			),
+			"max": NewPropertySchema(
+				NewIntSchema(IntPointer(0), nil, PointerTo(UnitCharacters)),
+				NewDisplayValue(
+					PointerTo("Maximum"),
+					PointerTo("Maximum length for this string (inclusive)."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"16"},
+			),
+			"pattern": NewPropertySchema(
+				NewPatternSchema(),
+				NewDisplayValue(
+					PointerTo("Pattern"),
+					PointerTo("Regular expression this string must match."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"^[a-zA-Z]+$\""},
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*unit](
+		"Unit",
+		map[string]*PropertySchema{
+			"name_long_plural": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Name long (plural)"),
+					PointerTo("Longer name for this unit in plural form."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"bytes\",\"characters\""},
+			),
+			"name_long_singular": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Name long (singular)"),
+					PointerTo("Longer name for this unit in singular form."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"byte\",\"character\""},
+			),
+			"name_short_plural": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Name short (plural)"),
+					PointerTo("Shorter name for this unit in plural form."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"B\",\"chars\""},
+			),
+			"name_short_singular": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Name short (singular)"),
+					PointerTo("Shorter name for this unit in singular form."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"B\",\"char\""},
+			),
+		},
+	),
+	NewStructMappedObjectSchema[*units](
+		"Units",
+		map[string]*PropertySchema{
+			"base_unit": NewPropertySchema(
+				NewRefSchema(
+					"Unit",
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Base unit"),
+					PointerTo("The base unit is the smallest unit of scale for this set of units."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{
+					"{\n" +
+						"  \"name_short_singular\": \"B\",\n" +
+						"  \"name_short_plural\": \"B\",\n" +
+						"  \"name_long_singular\": \"byte\",\n" +
+						"  \"name_long_plural\": \"bytes\"\n" +
+						"}",
+				},
+			),
+			"multipliers": NewPropertySchema(
+				NewMapSchema(
+					NewIntSchema(nil, nil, nil),
+					NewRefSchema("Unit", nil),
+					nil,
+					nil,
+				),
+				NewDisplayValue(
+					PointerTo("Base unit"),
+					PointerTo("The base unit is the smallest unit of scale for this set of units."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{
+					"{\n" +
+						"  \"1024\": {\n" +
+						"    \"name_short_singular\": \"kB\",\n" +
+						"    \"name_short_plural\": \"kB\",\n" +
+						"    \"name_long_singular\": \"kilobyte\",\n" +
+						"    \"name_long_plural\": \"kilobytes\"\n" +
 						"  },\n" +
-						"  \"orange\": {\n" +
-						"    \"name\": \"Orange\"\n" +
+						"  \"1048576\": {\n" +
+						"    \"name_short_singular\": \"MB\",\n" +
+						"    \"name_short_plural\": \"MB\",\n" +
+						"    \"name_long_singular\": \"megabyte\",\n" +
+						"    \"name_long_plural\": \"megabytes\"\n" +
 						"  }\n" +
-						"}"},
-				),
-			},
-		).Any(),
-		"StringSchema": NewObjectType[*stringSchema](
-			"StringSchema",
-			map[string]PropertyType{
-				"min": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, PointerTo(UnitCharacters)),
-					NewDisplayValue(
-						PointerTo("Minimum"),
-						PointerTo("Minimum length for this string (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"5"},
-				),
-				"max": NewPropertyType[int64](
-					NewIntType(IntPointer(0), nil, PointerTo(UnitCharacters)),
-					NewDisplayValue(
-						PointerTo("Maximum"),
-						PointerTo("Maximum length for this string (inclusive)."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"16"},
-				),
-				"pattern": NewPropertyType[*regexp.Regexp](
-					NewPatternType(),
-					NewDisplayValue(
-						PointerTo("Pattern"),
-						PointerTo("Regular expression this string must match."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"^[a-zA-Z]+$\""},
-				),
-			},
-		).Any(),
-		"Unit": NewObjectType[*unit](
-			"Unit",
-			map[string]PropertyType{
-				"name_long_plural": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Name long (plural)"),
-						PointerTo("Longer name for this unit in plural form."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"bytes\",\"characters\""},
-				),
-				"name_long_singular": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Name long (singular)"),
-						PointerTo("Longer name for this unit in singular form."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"byte\",\"character\""},
-				),
-				"name_short_plural": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Name short (plural)"),
-						PointerTo("Shorter name for this unit in plural form."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"B\",\"chars\""},
-				),
-				"name_short_singular": NewPropertyType[string](
-					NewStringType(nil, nil, nil),
-					NewDisplayValue(
-						PointerTo("Name short (singular)"),
-						PointerTo("Shorter name for this unit in singular form."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{"\"B\",\"char\""},
-				),
-			},
-		).Any(),
-		"Units": NewObjectType[*units](
-			"Units",
-			map[string]PropertyType{
-				"base_unit": NewPropertyType[*unit](
-					NewRefType[*unit](
-						"Unit",
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Base unit"),
-						PointerTo("The base unit is the smallest unit of scale for this set of units."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{
-						"{\n" +
-							"  \"name_short_singular\": \"B\",\n" +
-							"  \"name_short_plural\": \"B\",\n" +
-							"  \"name_long_singular\": \"byte\",\n" +
-							"  \"name_long_plural\": \"bytes\"\n" +
-							"}",
-					},
-				),
-				"multipliers": NewPropertyType[map[int64]*unit](
-					NewMapType[int64, *unit](
-						NewIntType(nil, nil, nil),
-						NewRefType[*unit]("Unit", nil),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Base unit"),
-						PointerTo("The base unit is the smallest unit of scale for this set of units."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					nil,
-					[]string{
-						"{\n" +
-							"  \"1024\": {\n" +
-							"    \"name_short_singular\": \"kB\",\n" +
-							"    \"name_short_plural\": \"kB\",\n" +
-							"    \"name_long_singular\": \"kilobyte\",\n" +
-							"    \"name_long_plural\": \"kilobytes\"\n" +
-							"  },\n" +
-							"  \"1048576\": {\n" +
-							"    \"name_short_singular\": \"MB\",\n" +
-							"    \"name_short_plural\": \"MB\",\n" +
-							"    \"name_long_singular\": \"megabyte\",\n" +
-							"    \"name_long_plural\": \"megabytes\"\n" +
-							"  }\n" +
-							"}",
-					},
-				),
-			},
-		).Any(),
-	},
-	"Schema",
+						"}",
+				},
+			),
+		},
+	),
 )
+
+func UnserializeSchema(data any) (*SchemaSchema, error) {
+	s, err := schemaSchema.Unserialize(data)
+	if err != nil {
+		return nil, err
+	}
+	return s.(*SchemaSchema), nil
+}

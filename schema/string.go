@@ -2,82 +2,81 @@ package schema
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 )
 
-// StringSchema holds schema information for strings. This dataclass only has the ability to hold the configuration but
+// String holds schema information for strings. This dataclass only has the ability to hold the configuration but
 // cannot serialize, unserialize or validate. For that functionality please use StringType.
-type StringSchema interface {
-	AbstractSchema
+type String interface {
+	TypedType[string]
+
 	Min() *int64
 	Max() *int64
 	Pattern() *regexp.Regexp
 }
 
 // NewStringSchema creates a new string schema.
-func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) StringSchema {
-	return &stringSchema{
+func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) *StringSchema {
+	return &StringSchema{
 		min,
 		max,
 		pattern,
 	}
 }
 
-type stringSchema struct {
+type StringSchema struct {
 	MinValue     *int64         `json:"min,omitempty"`
 	MaxValue     *int64         `json:"max,omitempty"`
 	PatternValue *regexp.Regexp `json:"pattern,omitempty"`
 }
 
-func (s stringSchema) TypeID() TypeID {
+func (s StringSchema) TypeID() TypeID {
 	return TypeIDString
 }
 
-func (s stringSchema) Min() *int64 {
+func (s StringSchema) ReflectedType() reflect.Type {
+	return reflect.TypeOf("")
+}
+
+func (s StringSchema) Min() *int64 {
 	return s.MinValue
 }
 
-func (s stringSchema) Max() *int64 {
+func (s StringSchema) Max() *int64 {
 	return s.MaxValue
 }
 
-func (s stringSchema) Pattern() *regexp.Regexp {
+func (s StringSchema) Pattern() *regexp.Regexp {
 	return s.PatternValue
 }
 
-// StringType is the serializable variant of StringSchema.
-type StringType interface {
-	AbstractType[string]
-	StringSchema
+func (s StringSchema) ApplyScope(scope Scope) {
 }
 
-// NewStringType creates a new string type definition with the given constraints.
-func NewStringType(min *int64, max *int64, pattern *regexp.Regexp) StringType {
-	return &stringType{
-		stringSchema{min, max, pattern},
-	}
+func (s StringSchema) Unserialize(data any) (any, error) {
+	return s.UnserializeType(data)
 }
 
-type stringType struct {
-	stringSchema `json:",inline"`
-}
-
-func (s stringType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
-}
-
-func (s stringType) UnderlyingType() string {
-	return ""
-}
-
-func (s stringType) Unserialize(data any) (string, error) {
+func (s StringSchema) UnserializeType(data any) (string, error) {
 	unserialized, err := stringInputMapper(data)
 	if err != nil {
 		return "", err
 	}
-	return unserialized, s.Validate(unserialized)
+	return unserialized, s.ValidateType(unserialized)
 }
 
-func (s stringType) Validate(data string) error {
+func (s StringSchema) Validate(data any) error {
+	d, ok := data.(string)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for a string schema.", data),
+		}
+	}
+	return s.ValidateType(d)
+}
+
+func (s StringSchema) ValidateType(data string) error {
 	if s.MinValue != nil && int64(len(data)) < *s.MinValue {
 		return &ConstraintError{
 			Message: fmt.Sprintf("String must be at least %d characters, %d given", *s.MinValue, int64(len(data))),
@@ -96,8 +95,18 @@ func (s stringType) Validate(data string) error {
 	return nil
 }
 
-func (s stringType) Serialize(data string) (any, error) {
-	return data, s.Validate(data)
+func (s StringSchema) Serialize(data any) (any, error) {
+	d, ok := data.(string)
+	if !ok {
+		return "", &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for a string schema.", d),
+		}
+	}
+	return s.SerializeType(d)
+}
+
+func (s StringSchema) SerializeType(data string) (any, error) {
+	return data, s.ValidateType(data)
 }
 
 func stringInputMapper(data any) (string, error) {

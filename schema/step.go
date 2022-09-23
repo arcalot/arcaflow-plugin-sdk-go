@@ -2,52 +2,29 @@ package schema
 
 import "fmt"
 
-// StepSchema holds the definition for a single step, it's input and output definitions.
-type StepSchema[
-	P PropertySchema,
-	O ObjectSchema[P],
-	InputSchema ScopeSchema[P, O],
-	OSC ScopeSchema[P, O],
-	OutputSchema StepOutputSchema[P, O, OSC],
-] interface {
+// Step holds the definition for a single step, it's input and output definitions.
+type Step interface {
 	ID() string
-	Input() InputSchema
-	Outputs() map[string]OutputSchema
-	Display() DisplayValue
+	Input() Scope
+	Outputs() map[string]*StepOutputSchema
+	Display() Display
+}
+
+// CallableStep is a step that can be directly called.
+type CallableStep interface {
+	Step
+	ToStepSchema() *StepSchema
+	Call(data any) (outputID string, outputData any, err error)
 }
 
 // NewStepSchema defines a new step.
 func NewStepSchema(
 	id string,
-	input ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	outputs map[string]StepOutputSchema[
-		PropertySchema,
-		ObjectSchema[PropertySchema],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	],
-	display DisplayValue,
-) StepSchema[
-	PropertySchema,
-	ObjectSchema[PropertySchema],
-	ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	StepOutputSchema[
-		PropertySchema,
-		ObjectSchema[PropertySchema],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-	],
-] {
-	return &abstractStepSchema[
-		PropertySchema,
-		ObjectSchema[PropertySchema],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		StepOutputSchema[
-			PropertySchema,
-			ObjectSchema[PropertySchema],
-			ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		],
-	]{
+	input Scope,
+	outputs map[string]*StepOutputSchema,
+	display Display,
+) *StepSchema {
+	return &StepSchema{
 		id,
 		input,
 		outputs,
@@ -55,117 +32,93 @@ func NewStepSchema(
 	}
 }
 
-type abstractStepSchema[
-	P PropertySchema,
-	O ObjectSchema[P],
-	InputScopeSchema ScopeSchema[P, O],
-	OSC ScopeSchema[P, O],
-	OutputSchema StepOutputSchema[P, O, OSC],
-] struct {
-	IDValue      string                  `json:"id"`
-	InputValue   InputScopeSchema        `json:"input"`
-	OutputsValue map[string]OutputSchema `json:"outputs"`
-	DisplayValue DisplayValue            `json:"display,omitempty"`
+// StepSchema describes a single step in a schema to execute one task. It has a fixed input and one or more outputs,
+// denominated by a string output ID.
+type StepSchema struct {
+	IDValue      string                       `json:"id"`
+	InputValue   Scope                        `json:"input"`
+	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
+	DisplayValue Display                      `json:"display,omitempty"`
 }
 
-//nolint:unused
-type stepSchema struct {
-	abstractStepSchema[*propertySchema, *objectSchema, *scopeSchema, *scopeSchema, *stepOutputSchema] `json:",inline"`
-}
-
-func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) ID() string {
+func (s StepSchema) ID() string {
 	return s.IDValue
 }
 
-func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Input() InputScopeSchema {
+func (s StepSchema) Input() Scope {
 	return s.InputValue
 }
 
-func (s abstractStepSchema[
-	P,
-	O,
-	IS,
-	OSC,
-	OS,
-]) Outputs() map[string]OS {
+func (s StepSchema) Outputs() map[string]*StepOutputSchema {
 	return s.OutputsValue
 }
 
-func (s abstractStepSchema[P, O, InputScopeSchema, OSC, OutputScopeSchema]) Display() DisplayValue {
+func (s StepSchema) Display() Display {
 	return s.DisplayValue
 }
 
-// StepType defines a step that can be called with a type input.
-type StepType[InputType any] interface {
-	StepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]]
-
-	Call(input InputType) (outputID string, outputData any)
-	Any() StepType[any]
-}
-
-// NewStepType creates a callable step definition.
-func NewStepType[InputType any](
+// NewCallableStep creates a callable step definition.
+func NewCallableStep[InputType any](
 	id string,
-	input ScopeType[InputType],
-	outputs map[string]StepOutputType[any],
-	display DisplayValue,
+	input *ScopeSchema,
+	outputs map[string]*StepOutputSchema,
+	display Display,
 	handler func(InputType) (string, any),
-) StepType[InputType] {
-	return &stepType[InputType]{
-		abstractStepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]]{
-			IDValue:      id,
-			InputValue:   input,
-			OutputsValue: outputs,
-			DisplayValue: display,
-		},
-		handler,
+) CallableStep {
+	return &CallableStepSchema[InputType]{
+		IDValue:      id,
+		InputValue:   input,
+		OutputsValue: outputs,
+		DisplayValue: display,
+		handler:      handler,
 	}
 }
 
-type stepType[InputType any] struct {
-	abstractStepSchema[PropertyType, ObjectType[any], ScopeType[InputType], ScopeType[any], StepOutputType[any]] `json:",inline"`
-
-	handler func(InputType) (string, any)
+// CallableStepSchema is a step that can be directly called and is typed to a specific input type.
+type CallableStepSchema[InputType any] struct {
+	IDValue      string                       `json:"id"`
+	InputValue   *ScopeSchema                 `json:"input"`
+	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
+	DisplayValue Display                      `json:"display,omitempty"`
+	handler      func(InputType) (string, any)
 }
 
-func (s stepType[InputType]) Any() StepType[any] {
-	return &anonymousStepType[InputType]{
-		s,
-	}
+func (s CallableStepSchema[InputType]) ID() string {
+	return s.IDValue
 }
 
-func (s stepType[InputType]) Input() ScopeType[InputType] {
+func (s CallableStepSchema[InputType]) Input() Scope {
 	return s.InputValue
 }
 
-func (s stepType[InputType]) Outputs() map[string]StepOutputType[any] {
+func (s CallableStepSchema[InputType]) Outputs() map[string]*StepOutputSchema {
 	return s.OutputsValue
 }
 
-func (s stepType[InputType]) Call(input InputType) (string, any) {
-	return s.handler(input)
+func (s CallableStepSchema[InputType]) Display() Display {
+	return s.DisplayValue
 }
 
-type anonymousStepType[T any] struct {
-	stepType[T]
-}
-
-func (a anonymousStepType[T]) Input() ScopeType[any] {
-	return a.InputValue.Any()
-}
-
-func (a anonymousStepType[T]) Outputs() map[string]StepOutputType[any] {
-	return a.OutputsValue
-}
-
-func (a anonymousStepType[T]) Call(input any) (outputID string, outputData any) {
-	typedInput, ok := input.(T)
-	if !ok {
-		var defaultValue T
-		panic(BadArgumentError{
-			fmt.Sprintf("Incorrect input argument type received: %T, expected: %T", input, defaultValue),
-			nil,
-		})
+func (s CallableStepSchema[InputType]) ToStepSchema() *StepSchema {
+	return &StepSchema{
+		IDValue:      s.IDValue,
+		InputValue:   s.InputValue,
+		OutputsValue: s.OutputsValue,
+		DisplayValue: s.DisplayValue,
 	}
-	return a.stepType.Call(typedInput)
+}
+
+func (s CallableStepSchema[InputType]) Call(input any) (string, any, error) {
+	if err := s.InputValue.Validate(input); err != nil {
+		return "", nil, InvalidInputError{err}
+	}
+
+	outputID, outputData := s.handler(input.(InputType))
+	output, ok := s.OutputsValue[outputID]
+	if !ok {
+		return "", nil, InvalidOutputError{
+			fmt.Errorf("undeclared output ID: %s", outputID),
+		}
+	}
+	return outputID, outputData, output.Validate(outputData)
 }

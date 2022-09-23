@@ -1,35 +1,36 @@
 package schema
 
-// DisplayValue holds the data related to displaying fields.
-type DisplayValue interface {
+// Display holds the data related to displaying fields.
+type Display interface {
 	Name() *string
 	Description() *string
 	Icon() *string
 }
 
 // NewDisplayValue creates a new display from the given parameters.
-func NewDisplayValue(name *string, description *string, icon *string) DisplayValue {
-	return &displayValue{
+func NewDisplayValue(name *string, description *string, icon *string) *DisplayValue {
+	return &DisplayValue{
 		NameValue:        name,
 		DescriptionValue: description,
 		IconValue:        icon,
 	}
 }
 
-type displayValue struct {
+// DisplayValue holds the data related to displaying fields.
+type DisplayValue struct {
 	NameValue        *string `json:"name"`
 	DescriptionValue *string `json:"description"`
 	IconValue        *string `json:"icon"`
 }
 
-func (d displayValue) Name() *string {
+func (d DisplayValue) Name() *string {
 	return d.NameValue
 }
 
-func (d displayValue) Description() *string {
+func (d DisplayValue) Description() *string {
 	return d.DescriptionValue
 }
 
-func (d displayValue) Icon() *string {
+func (d DisplayValue) Icon() *string {
 	return d.IconValue
 }

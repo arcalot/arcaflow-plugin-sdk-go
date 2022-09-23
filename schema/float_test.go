@@ -198,7 +198,7 @@ var testFloatSerializationDataSet = map[string]serializationTestCase[float64]{
 func TestFloatSerialization(t *testing.T) {
 	performSerializationTest[float64](
 		t,
-		schema.NewFloatType(
+		schema.NewFloatSchema(
 			schema.PointerTo(float64(5)),
 			schema.PointerTo(float64(10)),
 			schema.PointerTo(schema.UnitBytes),
@@ -216,7 +216,7 @@ func TestFloatSerialization(t *testing.T) {
 func TestFloatSerializationNoValidation(t *testing.T) {
 	performSerializationTest[float64](
 		t,
-		schema.NewFloatType(nil, nil, nil),
+		schema.NewFloatSchema(nil, nil, nil),
 		map[string]serializationTestCase[float64]{
 			"stringInvalid": {
 				SerializedValue: "a",
@@ -253,7 +253,7 @@ func TestFloatSerializationNoValidation(t *testing.T) {
 }
 
 func TestFloatParameters(t *testing.T) {
-	floatType := schema.NewFloatType(
+	floatType := schema.NewFloatSchema(
 		schema.PointerTo(float64(1)),
 		schema.PointerTo(float64(2)),
 		schema.PointerTo(schema.UnitPercentage),
@@ -269,5 +269,4 @@ func TestFloatParameters(t *testing.T) {
 
 func TestFloatType(t *testing.T) {
 	assertEqual(t, schema.NewFloatSchema(nil, nil, nil).TypeID(), schema.TypeIDFloat)
-	assertEqual(t, schema.NewFloatType(nil, nil, nil).TypeID(), schema.TypeIDFloat)
 }

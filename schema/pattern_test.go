@@ -8,11 +8,11 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-func ExamplePatternType() {
-	patternType := schema.NewPatternType()
+func ExamplePatternSchema() {
+	patternType := schema.NewPatternSchema()
 
 	// Unserialize a string
-	pattern, err := patternType.Unserialize("^[a-z]+$")
+	pattern, err := patternType.UnserializeType("^[a-z]+$")
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +26,7 @@ func ExamplePatternType() {
 func TestPatternType(t *testing.T) {
 	performSerializationTest[*regexp.Regexp](
 		t,
-		schema.NewPatternType(),
+		schema.NewPatternSchema(),
 		map[string]serializationTestCase[*regexp.Regexp]{
 			"valid": {
 				"^[a-z]+$",
@@ -60,14 +60,14 @@ func TestPatternType(t *testing.T) {
 }
 
 func TestPatternValidateInvalid(t *testing.T) {
-	patternType := schema.NewPatternType()
+	patternType := schema.NewPatternSchema()
 	if err := patternType.Validate(nil); err == nil {
 		t.Fatalf("Validating nil did not result in an error.")
 	}
 }
 
 func TestPatternSerializeInvalid(t *testing.T) {
-	patternType := schema.NewPatternType()
+	patternType := schema.NewPatternSchema()
 	if _, err := patternType.Serialize(nil); err == nil {
 		t.Fatalf("Serializing nil did not result in an error.")
 	}
@@ -75,5 +75,5 @@ func TestPatternSerializeInvalid(t *testing.T) {
 
 func TestPatternID(t *testing.T) {
 	assertEqual(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
-	assertEqual(t, schema.NewPatternType().TypeID(), schema.TypeIDPattern)
+	assertEqual(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
 }

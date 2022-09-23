@@ -7,186 +7,91 @@ import (
 	"strings"
 )
 
-// ObjectSchema holds the definition for objects comprised of defined fields. This dataclass only has the ability to hold
-// the configuration but cannot serialize, unserialize or validate. For that functionality please use
-// PropertyType.
-type ObjectSchema[T PropertySchema] interface {
-	AbstractSchema
+// Object holds the definition for objects comprised of defined fields.
+type Object interface {
+	Type
 	ID() string
-	Properties() map[string]T
+	Properties() map[string]*PropertySchema
 }
 
 // NewObjectSchema creates a new object definition.
-func NewObjectSchema(id string, properties map[string]PropertySchema) ObjectSchema[PropertySchema] {
-	return &abstractObjectSchema[PropertySchema]{
+func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
+	return &ObjectSchema{
 		id,
 		properties,
+
+		nil,
+		nil,
+		nil,
 	}
 }
 
-type abstractObjectSchema[T PropertySchema] struct {
-	IDValue         string       `json:"id"`
-	PropertiesValue map[string]T `json:"properties"`
+// ObjectSchema is the implementation of the object schema type.
+type ObjectSchema struct {
+	IDValue         string                     `json:"id"`
+	PropertiesValue map[string]*PropertySchema `json:"properties"`
+
+	defaultValues map[string]any
+
+	defaultValue any
+	fieldCache   map[string]reflect.StructField
 }
 
-//nolint:unused
-type objectSchema struct {
-	abstractObjectSchema[*propertySchema]
+func (o ObjectSchema) ReflectedType() reflect.Type {
+	if o.fieldCache != nil {
+		return reflect.TypeOf(o.defaultValue)
+	}
+	return reflect.TypeOf(map[string]any{})
 }
 
-func (o abstractObjectSchema[T]) TypeID() TypeID {
+func (o ObjectSchema) ApplyScope(scope Scope) {
+	for _, property := range o.PropertiesValue {
+		property.ApplyScope(scope)
+	}
+}
+
+func (o ObjectSchema) TypeID() TypeID {
 	return TypeIDObject
 }
 
-func (o abstractObjectSchema[T]) ID() string {
+func (o ObjectSchema) ID() string {
 	return o.IDValue
 }
 
-func (o abstractObjectSchema[T]) Properties() map[string]T {
+func (o ObjectSchema) Properties() map[string]*PropertySchema {
 	return o.PropertiesValue
 }
 
-// ObjectType is a serializable version of ObjectSchema.
-type ObjectType[T any] interface {
-	ObjectSchema[PropertyType]
-	AbstractType[T]
-
-	Any() ObjectType[any]
-}
-
-// NewObjectType creates a serializable representation for an object, for filling structs.
-func NewObjectType[T any](id string, properties map[string]PropertyType) ObjectType[T] {
-	validateObjectIsStruct[T]()
-
-	return &objectType[T]{
-		abstractObjectSchema[PropertyType]{
-			id,
-			properties,
-		},
-		extractObjectDefaultValues(properties),
-		buildObjectFieldCache[T](properties),
-	}
-}
-
-func validateObjectIsStruct[T any]() {
-	var defaultValue T
-	reflectValue := reflect.TypeOf(defaultValue)
-	if reflectValue.Kind() == reflect.Pointer {
-		reflectValue = reflectValue.Elem()
-	}
-	if reflectValue.Kind() != reflect.Struct {
-		panic(BadArgumentError{
-			Message: fmt.Sprintf(
-				"NewObjectType should only be called with a struct type, %T given",
-				defaultValue,
-			),
-		})
-	}
-}
-
-func buildObjectFieldCache[T any](properties map[string]PropertyType) map[string]reflect.StructField {
-	var defaultValue T
-	fieldCache := make(map[string]reflect.StructField, len(properties))
-	reflectType := reflect.TypeOf(defaultValue)
-	if reflectType.Kind() == reflect.Pointer {
-		reflectType = reflectType.Elem()
-	}
-	for propertyID := range properties {
-		field, ok := reflectType.FieldByNameFunc(func(s string) bool {
-			fieldType, _ := reflectType.FieldByName(s)
-			jsonTag := fieldType.Tag.Get("json")
-			if jsonTag != "" {
-				parts := strings.SplitN(jsonTag, ",", 2)
-				if parts[0] == propertyID {
-					return true
-				}
-			}
-			return false
-		})
-		if !ok {
-			field, ok = reflectType.FieldByName(propertyID)
-			if !ok {
-				panic(BadArgumentError{
-					Message: fmt.Sprintf(
-						"Cannot find a valid field to set for '%s' on '%s'. Please name a field identically "+
-							"or provide a `json:\"%s\"` tag.",
-						propertyID,
-						reflectType.Name(),
-						propertyID,
-					),
-				})
-			}
-		}
-		fieldCache[propertyID] = field
-	}
-	return fieldCache
-}
-
-func extractObjectDefaultValues(properties map[string]PropertyType) map[string]any {
-	defaultValues := map[string]any{}
-	for propertyID, property := range properties {
-		if property.Default() != nil {
-			var value any
-			if err := json.Unmarshal([]byte(*property.Default()), &value); err != nil {
-				panic(BadArgumentError{
-					Message: fmt.Sprintf("Default value for property %s is not a valid JSON", propertyID),
-					Cause:   err,
-				})
-			}
-			unserializedDefault, err := property.Unserialize(value)
-			if err != nil {
-				panic(BadArgumentError{
-					Message: fmt.Sprintf("Default value for property %s is not a unserializable", propertyID),
-					Cause:   err,
-				})
-			}
-			defaultValues[propertyID] = unserializedDefault
-		}
-	}
-	return defaultValues
-}
-
-type objectType[T any] struct {
-	abstractObjectSchema[PropertyType] `json:",inline"`
-	defaultValues                      map[string]any
-	fieldCache                         map[string]reflect.StructField
-}
-
-func (o objectType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
-	for _, property := range o.PropertiesValue {
-		property.ApplyScope(s)
-	}
-}
-
-func (o objectType[T]) UnderlyingType() T {
-	var defaultValue T
-	return defaultValue
-}
-
-//nolint:funlen
-func (o objectType[T]) Unserialize(data any) (result T, err error) {
+func (o ObjectSchema) Unserialize(data any) (result any, err error) {
 	v := reflect.ValueOf(data)
 	if v.Kind() != reflect.Map {
 		return result, &ConstraintError{
 			Message: fmt.Sprintf("Must be a map, %T given", data),
 		}
 	}
-	tempData, err := o.convertData(v)
+	rawData, err := o.convertData(v)
 	if err != nil {
 		return result, err
 	}
-	if err := o.validateFieldInterdependencies(tempData); err != nil {
+	if err := o.validateFieldInterdependencies(rawData); err != nil {
 		return result, err
 	}
 
-	reflectType := reflect.TypeOf(result)
+	if o.fieldCache != nil {
+		return o.unserializeToStruct(rawData)
+	}
+	return rawData, nil
+}
+
+func (o ObjectSchema) unserializeToStruct(rawData map[string]any) (any, error) {
+	reflectType := reflect.TypeOf(o.defaultValue)
 	var reflectedValue reflect.Value
 	if reflectType.Kind() != reflect.Pointer {
 		reflectedValue = reflect.New(reflectType)
 	} else {
 		reflectedValue = reflect.New(reflectType.Elem())
 	}
-	for key, value := range tempData {
+	for key, value := range rawData {
 		val := value
 		elem := reflectedValue.Elem()
 		field := elem.FieldByIndex(o.fieldCache[key].Index)
@@ -213,24 +118,190 @@ func (o objectType[T]) Unserialize(data any) (result T, err error) {
 			}
 		}()
 		if recoveredError != nil {
-			return result, &ConstraintError{
+			return nil, &ConstraintError{
 				"Field cannot be set",
 				[]string{key},
 				recoveredError,
 			}
 		}
 	}
-	reflectType = reflect.TypeOf(result)
+	reflectType = reflect.TypeOf(o.defaultValue)
+	var result any
 	if reflectType.Kind() != reflect.Pointer {
-		result = reflectedValue.Elem().Interface().(T)
+		result = reflectedValue.Elem().Interface()
 	} else {
-		result = reflectedValue.Interface().(T)
+		result = reflectedValue.Interface()
 	}
 	return result, nil
 }
 
-func (o objectType[T]) convertData(v reflect.Value) (map[string]any, error) {
-	tempData := make(map[string]any, v.Len())
+func (o ObjectSchema) serializeMap(data map[string]any) (any, error) {
+	if err := o.validateFieldInterdependencies(data); err != nil {
+		return nil, err
+	}
+
+	rawData := map[string]any{}
+	for k, v := range data {
+		property, ok := o.PropertiesValue[k]
+		if !ok {
+			return nil, o.invalidKeyError(k)
+		}
+		serializedValue, err := property.Serialize(v)
+		if err != nil {
+			return nil, ConstraintErrorAddPathSegment(err, k)
+		}
+		defaultValue, hasDefaultValue := o.defaultValues[k]
+		if !hasDefaultValue && defaultValue != serializedValue {
+			rawData[k] = serializedValue
+		}
+	}
+	return rawData, nil
+}
+
+func (o ObjectSchema) serializeStruct(data any) (any, error) {
+	if reflect.TypeOf(data) != o.ReflectedType() {
+		return o.defaultValue, &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type, expected %s.", data, o.ReflectedType().String()),
+		}
+	}
+
+	rawData := map[string]any{}
+	v := reflect.ValueOf(data)
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("Nil value passed instead of %T", o.defaultValue),
+		}
+	}
+	for propertyID, property := range o.PropertiesValue {
+		a, err := o.extractPropertyValue(propertyID, v, property)
+		if err != nil {
+			return nil, err
+		}
+		if a != nil {
+			rawData[propertyID] = *a
+		}
+	}
+
+	if err := o.validateFieldInterdependencies(rawData); err != nil {
+		return nil, err
+	}
+
+	return rawData, nil
+}
+
+func (o ObjectSchema) extractPropertyValue(propertyID string, v reflect.Value, property *PropertySchema) (*any, error) {
+	valPtr := o.getFieldReflection(propertyID, v, property)
+	if valPtr == nil {
+		return nil, nil
+	}
+	value := valPtr.Interface()
+
+	serializedData, err := property.Serialize(value)
+	if err != nil {
+		return nil, ConstraintErrorAddPathSegment(err, propertyID)
+	}
+	if defaultValue, ok := o.defaultValues[propertyID]; !ok || defaultValue == serializedData {
+		return &serializedData, nil
+	}
+	return nil, nil
+}
+
+func (o ObjectSchema) getFieldReflection(propertyID string, v reflect.Value, property *PropertySchema) *reflect.Value {
+	field := o.fieldCache[propertyID]
+	var val reflect.Value
+	if v.Kind() == reflect.Pointer {
+		val = v.Elem().FieldByName(field.Name)
+	} else {
+		val = v.FieldByName(field.Name)
+	}
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return nil
+		}
+		if property.ReflectedType().Kind() != reflect.Pointer {
+			val = val.Elem()
+		}
+	}
+	if val.Interface() == nil {
+		return nil
+	}
+	return &val
+}
+
+func (o ObjectSchema) Serialize(data any) (any, error) {
+	if o.fieldCache != nil {
+		return o.serializeStruct(data)
+	}
+	d, ok := data.(map[string]any)
+	if !ok {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for an object schema.", d),
+		}
+	}
+	return o.serializeMap(d)
+}
+
+func (o ObjectSchema) validateMap(data map[string]any) error {
+	if err := o.validateFieldInterdependencies(data); err != nil {
+		return err
+	}
+	for k, v := range data {
+		property, ok := o.PropertiesValue[k]
+		if !ok {
+			return o.invalidKeyError(k)
+		}
+		if err := property.Validate(v); err != nil {
+			return ConstraintErrorAddPathSegment(err, k)
+		}
+	}
+	return nil
+}
+
+func (o ObjectSchema) validateStruct(data any) error {
+	if reflect.TypeOf(data) != o.ReflectedType() {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type, expected %s.", data, o.ReflectedType().String()),
+		}
+	}
+
+	rawData := map[string]any{}
+
+	v := reflect.ValueOf(data)
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Nil value passed instead of %T", o.defaultValue),
+		}
+	}
+	for propertyID, property := range o.PropertiesValue {
+		valPtr := o.getFieldReflection(propertyID, v, property)
+		if valPtr == nil {
+			continue
+		}
+		value := valPtr.Interface()
+		if err := property.Validate(value); err != nil {
+			return ConstraintErrorAddPathSegment(err, propertyID)
+		}
+		rawData[propertyID] = value
+	}
+
+	return o.validateFieldInterdependencies(rawData)
+}
+
+func (o ObjectSchema) Validate(data any) error {
+	if o.fieldCache != nil {
+		return o.validateStruct(data)
+	}
+	d, ok := data.(map[string]any)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for an object schema.", d),
+		}
+	}
+	return o.validateMap(d)
+}
+
+func (o ObjectSchema) convertData(v reflect.Value) (map[string]any, error) {
+	rawData := make(map[string]any, v.Len())
 	for _, key := range v.MapKeys() {
 		stringKey, ok := key.Interface().(string)
 		if !ok {
@@ -244,20 +315,20 @@ func (o objectType[T]) convertData(v reflect.Value) (map[string]any, error) {
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, stringKey)
 		}
-		tempData[stringKey] = unserializedData
+		rawData[stringKey] = unserializedData
 	}
 	for propertyID := range o.PropertiesValue {
-		_, isSet := tempData[propertyID]
+		_, isSet := rawData[propertyID]
 		if !isSet {
 			if defaultValue, ok := o.defaultValues[propertyID]; ok {
-				tempData[propertyID] = defaultValue
+				rawData[propertyID] = defaultValue
 			}
 		}
 	}
-	return tempData, nil
+	return rawData, nil
 }
 
-func (o objectType[T]) validateFieldInterdependencies(rawData map[string]any) error {
+func (o ObjectSchema) validateFieldInterdependencies(rawData map[string]any) error {
 	for propertyID, property := range o.PropertiesValue {
 		if _, isSet := rawData[propertyID]; isSet {
 			if err := o.validatePropertyInterdependenciesIfSet(rawData, propertyID, property); err != nil {
@@ -273,10 +344,10 @@ func (o objectType[T]) validateFieldInterdependencies(rawData map[string]any) er
 	return nil
 }
 
-func (o objectType[T]) validatePropertyInterdependenciesIfUnset(
+func (o ObjectSchema) validatePropertyInterdependenciesIfUnset(
 	rawData map[string]any,
 	propertyID string,
-	property PropertyType,
+	property *PropertySchema,
 ) error {
 	if property.Required() {
 		return &ConstraintError{
@@ -325,10 +396,10 @@ func (o objectType[T]) validatePropertyInterdependenciesIfUnset(
 	return nil
 }
 
-func (o objectType[T]) validatePropertyInterdependenciesIfSet(
+func (o ObjectSchema) validatePropertyInterdependenciesIfSet(
 	rawData map[string]any,
 	propertyID string,
-	property PropertyType,
+	property *PropertySchema,
 ) error {
 	for _, conflict := range property.Conflicts() {
 		if _, set := rawData[conflict]; set {
@@ -344,7 +415,7 @@ func (o objectType[T]) validatePropertyInterdependenciesIfSet(
 	return nil
 }
 
-func (o objectType[T]) invalidKeyError(value any) error {
+func (o ObjectSchema) invalidKeyError(value any) error {
 	validKeys := make([]string, len(o.PropertiesValue))
 	i := 0
 	for k := range o.PropertiesValue {
@@ -360,83 +431,132 @@ func (o objectType[T]) invalidKeyError(value any) error {
 	}
 }
 
-func (o objectType[T]) Validate(data T) error {
-	rawData := map[string]any{}
+// TypedObject is a serializable version of Object.
+type TypedObject[T any] interface {
+	Object
+	TypedType[T]
 
-	v := reflect.ValueOf(data)
-	for propertyID, property := range o.PropertiesValue {
-		field := o.fieldCache[propertyID]
-		val := v.FieldByName(field.Name)
-		if err := property.Validate(val.Interface()); err != nil {
-			return ConstraintErrorAddPathSegment(err, propertyID)
-		}
-		rawData[propertyID] = val.Interface()
-	}
-
-	return o.validateFieldInterdependencies(rawData)
+	Any() TypedObject[any]
 }
 
-func (o objectType[T]) Serialize(data T) (any, error) {
-	rawData := map[string]any{}
+// NewStructMappedObjectSchema creates an object schema that is tied to a specific struct. The values will be mapped to that struct
+// when unserialized.
+func NewStructMappedObjectSchema[T any](id string, properties map[string]*PropertySchema) *ObjectSchema {
+	validateObjectIsStruct[T]()
+	var defaultValue T
+	return &ObjectSchema{
+		IDValue:         id,
+		PropertiesValue: properties,
 
-	v := reflect.ValueOf(data)
-	for propertyID, property := range o.PropertiesValue {
-		field := o.fieldCache[propertyID]
-		val := v.FieldByName(field.Name)
-		serializedData, err := property.Serialize(val.Interface())
-		if err != nil {
-			return nil, ConstraintErrorAddPathSegment(err, propertyID)
-		}
+		defaultValues: extractObjectDefaultValues(properties),
 
-		if defaultValue, ok := o.defaultValues[propertyID]; !ok || defaultValue == serializedData {
-			rawData[propertyID] = serializedData
-		}
-	}
-
-	return rawData, o.validateFieldInterdependencies(rawData)
-}
-
-func (o objectType[T]) Any() ObjectType[any] {
-	return &objectTypeAny[T]{
-		o,
+		defaultValue: defaultValue,
+		fieldCache:   buildObjectFieldCache[T](properties),
 	}
 }
 
-type objectTypeAny[T any] struct {
-	objectType[T] `json:",inline"`
+func NewTypedObject[T any](id string, properties map[string]*PropertySchema) *TypedObjectSchema[T] {
+	objectSchema := NewStructMappedObjectSchema[T](id, properties)
+	return &TypedObjectSchema[T]{
+		*objectSchema,
+	}
 }
 
-func (o objectTypeAny[T]) UnderlyingType() any {
-	return any(o.objectType.UnderlyingType())
+type TypedObjectSchema[T any] struct {
+	ObjectSchema `json:",inline"`
 }
 
-func (o objectTypeAny[T]) Unserialize(data any) (any, error) {
-	result, err := o.objectType.Unserialize(data)
-	return any(result), err
+func (t TypedObjectSchema[T]) UnserializeType(data any) (T, error) {
+	data, err := t.ObjectSchema.Unserialize(data)
+	if err != nil {
+		var defaultValue T
+		return defaultValue, err
+	}
+	return data.(T), err
 }
 
-func (o objectTypeAny[T]) Validate(data any) error {
-	typedData, ok := data.(T)
-	if !ok {
-		underlyingType := o.objectType.UnderlyingType()
-		return &ConstraintError{
-			Message: fmt.Sprintf("Invalid type %T for %T", data, underlyingType),
+func (t TypedObjectSchema[T]) ValidateType(data T) error {
+	return t.ObjectSchema.Validate(data)
+}
+
+func (t TypedObjectSchema[T]) SerializeType(data T) (any, error) {
+	return t.ObjectSchema.Serialize(data)
+}
+
+func validateObjectIsStruct[T any]() {
+	var defaultValue T
+	reflectValue := reflect.TypeOf(defaultValue)
+	if reflectValue.Kind() == reflect.Pointer {
+		reflectValue = reflectValue.Elem()
+	}
+	if reflectValue.Kind() != reflect.Struct {
+		panic(BadArgumentError{
+			Message: fmt.Sprintf(
+				"NewStructMappedObjectSchema should only be called with a struct type, %T given",
+				defaultValue,
+			),
+		})
+	}
+}
+
+func extractObjectDefaultValues(properties map[string]*PropertySchema) map[string]any {
+	defaultValues := map[string]any{}
+	for propertyID, property := range properties {
+		if property.Default() != nil {
+			var value any
+			if err := json.Unmarshal([]byte(*property.Default()), &value); err != nil {
+				panic(BadArgumentError{
+					Message: fmt.Sprintf("Default value for property %s is not a valid JSON", propertyID),
+					Cause:   err,
+				})
+			}
+			unserializedDefault, err := property.Unserialize(value)
+			if err != nil {
+				panic(BadArgumentError{
+					Message: fmt.Sprintf("Default value for property %s is not a unserializable", propertyID),
+					Cause:   err,
+				})
+			}
+			defaultValues[propertyID] = unserializedDefault
 		}
 	}
-	return o.objectType.Validate(typedData)
+	return defaultValues
 }
 
-func (o objectTypeAny[T]) Serialize(data any) (any, error) {
-	typedData, ok := data.(T)
-	if !ok {
-		underlyingType := o.objectType.UnderlyingType()
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Invalid type %T for %T", data, underlyingType),
-		}
+func buildObjectFieldCache[T any](properties map[string]*PropertySchema) map[string]reflect.StructField {
+	var defaultValue T
+	fieldCache := make(map[string]reflect.StructField, len(properties))
+	reflectType := reflect.TypeOf(defaultValue)
+	if reflectType.Kind() == reflect.Pointer {
+		reflectType = reflectType.Elem()
 	}
-	return o.objectType.Serialize(typedData)
-}
-
-func (o objectTypeAny[T]) Any() ObjectType[any] {
-	return o
+	for propertyID := range properties {
+		field, ok := reflectType.FieldByNameFunc(func(s string) bool {
+			fieldType, _ := reflectType.FieldByName(s)
+			jsonTag := fieldType.Tag.Get("json")
+			if jsonTag != "" {
+				parts := strings.SplitN(jsonTag, ",", 2)
+				if parts[0] == propertyID {
+					return true
+				}
+			}
+			return false
+		})
+		if !ok {
+			field, ok = reflectType.FieldByName(propertyID)
+			if !ok {
+				panic(BadArgumentError{
+					Message: fmt.Sprintf(
+						"Cannot find a valid field to set for '%s' on '%s'. Please name a field identically "+
+							"or provide a `json:\"%s\"` tag.",
+						propertyID,
+						reflectType.Name(),
+						propertyID,
+					),
+				})
+			}
+		}
+		fieldCache[propertyID] = field
+	}
+	return fieldCache
 }

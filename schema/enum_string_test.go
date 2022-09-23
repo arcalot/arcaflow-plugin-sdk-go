@@ -8,9 +8,9 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-func ExampleNewStringEnumType() {
+func ExampleNewStringEnumSchema() {
 	// Create a new enum type by defining its valid values:
-	portionSize := schema.NewStringEnumType(map[string]string{
+	portionSize := schema.NewStringEnumSchema(map[string]string{
 		"small": "Small",
 		"large": "Large",
 	})
@@ -20,8 +20,8 @@ func ExampleNewStringEnumType() {
 	// Output: map[large:Large small:Small]
 }
 
-func ExampleStringEnumType_unserialize() {
-	portionSize := schema.NewStringEnumType(map[string]string{
+func ExampleStringEnumSchema_Unserialize() {
+	portionSize := schema.NewStringEnumSchema(map[string]string{
 		"small": "Small",
 		"large": "Large",
 	})
@@ -65,7 +65,7 @@ var testStringEnumSerializationDataSet = map[string]serializationTestCase[string
 func TestStringEnumSerialization(t *testing.T) {
 	performSerializationTest[string](
 		t,
-		schema.NewStringEnumType(map[string]string{
+		schema.NewStringEnumSchema(map[string]string{
 			"small": "Small",
 			"large": "Large",
 		}),
@@ -80,7 +80,7 @@ func TestStringEnumSerialization(t *testing.T) {
 }
 
 func TestStringEnumJSONMarshal(t *testing.T) {
-	typeUnderTest := schema.NewStringEnumType(map[string]string{
+	typeUnderTest := schema.NewStringEnumSchema(map[string]string{
 		"small": "Small",
 		"large": "Large",
 	})
@@ -92,7 +92,7 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 	if string(marshalled) != `{"values":{"large":"Large","small":"Small"}}` {
 		t.Fatalf("Invalid marshalled JSON output: %s", marshalled)
 	}
-	typeUnderTest = schema.NewStringEnumType(map[string]string{})
+	typeUnderTest = schema.NewStringEnumSchema(map[string]string{})
 	if err := json.Unmarshal(marshalled, &typeUnderTest); err != nil {
 		t.Fatal(err)
 	}
@@ -103,5 +103,4 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 
 func TestStringEnumType(t *testing.T) {
 	assertEqual(t, schema.NewStringEnumSchema(map[string]string{}).TypeID(), schema.TypeIDStringEnum)
-	assertEqual(t, schema.NewStringEnumType(map[string]string{}).TypeID(), schema.TypeIDStringEnum)
 }

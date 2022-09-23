@@ -6,10 +6,8 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-var schemaTestSchema = schema.NewSchemaType(
-	map[string]schema.StepType[any]{
-		"hello": testStepSchema.Any(),
-	},
+var schemaTestSchema = schema.NewCallableSchema(
+	testStepSchema,
 )
 
 func TestSchemaCall(t *testing.T) {

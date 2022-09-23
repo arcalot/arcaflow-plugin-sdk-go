@@ -3,82 +3,58 @@ package schema
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 )
 
-// IntSchema holds the schema information for 64-bit integers. This dataclass only has the ability to hold the
+// Int holds the schema information for 64-bit integers. This dataclass only has the ability to hold the
 // configuration but cannot serialize, unserialize or validate. For that functionality please use IntType.
-type IntSchema interface {
-	AbstractSchema
+type Int interface {
+	TypedType[int64]
 	Min() *int64
 	Max() *int64
 	Units() *Units
 }
 
 // NewIntSchema creates a new integer schema with the specified values.
-func NewIntSchema(min *int64, max *int64, units *Units) IntSchema {
-	return &intSchema{
+func NewIntSchema(min *int64, max *int64, units *Units) *IntSchema {
+	return &IntSchema{
 		min,
 		max,
 		units,
 	}
 }
 
-type intSchema struct {
+type IntSchema struct {
 	MinValue   *int64 `json:"min"`
 	MaxValue   *int64 `json:"max"`
 	UnitsValue *Units `json:"units"`
 }
 
-func (i intSchema) TypeID() TypeID {
+func (i IntSchema) ReflectedType() reflect.Type {
+	return reflect.TypeOf(int64(0))
+}
+
+func (i IntSchema) ApplyScope(scope Scope) {
+}
+
+func (i IntSchema) TypeID() TypeID {
 	return TypeIDInt
 }
 
-func (i intSchema) Min() *int64 {
+func (i IntSchema) Min() *int64 {
 	return i.MinValue
 }
 
-func (i intSchema) Max() *int64 {
+func (i IntSchema) Max() *int64 {
 	return i.MaxValue
 }
 
-func (i intSchema) Units() *Units {
+func (i IntSchema) Units() *Units {
 	return i.UnitsValue
 }
 
-// IntType is the version of the IntSchema that supports serialization.
-type IntType interface {
-	AbstractType[int64]
-	IntSchema
-}
-
-// NewIntType defines a serializable integer representation.
-func NewIntType(min *int64, max *int64, units *Units) IntType {
-	return &intType{
-		intSchema{
-			min,
-			max,
-			units,
-		},
-	}
-}
-
-type intType struct {
-	intSchema `json:",inline"`
-}
-
-func (i intType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
-}
-
-func (i intType) UnderlyingType() int64 {
-	return int64(0)
-}
-
-func (i intType) TypeID() TypeID {
-	return TypeIDInt
-}
-
-func (i intType) Unserialize(data any) (int64, error) {
+func (i IntSchema) Unserialize(data any) (any, error) {
 	unserialized, err := intInputMapper(data, i.UnitsValue)
 	if err != nil {
 		return 0, err
@@ -86,7 +62,13 @@ func (i intType) Unserialize(data any) (int64, error) {
 	return unserialized, i.Validate(unserialized)
 }
 
-func (i intType) Validate(data int64) error {
+func (i IntSchema) Validate(d any) error {
+	data, ok := d.(int64)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for an int schema.", d),
+		}
+	}
 	if i.MinValue != nil && data < *i.MinValue {
 		return &ConstraintError{
 			Message: fmt.Sprintf("Must be at least %d", *i.MinValue),
@@ -100,8 +82,24 @@ func (i intType) Validate(data int64) error {
 	return nil
 }
 
-func (i intType) Serialize(data int64) (any, error) {
+func (i IntSchema) Serialize(data any) (any, error) {
 	return data, i.Validate(data)
+}
+
+func (i IntSchema) UnserializeType(data any) (int64, error) {
+	unserialized, err := i.Unserialize(data)
+	if err != nil {
+		return 0, err
+	}
+	return unserialized.(int64), nil
+}
+
+func (i IntSchema) ValidateType(data int64) error {
+	return i.Validate(data)
+}
+
+func (i IntSchema) SerializeType(data int64) (any, error) {
+	return i.Serialize(data)
 }
 
 //nolint:funlen

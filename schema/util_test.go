@@ -16,21 +16,23 @@ type serializationTestCase[T any] struct {
 
 func performSerializationTest[T any](
 	t *testing.T,
-	typeUnderTest schema.AbstractType[T],
+	typeUnderTest schema.TypedType[T],
 	testCases map[string]serializationTestCase[T],
 	compareUnserialized func(a T, b T) bool,
 	compareSerialized func(a any, b any) bool,
 ) {
+	t.Helper()
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			unserialized, err := typeUnderTest.Unserialize(tc.SerializedValue)
+			t.Helper()
+			unserialized, err := typeUnderTest.UnserializeType(tc.SerializedValue)
 			if err != nil {
 				if tc.ExpectError {
 					return
 				}
 				t.Fatal(err)
 			}
-			if err := typeUnderTest.Validate(unserialized); err != nil {
+			if err := typeUnderTest.ValidateType(unserialized); err != nil {
 				t.Fatal(err)
 			}
 			if !compareUnserialized(unserialized, tc.ExpectUnserializedValue) {
@@ -40,7 +42,7 @@ func performSerializationTest[T any](
 					unserialized,
 				)
 			}
-			serialized, err := typeUnderTest.Serialize(unserialized)
+			serialized, err := typeUnderTest.SerializeType(unserialized)
 			if err != nil {
 				t.Fatal(err)
 			}

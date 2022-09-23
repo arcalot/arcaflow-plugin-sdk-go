@@ -5,63 +5,24 @@ import (
 	"reflect"
 )
 
-// ListSchema holds the schema definition for lists. This dataclass only has the ability to hold the configuration but
-// cannot serialize, unserialize or validate. For that functionality please use ListType.
-type ListSchema interface {
-	AbstractSchema
-	Items() AbstractSchema
+// List holds the schema definition for lists.
+type List[ItemType Type] interface {
+	Type
+	Items() ItemType
 	Min() *int64
 	Max() *int64
 }
 
+// TypedList extends List by providing typed unserialization.
+type TypedList[UnserializedType any, ItemType TypedType[UnserializedType]] interface {
+	List[ItemType]
+	TypedType[[]UnserializedType]
+}
+
 // NewListSchema creates a new list schema from the specified values.
-func NewListSchema(items AbstractSchema, min *int64, max *int64) ListSchema {
-	return &abstractListSchema[AbstractSchema]{
-		items,
-		min,
-		max,
-	}
-}
-
-type abstractListSchema[T AbstractSchema] struct {
-	ItemsValue T      `json:"items"`
-	MinValue   *int64 `json:"min"`
-	MaxValue   *int64 `json:"max"`
-}
-
-//nolint:unused
-type listSchema struct {
-	abstractListSchema[AbstractSchema] `json:",inline"`
-}
-
-func (l abstractListSchema[T]) TypeID() TypeID {
-	return TypeIDList
-}
-
-func (l abstractListSchema[T]) Items() AbstractSchema {
-	return l.ItemsValue
-}
-
-func (l abstractListSchema[T]) Min() *int64 {
-	return l.MinValue
-}
-
-func (l abstractListSchema[T]) Max() *int64 {
-	return l.MaxValue
-}
-
-// ListType is the serializable instance of a ListSchema.
-type ListType[T any] interface {
-	ListSchema
-	AbstractType[[]T]
-
-	TypedItems() AbstractType[T]
-}
-
-// NewListType defines a serializable list.
-func NewListType[T any](items AbstractType[T], min *int64, max *int64) ListType[T] {
-	return &listType[T]{
-		abstractListSchema[AbstractType[T]]{
+func NewListSchema(items Type, min *int64, max *int64) *ListSchema {
+	return &ListSchema{
+		AbstractListSchema[Type]{
 			items,
 			min,
 			max,
@@ -69,21 +30,64 @@ func NewListType[T any](items AbstractType[T], min *int64, max *int64) ListType[
 	}
 }
 
-type listType[T any] struct {
-	abstractListSchema[AbstractType[T]] `json:",inline"`
+// NewTypedListSchema creates a new list schema from the specified values with typed unserialization.
+func NewTypedListSchema[UnserializedType any](
+	items TypedType[UnserializedType],
+	min *int64,
+	max *int64,
+) *TypedListSchema[UnserializedType, TypedType[UnserializedType]] {
+	return &TypedListSchema[UnserializedType, TypedType[UnserializedType]]{
+		AbstractListSchema[TypedType[UnserializedType]]{
+			items,
+			min,
+			max,
+		},
+	}
 }
 
-func (l listType[T]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
-	l.ItemsValue.ApplyScope(s)
+// ListSchema is the untyped representation of a list.
+type ListSchema struct {
+	AbstractListSchema[Type] `json:",inline"`
 }
 
-func (l listType[T]) UnderlyingType() []T {
-	var defaultValue []T
-	return defaultValue
+// TypedListSchema is the typed variant of the list.
+type TypedListSchema[UnserializedType any, ItemType TypedType[UnserializedType]] struct {
+	AbstractListSchema[ItemType] `json:",inline"`
 }
 
-func (l listType[T]) Unserialize(data any) ([]T, error) {
-	var result []T
+// AbstractListSchema is a root type for both the untyped and the typed lists.
+type AbstractListSchema[ItemType Type] struct {
+	ItemsValue ItemType `json:"items"`
+	MinValue   *int64   `json:"min"`
+	MaxValue   *int64   `json:"max"`
+}
+
+func (l AbstractListSchema[ItemType]) TypeID() TypeID {
+	return TypeIDList
+}
+
+func (l AbstractListSchema[ItemType]) Items() ItemType {
+	return l.ItemsValue
+}
+
+func (l AbstractListSchema[ItemType]) Min() *int64 {
+	return l.MinValue
+}
+
+func (l AbstractListSchema[ItemType]) Max() *int64 {
+	return l.MaxValue
+}
+
+func (l AbstractListSchema[ItemType]) ApplyScope(scope Scope) {
+	l.ItemsValue.ApplyScope(scope)
+}
+
+func (l AbstractListSchema[ItemType]) ReflectedType() reflect.Type {
+	elementType := l.ItemsValue.ReflectedType()
+	return reflect.SliceOf(elementType)
+}
+
+func (l AbstractListSchema[ItemType]) Unserialize(data any) (any, error) {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Slice:
@@ -98,15 +102,15 @@ func (l listType[T]) Unserialize(data any) ([]T, error) {
 			}
 		}
 
-		result = make([]T, v.Len())
+		result := reflect.MakeSlice(reflect.SliceOf(l.ItemsValue.ReflectedType()), v.Len(), v.Len())
 		for i := 0; i < v.Len(); i++ {
 			unserializedV, err := l.ItemsValue.Unserialize(v.Index(i).Interface())
 			if err != nil {
 				return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%d]", i))
 			}
-			result[i] = unserializedV
+			result.Index(i).Set(reflect.ValueOf(unserializedV))
 		}
-		return result, nil
+		return result.Interface(), nil
 	default:
 		return nil, &ConstraintError{
 			Message: fmt.Sprintf("Must be a slice, %T given", data),
@@ -114,41 +118,41 @@ func (l listType[T]) Unserialize(data any) ([]T, error) {
 	}
 }
 
-func (l listType[T]) Validate(data []T) error {
-	if l.MinValue != nil && *l.MinValue > int64(len(data)) {
+func (l AbstractListSchema[ItemType]) Validate(data any) error {
+	v := reflect.ValueOf(data)
+	if v.Kind() != reflect.Slice {
 		return &ConstraintError{
-			Message: fmt.Sprintf("Must have at least %d items, %d given", *l.MinValue, len(data)),
+			Message: fmt.Sprintf("%T is not a valid data type for a slice schema.", data),
 		}
 	}
-	if l.MaxValue != nil && *l.MaxValue < int64(len(data)) {
+	if l.MinValue != nil && *l.MinValue > int64(v.Len()) {
 		return &ConstraintError{
-			Message: fmt.Sprintf("Must have at most %d items, %d given", *l.MaxValue, len(data)),
+			Message: fmt.Sprintf("Must have at least %d items, %d given", *l.MinValue, v.Len()),
+		}
+	}
+	if l.MaxValue != nil && *l.MaxValue < int64(v.Len()) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must have at most %d items, %d given", *l.MaxValue, v.Len()),
 		}
 	}
 
-	for i := 0; i < len(data); i++ {
-		if err := l.ItemsValue.Validate(data[i]); err != nil {
+	for i := 0; i < v.Len(); i++ {
+		if err := l.ItemsValue.Validate(v.Index(i).Interface()); err != nil {
 			return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%d]", i))
 		}
 	}
 	return nil
 }
 
-func (l listType[T]) Serialize(data []T) (any, error) {
-	if l.MinValue != nil && *l.MinValue > int64(len(data)) {
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Must have at least %d items, %d given", *l.MinValue, len(data)),
-		}
-	}
-	if l.MaxValue != nil && *l.MaxValue < int64(len(data)) {
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Must have at most %d items, %d given", *l.MaxValue, len(data)),
-		}
+func (l AbstractListSchema[ItemType]) Serialize(data any) (any, error) {
+	if err := l.Validate(data); err != nil {
+		return nil, err
 	}
 
-	result := make([]any, len(data))
-	for i := 0; i < len(data); i++ {
-		serialized, err := l.ItemsValue.Serialize(data[i])
+	v := reflect.ValueOf(data)
+	result := make([]any, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		serialized, err := l.ItemsValue.Serialize(v.Index(i).Interface())
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%d]", i))
 		}
@@ -157,6 +161,18 @@ func (l listType[T]) Serialize(data []T) (any, error) {
 	return result, nil
 }
 
-func (l listType[T]) TypedItems() AbstractType[T] {
-	return l.ItemsValue
+func (t TypedListSchema[UnserializedType, ItemType]) UnserializeType(data any) (result []UnserializedType, err error) {
+	unserialized, err := t.Unserialize(data)
+	if err != nil {
+		return result, err
+	}
+	return unserialized.([]UnserializedType), nil
+}
+
+func (t TypedListSchema[UnserializedType, ItemType]) ValidateType(data []UnserializedType) error {
+	return t.Validate(data)
+}
+
+func (t TypedListSchema[UnserializedType, ItemType]) SerializeType(data []UnserializedType) (any, error) {
+	return t.Serialize(data)
 }

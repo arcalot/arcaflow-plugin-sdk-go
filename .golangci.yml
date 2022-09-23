@@ -80,8 +80,9 @@ linters-settings:
     list-type: whitelist
     include-go-root: false
     packages:
-      - go.flow.arcalot.io/pluginsdk/schema
+      - go.flow.arcalot.io/pluginsdk
       - gopkg.in/yaml.v3
+      - github.com/fxamacker/cbor
   govet:
     enable-all: true
     check-shadowing: false

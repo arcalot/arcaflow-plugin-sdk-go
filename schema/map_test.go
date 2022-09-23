@@ -7,9 +7,9 @@ import (
 )
 
 func TestMapMin(t *testing.T) {
-	mapType := schema.NewMapType[string, string](
-		schema.NewStringType(nil, nil, nil),
-		schema.NewStringType(nil, nil, nil),
+	mapType := schema.NewTypedMapSchema[string, string](
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewStringSchema(nil, nil, nil),
 		schema.IntPointer(2),
 		nil,
 	)
@@ -19,7 +19,7 @@ func TestMapMin(t *testing.T) {
 
 	assertError2(t)(mapType.Unserialize(map[any]any{}))
 	assertError2(t)(mapType.Unserialize(map[any]any{"foo": "foo"}))
-	unserialized, err := mapType.Unserialize(map[any]any{"foo": "foo", "bar": "bar"})
+	unserialized, err := mapType.UnserializeType(map[any]any{"foo": "foo", "bar": "bar"})
 	assertNoError(t, err)
 	assertEqual(t, 2, len(unserialized))
 	assertEqual(t, "foo", unserialized["foo"])
@@ -40,9 +40,9 @@ func TestMapMin(t *testing.T) {
 }
 
 func TestMapMax(t *testing.T) {
-	mapType := schema.NewMapType[string, string](
-		schema.NewStringType(nil, nil, nil),
-		schema.NewStringType(nil, nil, nil),
+	mapType := schema.NewTypedMapSchema[string, string](
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		schema.IntPointer(2),
 	)
@@ -51,7 +51,7 @@ func TestMapMax(t *testing.T) {
 	assertEqual(t, *mapType.Max(), int64(2))
 
 	assertError2(t)(mapType.Unserialize(map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}))
-	unserialized, err := mapType.Unserialize(map[any]any{"foo": "foo", "bar": "bar"})
+	unserialized, err := mapType.UnserializeType(map[any]any{"foo": "foo", "bar": "bar"})
 	assertNoError(t, err)
 	assertEqual(t, 2, len(unserialized))
 	assertEqual(t, "foo", unserialized["foo"])
@@ -69,12 +69,12 @@ func TestMapMax(t *testing.T) {
 	assertEqual(t, "bar", serializedMap["bar"].(string))
 }
 
-func TestMapTypeID(t *testing.T) {
+func TestMapSchemaID(t *testing.T) {
 	assertEqual(
 		t,
 		(schema.NewMapSchema(
-			schema.NewStringType(nil, nil, nil),
-			schema.NewStringType(nil, nil, nil),
+			schema.NewStringSchema(nil, nil, nil),
+			schema.NewStringSchema(nil, nil, nil),
 			nil,
 			nil,
 		)).TypeID(),
@@ -82,9 +82,9 @@ func TestMapTypeID(t *testing.T) {
 	)
 	assertEqual(
 		t,
-		(schema.NewMapType[string, string](
-			schema.NewStringType(nil, nil, nil),
-			schema.NewStringType(nil, nil, nil),
+		(schema.NewMapSchema(
+			schema.NewStringSchema(nil, nil, nil),
+			schema.NewStringSchema(nil, nil, nil),
 			nil,
 			nil,
 		)).TypeID(),
@@ -93,13 +93,13 @@ func TestMapTypeID(t *testing.T) {
 }
 
 func TestMapItemValidation(t *testing.T) {
-	mapType := schema.NewMapType[string, string](
-		schema.NewStringType(
+	mapType := schema.NewTypedMapSchema[string, string](
+		schema.NewStringSchema(
 			schema.IntPointer(2),
 			nil,
 			nil,
 		),
-		schema.NewStringType(
+		schema.NewStringSchema(
 			schema.IntPointer(1),
 			nil,
 			nil,
@@ -121,19 +121,17 @@ func TestMapItemValidation(t *testing.T) {
 	assertNoError2(t)(mapType.Serialize(map[string]string{"ab": "b"}))
 
 	assertEqual(t, mapType.Keys().TypeID(), schema.TypeIDString)
-	assertEqual(t, mapType.TypedKeys().TypeID(), schema.TypeIDString)
 	assertEqual(t, mapType.Values().TypeID(), schema.TypeIDString)
-	assertEqual(t, mapType.TypedValues().TypeID(), schema.TypeIDString)
 }
 
-func TestMapTypeHandling(t *testing.T) {
-	mapType := schema.NewMapType[string, string](
-		schema.NewStringType(
+func TestMapSchemaHandling(t *testing.T) {
+	mapType := schema.NewMapSchema(
+		schema.NewStringSchema(
 			nil,
 			nil,
 			nil,
 		),
-		schema.NewStringType(
+		schema.NewStringSchema(
 			nil,
 			nil,
 			nil,
@@ -200,46 +198,4 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		)
 		t.Fatalf("Bool keys did not result in an error")
 	}()
-}
-
-func TestMapTypeTypesValidation(t *testing.T) {
-	s := schema.NewMapType[string, int64](
-		schema.NewStringType(nil, nil, nil),
-		schema.NewIntType(nil, nil, nil),
-		nil,
-		nil,
-	)
-
-	assertEqual(t, s.Keys().TypeID(), schema.TypeIDString)
-	assertEqual(t, s.Values().TypeID(), schema.TypeIDInt)
-
-	s2 := schema.NewMapType[int64, string](
-		schema.NewIntType(nil, nil, nil),
-		schema.NewStringType(nil, nil, nil),
-		nil,
-		nil,
-	)
-
-	assertEqual(t, s2.Keys().TypeID(), schema.TypeIDInt)
-	assertEqual(t, s2.Values().TypeID(), schema.TypeIDString)
-
-	s3 := schema.NewMapType[int64, string](
-		schema.NewIntEnumType(map[int64]string{1024: "Small"}, nil),
-		schema.NewStringType(nil, nil, nil),
-		nil,
-		nil,
-	)
-
-	assertEqual(t, s3.Keys().TypeID(), schema.TypeIDIntEnum)
-	assertEqual(t, s3.Values().TypeID(), schema.TypeIDString)
-
-	s4 := schema.NewMapType[string, int64](
-		schema.NewStringEnumType(map[string]string{"s": "Small"}),
-		schema.NewIntType(nil, nil, nil),
-		nil,
-		nil,
-	)
-
-	assertEqual(t, s4.Keys().TypeID(), schema.TypeIDStringEnum)
-	assertEqual(t, s4.Values().TypeID(), schema.TypeIDInt)
 }

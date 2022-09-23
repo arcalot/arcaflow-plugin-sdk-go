@@ -8,8 +8,8 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-func ExampleBoolType() {
-	boolType := schema.NewBoolType()
+func ExampleBoolSchema() {
+	boolType := schema.NewBoolSchema()
 
 	// Unserialize a bool:
 	unserializedValue, err := boolType.Unserialize(true)
@@ -38,8 +38,8 @@ func ExampleBoolType() {
 	// bool
 }
 
-func ExampleBoolType_unserialize() {
-	boolType := schema.NewBoolType()
+func ExampleBoolSchema_unserialize() {
+	boolType := schema.NewBoolSchema()
 
 	// Unserialize a bool:
 	unserializedValue, err := boolType.Unserialize(true)
@@ -143,7 +143,7 @@ var boolTestSerializationCases = map[string]struct {
 func TestBoolSerializationCycle(t *testing.T) {
 	for name, tc := range boolTestSerializationCases {
 		t.Run(name, func(t *testing.T) {
-			boolType := schema.NewBoolType()
+			var boolType schema.Bool = schema.NewBoolSchema()
 			output, err := boolType.Unserialize(tc.input)
 			if err != nil {
 				if tc.expectedError {
@@ -171,20 +171,20 @@ func TestBoolSerializationCycle(t *testing.T) {
 }
 
 func TestBoolJSONMarshal(t *testing.T) {
-	j, err := json.Marshal(schema.NewBoolType())
+	j, err := json.Marshal(schema.NewBoolSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(j) != "{}" {
 		t.Fatalf("Unexpected JSON output: %s", j)
 	}
-	boolType := schema.NewBoolType()
+	boolType := schema.NewBoolSchema()
 	if err := json.Unmarshal(j, &boolType); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestBoolType(t *testing.T) {
+func TestBoolSchema(t *testing.T) {
 	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
-	assertEqual(t, schema.NewBoolType().TypeID(), schema.TypeIDBool)
+	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
 }

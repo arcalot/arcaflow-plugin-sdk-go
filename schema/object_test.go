@@ -11,9 +11,9 @@ type testStruct struct {
 	Field2 string `json:"field3"`
 }
 
-var testStructSchema = schema.NewObjectType[testStruct]("testStruct", map[string]schema.PropertyType{
-	"Field1": schema.NewPropertyType[int64](
-		schema.NewIntType(nil, nil, nil),
+var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", map[string]*schema.PropertySchema{
+	"Field1": schema.NewPropertySchema(
+		schema.NewIntSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -22,8 +22,8 @@ var testStructSchema = schema.NewObjectType[testStruct]("testStruct", map[string
 		nil,
 		nil,
 	),
-	"field3": schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	"field3": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -39,9 +39,9 @@ type testStructPtr struct {
 	Field2 *string `json:"field3"`
 }
 
-var testStructSchemaPtr = schema.NewObjectType[*testStructPtr]("testStruct", map[string]schema.PropertyType{
-	"Field1": schema.NewPropertyType[int64](
-		schema.NewIntType(nil, nil, nil),
+var testStructSchemaPtr = schema.NewTypedObject[*testStructPtr]("testStruct", map[string]*schema.PropertySchema{
+	"Field1": schema.NewPropertySchema(
+		schema.NewIntSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -50,8 +50,8 @@ var testStructSchemaPtr = schema.NewObjectType[*testStructPtr]("testStruct", map
 		nil,
 		nil,
 	),
-	"field3": schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	"field3": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -69,7 +69,7 @@ func TestObjectUnserialization(t *testing.T) {
 	}
 
 	t.Run("noptr", func(t *testing.T) {
-		unserializedData, err := testStructSchema.Unserialize(data)
+		unserializedData, err := testStructSchema.UnserializeType(data)
 		assertNoError(t, err)
 		assertInstanceOf[testStruct](t, unserializedData)
 		assertEqual(t, unserializedData.Field1, int64(42))
@@ -77,7 +77,7 @@ func TestObjectUnserialization(t *testing.T) {
 	})
 
 	t.Run("ptr", func(t *testing.T) {
-		unserializedDataPtr, err := testStructSchemaPtr.Unserialize(data)
+		unserializedDataPtr, err := testStructSchemaPtr.UnserializeType(data)
 		assertNoError(t, err)
 		assertInstanceOf[*testStructPtr](t, unserializedDataPtr)
 		assertNotNil(t, unserializedDataPtr.Field1)
@@ -96,9 +96,9 @@ type testStructWithEmbed struct {
 	Field2             string `json:"field3"`
 }
 
-var testStructWithEmbedSchema = schema.NewObjectType[testStructWithEmbed]("testStruct", map[string]schema.PropertyType{
-	"Field1": schema.NewPropertyType[int64](
-		schema.NewIntType(nil, nil, nil),
+var testStructWithEmbedSchema = schema.NewTypedObject[testStructWithEmbed]("testStruct", map[string]*schema.PropertySchema{
+	"Field1": schema.NewPropertySchema(
+		schema.NewIntSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -107,8 +107,8 @@ var testStructWithEmbedSchema = schema.NewObjectType[testStructWithEmbed]("testS
 		nil,
 		nil,
 	),
-	"field3": schema.NewPropertyType[string](
-		schema.NewStringType(nil, nil, nil),
+	"field3": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		true,
 		nil,
@@ -120,7 +120,7 @@ var testStructWithEmbedSchema = schema.NewObjectType[testStructWithEmbed]("testS
 })
 
 func TestObjectUnserializationEmbeddedStruct(t *testing.T) {
-	unserializedData, err := testStructWithEmbedSchema.Unserialize(map[string]any{
+	unserializedData, err := testStructWithEmbedSchema.UnserializeType(map[string]any{
 		"Field1": 42,
 		"field3": "Hello world!",
 	})
@@ -181,4 +181,32 @@ func TestObjectValidationEmbedded(t *testing.T) {
 	}
 
 	assertNoError(t, testStructWithEmbedSchema.Validate(testData))
+}
+
+type testOptionalFieldStruct struct {
+	A *string `json:"a"`
+}
+
+var testOptionalFieldSchema = schema.NewTypedObject[testOptionalFieldStruct](
+	"testOptionalFieldStruct",
+	map[string]*schema.PropertySchema{
+		"a": schema.NewPropertySchema(
+			schema.NewStringSchema(nil, nil, nil),
+			nil,
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
+
+func TestOptionalField(t *testing.T) {
+	data, err := testOptionalFieldSchema.UnserializeType(map[string]any{})
+	assertNoError(t, err)
+	if data.A != nil {
+		t.Fatalf("Unexpected value: %s", *data.A)
+	}
 }

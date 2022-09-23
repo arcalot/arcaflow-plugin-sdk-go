@@ -2,14 +2,15 @@ package schema
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 )
 
-// FloatSchema holds the schema information for 64-bit floating point numbers. This dataclass only has the ability to
+// Float holds the schema information for 64-bit floating point numbers. This dataclass only has the ability to
 // hold the configuration but cannot serialize, unserialize or validate. For that functionality please use
 // FloatType.
-type FloatSchema interface {
-	AbstractSchema
+type Float interface {
+	TypedType[float64]
 
 	Min() *float64
 	Max() *float64
@@ -17,69 +18,43 @@ type FloatSchema interface {
 }
 
 // NewFloatSchema creates a new float schema from the specified values.
-func NewFloatSchema(min *float64, max *float64, units *Units) FloatSchema {
-	return &floatSchema{
+func NewFloatSchema(min *float64, max *float64, units *Units) *FloatSchema {
+	return &FloatSchema{
 		min,
 		max,
 		units,
 	}
 }
 
-type floatSchema struct {
+type FloatSchema struct {
 	MinValue   *float64 `json:"min"`
 	MaxValue   *float64 `json:"max"`
 	UnitsValue *Units   `json:"units"`
 }
 
-func (f floatSchema) TypeID() TypeID {
+func (f FloatSchema) ReflectedType() reflect.Type {
+	return reflect.TypeOf(float64(0))
+}
+
+func (f FloatSchema) TypeID() TypeID {
 	return TypeIDFloat
 }
 
-func (f floatSchema) Min() *float64 {
+func (f FloatSchema) Min() *float64 {
 	return f.MinValue
 }
 
-func (f floatSchema) Max() *float64 {
+func (f FloatSchema) Max() *float64 {
 	return f.MaxValue
 }
 
-func (f floatSchema) Units() *Units {
+func (f FloatSchema) Units() *Units {
 	return f.UnitsValue
 }
-
-// FloatType is the version of the FloatSchema that supports serialization.
-type FloatType interface {
-	AbstractType[float64]
-	FloatSchema
+func (f FloatSchema) ApplyScope(scope Scope) {
 }
 
-// NewFloatType defines a serializable integer representation.
-func NewFloatType(min *float64, max *float64, units *Units) FloatType {
-	return &floatType{
-		floatSchema{
-			min,
-			max,
-			units,
-		},
-	}
-}
-
-type floatType struct {
-	floatSchema `json:",inline"`
-}
-
-func (f floatType) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
-}
-
-func (f floatType) UnderlyingType() float64 {
-	return float64(0)
-}
-
-func (f floatType) TypeID() TypeID {
-	return TypeIDFloat
-}
-
-func (f floatType) Unserialize(data any) (float64, error) {
+func (f FloatSchema) Unserialize(data any) (any, error) {
 	unserialized, err := floatInputMapper(data, f.UnitsValue)
 	if err != nil {
 		return 0, err
@@ -87,7 +62,21 @@ func (f floatType) Unserialize(data any) (float64, error) {
 	return unserialized, f.Validate(unserialized)
 }
 
-func (f floatType) Validate(data float64) error {
+func (f FloatSchema) UnserializeType(data any) (float64, error) {
+	unserialized, err := f.Unserialize(data)
+	if err != nil {
+		return 0, err
+	}
+	return unserialized.(float64), nil
+}
+
+func (f FloatSchema) Validate(d any) error {
+	data, ok := d.(float64)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf("%T is not a valid data type for a float schema.", d),
+		}
+	}
 	if f.MinValue != nil && data < *f.MinValue {
 		return &ConstraintError{
 			Message: fmt.Sprintf("Must be at least %f", *f.MinValue),
@@ -101,8 +90,16 @@ func (f floatType) Validate(data float64) error {
 	return nil
 }
 
-func (f floatType) Serialize(data float64) (any, error) {
+func (f FloatSchema) ValidateType(data float64) error {
+	return f.Validate(data)
+}
+
+func (f FloatSchema) Serialize(data any) (any, error) {
 	return data, f.Validate(data)
+}
+
+func (f FloatSchema) SerializeType(data float64) (any, error) {
+	return f.Serialize(data)
 }
 
 func floatInputMapper(data any, u *Units) (float64, error) {
@@ -138,10 +135,10 @@ func floatInputMapper(data any, u *Units) (float64, error) {
 		return float64(v), nil
 	case bool:
 		if v {
-			return 1, nil
+			return float64(1), nil
 		}
-		return 0, nil
+		return float64(0), nil
 	default:
-		return 0, fmt.Errorf("%T cannot be converted to a float64", data)
+		return float64(0), fmt.Errorf("%T cannot be converted to a float64", data)
 	}
 }

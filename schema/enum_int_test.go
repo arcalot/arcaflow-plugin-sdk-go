@@ -7,9 +7,9 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-func ExampleNewIntEnumType() {
+func ExampleNewIntEnumSchema() {
 	// Create a new enum type by defining its valid values:
-	payloadSize := schema.NewIntEnumType(map[int64]string{
+	var payloadSize schema.IntEnum = schema.NewIntEnumSchema(map[int64]string{
 		1024:    "Small",
 		1048576: "Large",
 	}, schema.PointerTo(schema.UnitBytes))
@@ -19,8 +19,8 @@ func ExampleNewIntEnumType() {
 	// Output: map[1024:Small 1048576:Large]
 }
 
-func ExampleIntEnumType_unserialize() {
-	payloadSize := schema.NewIntEnumType(map[int64]string{
+func ExampleIntEnumSchema_unserialize() {
+	payloadSize := schema.NewIntEnumSchema(map[int64]string{
 		1024:    "Small",
 		1048576: "Large",
 	}, schema.PointerTo(schema.UnitBytes))
@@ -198,7 +198,7 @@ var testIntEnumSerializationDataSet = map[string]serializationTestCase[int64]{
 func TestIntEnumSerialization(t *testing.T) {
 	performSerializationTest[int64](
 		t,
-		schema.NewIntEnumType(map[int64]string{
+		schema.NewIntEnumSchema(map[int64]string{
 			64:      "XS",
 			1024:    "Small",
 			1048576: "Large",
@@ -213,7 +213,7 @@ func TestIntEnumSerialization(t *testing.T) {
 	)
 }
 
-func TestIntEnumType(t *testing.T) {
+func TestIntEnumSchema(t *testing.T) {
 	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
-	assertEqual(t, schema.NewIntEnumType(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
+	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
 }

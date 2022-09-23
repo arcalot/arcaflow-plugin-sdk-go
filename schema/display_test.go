@@ -7,7 +7,7 @@ import (
 )
 
 func TestDisplayValue(t *testing.T) {
-	dv := schema.NewDisplayValue(
+	var dv schema.Display = schema.NewDisplayValue(
 		schema.PointerTo("Greeting"),
 		schema.PointerTo("Hello world!"),
 		schema.PointerTo("<svg ...></svg>"),

@@ -19,112 +19,103 @@ type scopeTestObjectAPtr struct {
 	B *scopeTestObjectB `json:"b"`
 }
 
-var scopeTestObjectASchema = schema.NewScopeSchema[schema.PropertySchema, schema.ObjectSchema[schema.PropertySchema]](
-	map[string]schema.ObjectSchema[schema.PropertySchema]{
-		"scopeTestObjectA": schema.NewObjectSchema(
-			"scopeTestObjectA",
-			map[string]schema.PropertySchema{
-				"b": schema.NewPropertySchema(
-					schema.NewRefSchema("scopeTestObjectB", nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		),
-		"scopeTestObjectB": schema.NewObjectSchema(
-			"scopeTestObjectB",
-			map[string]schema.PropertySchema{
-				"c": schema.NewPropertySchema(
-					schema.NewStringSchema(nil, nil, nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		),
-	},
-	"scopeTestObjectA",
+var scopeTestObjectASchema = schema.NewScopeSchema(
+	schema.NewObjectSchema(
+		"scopeTestObjectA",
+		map[string]*schema.PropertySchema{
+			"b": schema.NewPropertySchema(
+				schema.NewRefSchema("scopeTestObjectB", nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	schema.NewObjectSchema(
+		"scopeTestObjectB",
+		map[string]*schema.PropertySchema{
+			"c": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
 )
 
-var scopeTestObjectAType = schema.NewScopeType[scopeTestObjectA](
-	map[string]schema.ObjectType[any]{
-		"scopeTestObjectA": schema.NewObjectType[scopeTestObjectA](
-			"scopeTestObjectA",
-			map[string]schema.PropertyType{
-				"b": schema.NewPropertyType[scopeTestObjectB](
-					schema.NewRefType[scopeTestObjectB]("scopeTestObjectB", nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"scopeTestObjectB": schema.NewObjectType[scopeTestObjectB](
-			"scopeTestObjectB",
-			map[string]schema.PropertyType{
-				"c": schema.NewPropertyType[string](
-					schema.NewStringType(nil, nil, nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-	},
-	"scopeTestObjectA",
+var scopeTestObjectAType = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[scopeTestObjectA](
+		"scopeTestObjectA",
+		map[string]*schema.PropertySchema{
+			"b": schema.NewPropertySchema(
+				schema.NewRefSchema("scopeTestObjectB", nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	schema.NewStructMappedObjectSchema[scopeTestObjectB](
+		"scopeTestObjectB",
+		map[string]*schema.PropertySchema{
+			"c": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
 )
 
-var scopeTestObjectATypePtr = schema.NewScopeType[*scopeTestObjectAPtr](
-	map[string]schema.ObjectType[any]{
-		"scopeTestObjectA": schema.NewObjectType[*scopeTestObjectAPtr](
-			"scopeTestObjectA",
-			map[string]schema.PropertyType{
-				"b": schema.NewPropertyType[*scopeTestObjectB](
-					schema.NewRefType[*scopeTestObjectB]("scopeTestObjectB", nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-		"scopeTestObjectB": schema.NewObjectType[*scopeTestObjectB](
-			"scopeTestObjectB",
-			map[string]schema.PropertyType{
-				"c": schema.NewPropertyType[string](
-					schema.NewStringType(nil, nil, nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		).Any(),
-	},
-	"scopeTestObjectA",
+var scopeTestObjectATypePtr = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[*scopeTestObjectAPtr](
+		"scopeTestObjectA",
+		map[string]*schema.PropertySchema{
+			"b": schema.NewPropertySchema(
+				schema.NewRefSchema("scopeTestObjectB", nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+	schema.NewStructMappedObjectSchema[*scopeTestObjectB](
+		"scopeTestObjectB",
+		map[string]*schema.PropertySchema{
+			"c": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
 )
 
 func TestScopeConstructor(t *testing.T) {
@@ -139,13 +130,13 @@ func TestUnserialization(t *testing.T) {
 
 	result, err := scopeTestObjectAType.Unserialize(input)
 	assertNoError(t, err)
-	assertInstanceOf[scopeTestObjectA](t, result)
-	assertEqual(t, result.B.C, "Hello world!")
+	assertInstanceOf[scopeTestObjectA](t, result.(scopeTestObjectA))
+	assertEqual(t, result.(scopeTestObjectA).B.C, "Hello world!")
 
 	resultPtr, err := scopeTestObjectATypePtr.Unserialize(input)
 	assertNoError(t, err)
-	assertInstanceOf[*scopeTestObjectAPtr](t, resultPtr)
-	assertEqual(t, resultPtr.B.C, "Hello world!")
+	assertInstanceOf[*scopeTestObjectAPtr](t, resultPtr.(*scopeTestObjectAPtr))
+	assertEqual(t, resultPtr.(*scopeTestObjectAPtr).B.C, "Hello world!")
 }
 
 func TestValidation(t *testing.T) {

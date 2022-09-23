@@ -21,77 +21,68 @@ type stepTestErrorOutput struct {
 	Error string `json:"message"`
 }
 
-var testStepSchema = schema.NewStepType(
+var testStepSchema = schema.NewCallableStep(
 	"hello",
-	schema.NewScopeType[stepTestInputData](
-		map[string]schema.ObjectType[any]{
-			"input": schema.NewObjectType[stepTestInputData](
-				"input",
-				map[string]schema.PropertyType{
-					"name": schema.NewPropertyType[string](
-						schema.NewStringType(schema.IntPointer(1), nil, nil),
-						nil,
-						true,
-						nil,
-						nil,
-						nil,
-						nil,
-						nil,
-					),
-				},
-			).Any(),
-		},
-		"input",
+	schema.NewScopeSchema(
+		schema.NewStructMappedObjectSchema[stepTestInputData](
+			"input",
+			map[string]*schema.PropertySchema{
+				"name": schema.NewPropertySchema(
+					schema.NewStringSchema(schema.IntPointer(1), nil, nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
 	),
-	map[string]schema.StepOutputType[any]{
-		"success": schema.NewStepOutputType[stepTestSuccessOutput](
-			schema.NewScopeType[stepTestSuccessOutput](
-				map[string]schema.ObjectType[any]{
-					"output": schema.NewObjectType[stepTestSuccessOutput](
-						"output",
-						map[string]schema.PropertyType{
-							"message": schema.NewPropertyType[string](
-								schema.NewStringType(schema.IntPointer(1), nil, nil),
-								nil,
-								true,
-								nil,
-								nil,
-								nil,
-								nil,
-								nil,
-							),
-						},
-					).Any(),
-				},
-				"output",
+	map[string]*schema.StepOutputSchema{
+		"success": schema.NewStepOutputSchema(
+			schema.NewScopeSchema(
+				schema.NewStructMappedObjectSchema[stepTestSuccessOutput](
+					"output",
+					map[string]*schema.PropertySchema{
+						"message": schema.NewPropertySchema(
+							schema.NewStringSchema(schema.IntPointer(1), nil, nil),
+							nil,
+							true,
+							nil,
+							nil,
+							nil,
+							nil,
+							nil,
+						),
+					},
+				),
 			),
 			nil,
 			false,
-		).Any(),
-		"error": schema.NewStepOutputType[stepTestErrorOutput](
-			schema.NewScopeType[stepTestErrorOutput](
-				map[string]schema.ObjectType[any]{
-					"output": schema.NewObjectType[stepTestSuccessOutput](
-						"output",
-						map[string]schema.PropertyType{
-							"message": schema.NewPropertyType[string](
-								schema.NewStringType(schema.IntPointer(1), nil, nil),
-								nil,
-								true,
-								nil,
-								nil,
-								nil,
-								nil,
-								nil,
-							),
-						},
-					).Any(),
-				},
-				"output",
+		),
+		"error": schema.NewStepOutputSchema(
+			schema.NewScopeSchema(
+				schema.NewStructMappedObjectSchema[stepTestErrorOutput](
+					"output",
+					map[string]*schema.PropertySchema{
+						"message": schema.NewPropertySchema(
+							schema.NewStringSchema(schema.IntPointer(1), nil, nil),
+							nil,
+							true,
+							nil,
+							nil,
+							nil,
+							nil,
+							nil,
+						),
+					},
+				),
 			),
 			nil,
 			true,
-		).Any(),
+		),
 	},
 	nil,
 	stepTestHandler,
@@ -104,7 +95,8 @@ func stepTestHandler(input stepTestInputData) (string, any) {
 }
 
 func TestStepExecution(t *testing.T) {
-	outputID, outputData := testStepSchema.Call(stepTestInputData{Name: "Arca Lot"})
+	outputID, outputData, err := testStepSchema.Call(stepTestInputData{Name: "Arca Lot"})
+	assertNoError(t, err)
 	assertEqual(t, outputID, "success")
 	assertEqual(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
 }

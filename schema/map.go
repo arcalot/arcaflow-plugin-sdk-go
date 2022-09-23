@@ -5,18 +5,28 @@ import (
 	"reflect"
 )
 
-// MapSchema holds the schema definition for key-value associations. This dataclass only has the ability to hold the
+// Map holds the schema definition for key-value associations. This dataclass only has the ability to hold the
 // configuration but cannot serialize, unserialize or validate. For that functionality please use MapType.
-type MapSchema interface {
-	AbstractSchema
-	Keys() AbstractSchema
-	Values() AbstractSchema
+type Map[KeyType Type, ValueType Type] interface {
+	Type
+
+	Keys() KeyType
+	Values() ValueType
 	Min() *int64
 	Max() *int64
 }
 
+// UntypedMap is a map schema without specific underlying types.
+type UntypedMap = Map[Type, Type]
+
+// TypedMap is a map schema that can be unserialized in its underlying components.
+type TypedMap[KeyType comparable, ValueType any] interface {
+	TypedType[map[KeyType]ValueType]
+	Map[TypedType[KeyType], TypedType[ValueType]]
+}
+
 // NewMapSchema creates a new map schema.
-func NewMapSchema(keys AbstractSchema, values AbstractSchema, min *int64, max *int64) MapSchema {
+func NewMapSchema(keys Type, values Type, min *int64, max *int64) *MapSchema[Type, Type] {
 	switch keys.TypeID() {
 	case TypeIDString:
 	case TypeIDInt:
@@ -28,7 +38,7 @@ func NewMapSchema(keys AbstractSchema, values AbstractSchema, min *int64, max *i
 		})
 	}
 
-	return &abstractMapSchema[AbstractSchema, AbstractSchema]{
+	return &MapSchema[Type, Type]{
 		keys,
 		values,
 		min,
@@ -36,156 +46,123 @@ func NewMapSchema(keys AbstractSchema, values AbstractSchema, min *int64, max *i
 	}
 }
 
-type abstractMapSchema[K AbstractSchema, V AbstractSchema] struct {
+// MapSchema is the implementation of tye map types.
+type MapSchema[K Type, V Type] struct {
 	KeysValue   K      `json:"keys"`
 	ValuesValue V      `json:"values"`
 	MinValue    *int64 `json:"min"`
 	MaxValue    *int64 `json:"max"`
 }
 
-//nolint:unused
-type mapSchema struct {
-	abstractMapSchema[AbstractSchema, AbstractSchema] `json:",inline"`
-}
-
-func (m abstractMapSchema[K, V]) TypeID() TypeID {
+func (m MapSchema[K, V]) TypeID() TypeID {
 	return TypeIDMap
 }
 
-func (m abstractMapSchema[K, V]) Keys() AbstractSchema {
+func (m MapSchema[K, V]) ReflectedType() reflect.Type {
+	return reflect.MapOf(m.KeysValue.ReflectedType(), m.ValuesValue.ReflectedType())
+}
+
+func (m MapSchema[K, V]) Keys() K {
 	return m.KeysValue
 }
 
-func (m abstractMapSchema[K, V]) Values() AbstractSchema {
+func (m MapSchema[K, V]) Values() V {
 	return m.ValuesValue
 }
 
-func (m abstractMapSchema[K, V]) Min() *int64 {
+func (m MapSchema[K, V]) Min() *int64 {
 	return m.MinValue
 }
 
-func (m abstractMapSchema[K, V]) Max() *int64 {
+func (m MapSchema[K, V]) Max() *int64 {
 	return m.MaxValue
 }
 
-// MapType is a serializable version of MapSchema.
-type MapType[K ~int64 | ~string, V any] interface {
-	MapSchema
-	AbstractType[map[K]V]
-
-	TypedKeys() AbstractType[K]
-	TypedValues() AbstractType[V]
+func (m MapSchema[K, V]) ApplyScope(scope Scope) {
+	m.KeysValue.ApplyScope(scope)
+	m.ValuesValue.ApplyScope(scope)
 }
 
-// NewMapType defines a serializable version of MapSchema.
-func NewMapType[K ~int64 | ~string, V any](
-	keys AbstractType[K],
-	values AbstractType[V],
-	min *int64, max *int64,
-) MapType[K, V] {
-	return &mapType[K, V]{
-		abstractMapSchema[AbstractType[K], AbstractType[V]]{
-			KeysValue:   keys,
-			ValuesValue: values,
-			MinValue:    min,
-			MaxValue:    max,
-		},
-	}
-}
-
-type mapType[K ~int64 | ~string, V any] struct {
-	abstractMapSchema[AbstractType[K], AbstractType[V]] `json:",inline"`
-}
-
-func (m mapType[K, V]) ApplyScope(s ScopeSchema[PropertyType, ObjectType[any]]) {
-	m.KeysValue.ApplyScope(s)
-	m.ValuesValue.ApplyScope(s)
-}
-
-func (m mapType[K, V]) UnderlyingType() map[K]V {
-	return map[K]V{}
-}
-
-func (m mapType[K, V]) Unserialize(data any) (map[K]V, error) {
-	var result map[K]V
+func (m MapSchema[K, V]) Unserialize(data any) (any, error) {
 	v := reflect.ValueOf(data)
-	switch v.Kind() {
-	case reflect.Map:
-		if m.MinValue != nil && *m.MinValue > int64(v.Len()) {
-			return nil, &ConstraintError{
-				Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, v.Len()),
-			}
-		}
-		if m.MaxValue != nil && *m.MaxValue < int64(v.Len()) {
-			return nil, &ConstraintError{
-				Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, v.Len()),
-			}
-		}
-
-		result = make(map[K]V, v.Len())
-		for _, k := range v.MapKeys() {
-			val := v.MapIndex(k)
-
-			unserializedKey, err := m.KeysValue.Unserialize(k.Interface())
-			if err != nil {
-				return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k.Interface()))
-			}
-			unserializedValue, err := m.ValuesValue.Unserialize(val.Interface())
-			if err != nil {
-				return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k.Interface()))
-			}
-			result[unserializedKey] = unserializedValue
-		}
-		return result, nil
-	default:
+	if v.Kind() != reflect.Map {
 		return nil, &ConstraintError{
 			Message: fmt.Sprintf("Must be a map, %T given", data),
 		}
 	}
+
+	if m.MinValue != nil && *m.MinValue > int64(v.Len()) {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, v.Len()),
+		}
+	}
+	if m.MaxValue != nil && *m.MaxValue < int64(v.Len()) {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, v.Len()),
+		}
+	}
+
+	t := m.ReflectedType()
+	result := reflect.MakeMapWithSize(t, v.Len())
+	for _, k := range v.MapKeys() {
+		val := v.MapIndex(k)
+
+		unserializedKey, err := m.KeysValue.Unserialize(k.Interface())
+		if err != nil {
+			return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k.Interface()))
+		}
+		unserializedValue, err := m.ValuesValue.Unserialize(val.Interface())
+		if err != nil {
+			return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k.Interface()))
+		}
+		result.SetMapIndex(reflect.ValueOf(unserializedKey), reflect.ValueOf(unserializedValue))
+	}
+	return result.Interface(), nil
 }
 
-func (m mapType[K, V]) Validate(data map[K]V) error {
-	if m.MinValue != nil && *m.MinValue > int64(len(data)) {
+func (m MapSchema[K, V]) Validate(data any) error {
+	v := reflect.ValueOf(data)
+	if v.Kind() != reflect.Map {
 		return &ConstraintError{
-			Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, len(data)),
-		}
-	}
-	if m.MaxValue != nil && *m.MaxValue < int64(len(data)) {
-		return &ConstraintError{
-			Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, len(data)),
+			Message: fmt.Sprintf("Must be a map, %T given", data),
 		}
 	}
 
-	for k, v := range data {
-		if err := m.KeysValue.Validate(k); err != nil {
+	if m.MinValue != nil && *m.MinValue > int64(v.Len()) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, v.Len()),
+		}
+	}
+	if m.MaxValue != nil && *m.MaxValue < int64(v.Len()) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, v.Len()),
+		}
+	}
+
+	for _, k := range v.MapKeys() {
+		if err := m.KeysValue.Validate(k.Interface()); err != nil {
 			return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k))
 		}
-		if err := m.ValuesValue.Validate(v); err != nil {
+		if err := m.ValuesValue.Validate(v.MapIndex(k).Interface()); err != nil {
 			return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k))
 		}
 	}
 	return nil
 }
 
-func (m mapType[K, V]) Serialize(data map[K]V) (any, error) {
-	if m.MinValue != nil && *m.MinValue > int64(len(data)) {
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, len(data)),
-		}
-	}
-	if m.MaxValue != nil && *m.MaxValue < int64(len(data)) {
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, len(data)),
-		}
+func (m MapSchema[K, V]) Serialize(data any) (any, error) {
+	if err := m.Validate(data); err != nil {
+		return nil, err
 	}
 
-	result := make(map[any]any, len(data))
-	for k, v := range data {
-		serializedKey, err := m.KeysValue.Serialize(k)
+	v := reflect.ValueOf(data)
+	result := make(map[any]any, v.Len())
+	for _, k := range v.MapKeys() {
+		serializedKey, err := m.KeysValue.Serialize(k.Interface())
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k))
 		}
-		serializedValue, err := m.ValuesValue.Serialize(v)
+		serializedValue, err := m.ValuesValue.Serialize(v.MapIndex(k).Interface())
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k))
 		}
@@ -194,10 +171,50 @@ func (m mapType[K, V]) Serialize(data map[K]V) (any, error) {
 	return result, nil
 }
 
-func (m mapType[K, V]) TypedKeys() AbstractType[K] {
-	return m.KeysValue
+// NewTypedMapSchema creates a new map schema with a defined underlying type.
+func NewTypedMapSchema[KeyType comparable, ValueType any](
+	keys TypedType[KeyType],
+	values TypedType[ValueType],
+	min *int64,
+	max *int64,
+) *TypedMapSchema[KeyType, ValueType] {
+	switch keys.TypeID() {
+	case TypeIDString:
+	case TypeIDInt:
+	case TypeIDStringEnum:
+	case TypeIDIntEnum:
+	default:
+		panic(BadArgumentError{
+			Message: fmt.Sprintf("Invalid type ID for map: %s, expected one of: string, int", keys.TypeID()),
+		})
+	}
+
+	return &TypedMapSchema[KeyType, ValueType]{
+		MapSchema[TypedType[KeyType], TypedType[ValueType]]{
+			keys,
+			values,
+			min,
+			max,
+		},
+	}
 }
 
-func (m mapType[K, V]) TypedValues() AbstractType[V] {
-	return m.ValuesValue
+type TypedMapSchema[KeyType comparable, ValueType any] struct {
+	MapSchema[TypedType[KeyType], TypedType[ValueType]]
+}
+
+func (m TypedMapSchema[KeyType, ValueType]) UnserializeType(data any) (result map[KeyType]ValueType, err error) {
+	unserialized, err := m.Unserialize(data)
+	if err != nil {
+		return result, err
+	}
+	return unserialized.(map[KeyType]ValueType), nil
+}
+
+func (m TypedMapSchema[KeyType, ValueType]) ValidateType(data map[KeyType]ValueType) error {
+	return m.Validate(data)
+}
+
+func (m TypedMapSchema[KeyType, ValueType]) SerializeType(data map[KeyType]ValueType) (any, error) {
+	return m.Serialize(data)
 }

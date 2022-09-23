@@ -8,8 +8,8 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-func ExampleStringType() {
-	stringType := schema.NewStringType(
+func ExampleStringSchema() {
+	var stringType schema.String = schema.NewStringSchema(
 		schema.IntPointer(5),
 		schema.IntPointer(16),
 		regexp.MustCompile("^[a-z]+$"),
@@ -49,7 +49,7 @@ func ExampleStringType() {
 }
 
 func TestStringMinValidation(t *testing.T) {
-	stringType := schema.NewStringType(schema.IntPointer(5), nil, nil)
+	stringType := schema.NewStringSchema(schema.IntPointer(5), nil, nil)
 
 	const invalidValue = "asdf"
 	const validValue = "asdfg"
@@ -59,7 +59,7 @@ func TestStringMinValidation(t *testing.T) {
 }
 
 func TestStringMaxValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, schema.IntPointer(4), nil)
+	stringType := schema.NewStringSchema(nil, schema.IntPointer(4), nil)
 
 	const invalidValue = "asdfg"
 	const validValue = "asdf"
@@ -69,7 +69,7 @@ func TestStringMaxValidation(t *testing.T) {
 }
 
 func TestStringPatternValidation(t *testing.T) {
-	stringType := schema.NewStringType(nil, nil, regexp.MustCompile("^[a-z]+$"))
+	stringType := schema.NewStringSchema(nil, nil, regexp.MustCompile("^[a-z]+$"))
 
 	const invalidValue = "asdf1"
 	const validValue = "asdf"
@@ -79,7 +79,7 @@ func TestStringPatternValidation(t *testing.T) {
 }
 
 func TestStringTypeUnserialization(t *testing.T) {
-	stringType := schema.NewStringType(nil, nil, nil)
+	stringType := schema.NewStringSchema(nil, nil, nil)
 
 	for _, v := range []interface{}{
 		3,
@@ -106,7 +106,7 @@ func TestStringTypeUnserialization(t *testing.T) {
 
 func testStringSerialization(
 	t *testing.T,
-	stringType schema.StringType,
+	stringType *schema.StringSchema,
 	invalidValue string,
 	validValue string,
 	invalidType any,
@@ -144,12 +144,12 @@ func testStringSerialization(
 }
 
 func TestStringParameters(t *testing.T) {
-	stringType := schema.NewStringType(nil, nil, nil)
+	stringType := schema.NewStringSchema(nil, nil, nil)
 	assertEqual(t, stringType.Min(), nil)
 	assertEqual(t, stringType.Max(), nil)
 	assertEqual(t, stringType.Pattern(), nil)
 
-	stringType = schema.NewStringType(
+	stringType = schema.NewStringSchema(
 		schema.IntPointer(1),
 		schema.IntPointer(2),
 		regexp.MustCompile("^[a-z]+$"),
@@ -161,5 +161,4 @@ func TestStringParameters(t *testing.T) {
 
 func TestStringID(t *testing.T) {
 	assertEqual(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
-	assertEqual(t, schema.NewStringType(nil, nil, nil).TypeID(), schema.TypeIDString)
 }

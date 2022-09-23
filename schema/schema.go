@@ -3,78 +3,64 @@ package schema
 import "fmt"
 
 // Schema is a collection of steps supported by a plugin.
-type Schema[P PropertySchema, O ObjectSchema[P], IS ScopeSchema[P, O], OSC ScopeSchema[P, O], OS StepOutputSchema[P, O, OSC], ST StepSchema[P, O, IS, OSC, OS]] interface {
-	Steps() map[string]ST
+type Schema[S Step] interface {
+	Steps() map[string]S
+
+	SelfSerialize() (any, error)
 }
 
 // NewSchema builds a new schema with the specified steps.
 func NewSchema(
-	steps map[string]StepSchema[
-		PropertySchema,
-		ObjectSchema[PropertySchema],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema],
-			ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]],
-	],
-) Schema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]], StepSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]], StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]]]] {
-	return &abstractSchema[
-		PropertySchema,
-		ObjectSchema[PropertySchema],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-		StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]],
-		StepSchema[
-			PropertySchema,
-			ObjectSchema[PropertySchema],
-			ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-			ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]],
-			StepOutputSchema[PropertySchema, ObjectSchema[PropertySchema], ScopeSchema[PropertySchema, ObjectSchema[PropertySchema]]],
-		],
-	]{
+	steps map[string]*StepSchema,
+) Schema[Step] {
+	return &SchemaSchema{
 		steps,
 	}
 }
 
-type abstractSchema[P PropertySchema, O ObjectSchema[P], IS ScopeSchema[P, O], OSC ScopeSchema[P, O], OS StepOutputSchema[P, O, OSC], ST StepSchema[P, O, IS, OSC, OS]] struct {
-	StepsValue map[string]ST `json:"steps"`
+type SchemaSchema struct {
+	StepsValue map[string]*StepSchema `json:"steps"`
 }
 
-//nolint:unused
-type schema struct {
-	abstractSchema[*propertySchema, *objectSchema, *scopeSchema, *scopeSchema, *stepOutputSchema, *stepSchema] `json:",inline"`
+func (s SchemaSchema) SelfSerialize() (any, error) {
+	steps := make(map[string]*StepSchema, len(s.StepsValue))
+
+	for id, step := range s.StepsValue {
+		steps[id] = step
+	}
+
+	return schemaSchema.Serialize(&SchemaSchema{
+		steps,
+	})
 }
 
-func (s abstractSchema[P, O, IS, OSC, OS, ST]) Steps() map[string]ST {
-	return s.StepsValue
+func (s SchemaSchema) Steps() map[string]Step {
+	result := make(map[string]Step, len(s.StepsValue))
+	for k, v := range s.StepsValue {
+		result[k] = v
+	}
+	return result
 }
 
-// SchemaType defines a complete callable schema.
-//
-// Disable linting, this is intentional:
-//goland:noinspection GoNameStartsWithPackageName
-type SchemaType interface {
-	Schema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]]
+func NewCallableSchema(
+	steps ...CallableStep,
+) *CallableSchema {
 
-	Call(stepID string, serializedInputData any) (outputID string, serializedOutputData any, err error)
-}
+	stepMap := make(map[string]CallableStep, len(steps))
+	for _, s := range steps {
+		stepMap[s.ID()] = s
+	}
 
-// NewSchemaType defines a callable schema.
-func NewSchemaType(
-	steps map[string]StepType[any],
-) SchemaType {
-	return &schemaType{
-		abstractSchema: abstractSchema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]]{
-			StepsValue: steps,
-		},
+	return &CallableSchema{
+		stepMap,
 	}
 }
 
-type schemaType struct {
-	abstractSchema[PropertyType, ObjectType[any], ScopeType[any], ScopeType[any], StepOutputType[any], StepType[any]] `json:",inline"`
+type CallableSchema struct {
+	StepsValue map[string]CallableStep `json:"steps"`
 }
 
-func (s schemaType) Call(
+func (s CallableSchema) Call(
 	stepID string,
 	serializedInputData any,
 ) (
@@ -92,11 +78,26 @@ func (s schemaType) Call(
 	if err != nil {
 		return "", nil, InvalidInputError{err}
 	}
-	outputID, unserializedOutput := step.Call(unserializedInputData)
+	outputID, unserializedOutput, err := step.Call(unserializedInputData)
+	if err != nil {
+		return outputID, nil, err
+	}
 	output := step.Outputs()[outputID]
 	serializedData, err := output.Schema().Serialize(unserializedOutput)
 	if err != nil {
 		return "", nil, InvalidOutputError{err}
 	}
 	return outputID, serializedData, nil
+}
+
+func (s CallableSchema) SelfSerialize() (any, error) {
+	steps := make(map[string]*StepSchema, len(s.StepsValue))
+
+	for id, step := range s.StepsValue {
+		steps[id] = step.ToStepSchema()
+	}
+
+	return schemaSchema.Serialize(&SchemaSchema{
+		steps,
+	})
 }

@@ -1,8 +1,8 @@
 package schema
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -11,58 +11,47 @@ type enumValue interface {
 	int64 | string
 }
 
-// EnumSchema is an abstract schema for enumerated types.
-type EnumSchema[T enumValue] interface {
-	AbstractSchema
+// Enum is an abstract schema for enumerated types.
+type Enum[T enumValue] interface {
+	TypedType[T]
+
 	ValidValues() map[T]string
 }
 
-type enumSchema[T enumValue] struct {
+type EnumSchema[T enumValue] struct {
 	ValidValuesMap map[T]string `json:"values"`
 }
 
-func (e enumSchema[T]) ValidValues() map[T]string {
+func (e EnumSchema[T]) ValidValues() map[T]string {
 	return e.ValidValuesMap
 }
 
-// EnumType defines an abstract type for enums.
-type EnumType[T enumValue] interface {
-	EnumSchema[T]
-	AbstractType[T]
+func (e EnumSchema[T]) ApplyScope(scope Scope) {
 }
 
-type enumType[T enumValue, K EnumSchema[T]] struct {
-	schemaType K
+func (e EnumSchema[T]) ReflectedType() reflect.Type {
+	var defaultValue T
+	return reflect.TypeOf(defaultValue)
 }
 
-func (e *enumType[T, K]) ApplyScope(_ ScopeSchema[PropertyType, ObjectType[any]]) {
-}
-
-func (e *enumType[T, K]) TypeID() TypeID {
-	return e.schemaType.TypeID()
-}
-
-func (e *enumType[T, K]) ValidValues() map[T]string {
-	return e.schemaType.ValidValues()
-}
-
-func (e *enumType[T, K]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.schemaType)
-}
-
-func (e *enumType[T, K]) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.schemaType)
-}
-
-func (e *enumType[T, K]) Validate(data T) error {
-	for validValue := range e.schemaType.ValidValues() {
+func (e EnumSchema[T]) Validate(data any) error {
+	if _, ok := data.(T); !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"%T is not a valid for an enum of %s",
+				data,
+				e.ReflectedType().Name(),
+			),
+		}
+	}
+	for validValue := range e.ValidValuesMap {
 		if validValue == data {
 			return nil
 		}
 	}
-	validValues := make([]string, len(e.schemaType.ValidValues()))
+	validValues := make([]string, len(e.ValidValuesMap))
 	i := 0
-	for validValue := range e.schemaType.ValidValues() {
+	for validValue := range e.ValidValuesMap {
 		validValues[i] = fmt.Sprintf("%v", validValue)
 		i++
 	}
@@ -78,6 +67,14 @@ func (e *enumType[T, K]) Validate(data T) error {
 	}
 }
 
-func (e *enumType[T, K]) Serialize(data T) (any, error) {
+func (e EnumSchema[T]) Serialize(data any) (any, error) {
 	return data, e.Validate(data)
+}
+
+func (e EnumSchema[T]) ValidateType(data T) error {
+	return e.Validate(data)
+}
+
+func (e EnumSchema[T]) SerializeType(data T) (any, error) {
+	return e.Serialize(data)
 }
