@@ -50,6 +50,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) ReflectedType() reflect.Type {
 	return reflect.TypeOf(v)
 }
 
+//nolint:funlen
 func (o OneOfSchema[KeyType, ItemsInterface]) UnserializeType(data any) (result ItemsInterface, err error) {
 	reflectedValue := reflect.ValueOf(data)
 	if reflectedValue.Kind() != reflect.Map {
