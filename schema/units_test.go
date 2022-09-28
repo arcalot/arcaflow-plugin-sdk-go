@@ -15,7 +15,7 @@ func TestUnitsParseInt(t *testing.T) {
 		"5m5s": {
 			"5m5s",
 			schema.UnitDurationNanoseconds,
-			305000000,
+			305000000000,
 		},
 		"1%": {
 			"1%",
