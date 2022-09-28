@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Unit is a description of a single scale of measurement, such as a "second". If there are multiple scales, such as
@@ -446,31 +447,37 @@ var UnitDurationNanoseconds = NewUnits(
 		"nanoseconds",
 	),
 	map[int64]Unit{
-		1000: NewUnit(
-			"ms",
-			"ms",
+		int64(time.Microsecond): NewUnit(
+			"μs",
+			"μs",
 			"microsecond",
 			"microseconds",
 		),
-		1000000: NewUnit(
+		int64(time.Millisecond): NewUnit(
+			"ms",
+			"ms",
+			"milliseconds",
+			"milliseconds",
+		),
+		int64(time.Second): NewUnit(
 			"s",
 			"s",
 			"second",
 			"seconds",
 		),
-		60000000: NewUnit(
+		int64(time.Minute): NewUnit(
 			"m",
 			"m",
 			"minute",
 			"minutes",
 		),
-		3600000000: NewUnit(
+		int64(time.Hour): NewUnit(
 			"H",
 			"H",
 			"hour",
 			"hours",
 		),
-		86400000000: NewUnit(
+		int64(24 * time.Hour): NewUnit(
 			"d",
 			"d",
 			"day",
