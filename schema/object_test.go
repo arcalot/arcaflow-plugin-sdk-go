@@ -330,5 +330,43 @@ func TestObjectNestedDefaults(t *testing.T) {
 		assertNoError(t, err)
 		assertEqual(t, unserialized3.Nested.Nested.A, "Hello world!")
 	})
+}
 
+func TestTypedString(t *testing.T) {
+	type testEnum string
+	type testStruct struct {
+		T1 testEnum  `json:"t1"`
+		T2 *testEnum `json:"t2"`
+	}
+	o := schema.NewStructMappedObjectSchema[testStruct](
+		"testStruct",
+		map[string]*schema.PropertySchema{
+			"t1": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"t2": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	)
+	result, err := o.Unserialize(map[string]any{"t1": "Hello world!"})
+	assertNoError(t, err)
+	assertEqual(t, result.(testStruct).T1, "Hello world!")
+	result, err = o.Unserialize(map[string]any{"t2": "Hello world!"})
+	assertNoError(t, err)
+	assertEqual(t, *result.(testStruct).T2, "Hello world!")
 }

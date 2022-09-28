@@ -120,10 +120,10 @@ func (o *ObjectSchema) unserializeToStruct(rawData map[string]any) (any, error) 
 			}()
 			if field.Kind() == reflect.Pointer && v.Kind() != reflect.Pointer {
 				f = reflect.New(f.Type().Elem())
-				f.Elem().Set(v)
+				f.Elem().Set(v.Convert(f.Elem().Type()))
 				field.Set(f)
 			} else {
-				f.Set(v)
+				f.Set(v.Convert(f.Type()))
 			}
 		}()
 		if recoveredError != nil {
