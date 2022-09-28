@@ -13,6 +13,7 @@ type Ref interface {
 
 	ID() string
 	Display() Display
+	GetObject() Object
 }
 
 // NewRefSchema creates a new reference to an object in a wrapping Scope by ID.
@@ -36,7 +37,21 @@ func (r *RefSchema) TypeID() TypeID {
 	return TypeIDRef
 }
 
+func (r *RefSchema) GetObject() Object {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "GetObject was called before ApplyScope!",
+		})
+	}
+	return r.referencedObjectCache
+}
+
 func (r *RefSchema) ReflectedType() reflect.Type {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "ReflectedType was called before ApplyScope!",
+		})
+	}
 	return r.referencedObjectCache.ReflectedType()
 }
 

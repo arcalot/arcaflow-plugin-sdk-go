@@ -63,6 +63,14 @@ func assertInstanceOf[T any](_ *testing.T, _ T) {
 
 }
 
+func assertNil[T any](t *testing.T, value T) T {
+	t.Helper()
+	if !reflect.ValueOf(value).IsNil() {
+		t.Fatalf("Unexpected non-nil value: %v", value)
+	}
+	return value
+}
+
 func assertNotNil[T any](t *testing.T, value T) T {
 	t.Helper()
 	if reflect.ValueOf(value).IsNil() {

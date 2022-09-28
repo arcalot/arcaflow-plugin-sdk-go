@@ -210,3 +210,125 @@ func TestOptionalField(t *testing.T) {
 		t.Fatalf("Unexpected value: %s", *data.A)
 	}
 }
+
+//nolint:funlen
+func TestObjectNestedDefaults(t *testing.T) {
+	type nested struct {
+		A string `json:"a"`
+	}
+	nestedProperty := schema.NewPropertySchema(
+		schema.NewRefSchema("nested", nil),
+		nil,
+		false,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	t.Run("nested-nopointer", func(t *testing.T) {
+		type root1 struct {
+			Nested nested `json:"nested"`
+		}
+		scope1 := schema.NewTypedScopeSchema[root1](
+			schema.NewStructMappedObjectSchema[root1]("root1", map[string]*schema.PropertySchema{
+				"nested": nestedProperty,
+			}),
+			schema.NewStructMappedObjectSchema[nested](
+				"nested",
+				map[string]*schema.PropertySchema{
+					"a": schema.NewPropertySchema(
+						schema.NewStringSchema(nil, nil, nil),
+						nil,
+						false,
+						nil,
+						nil,
+						nil,
+						schema.PointerTo("\"Hello world!\""),
+						nil,
+					),
+				},
+			),
+		)
+		unserialized1, err := scope1.UnserializeType(map[string]any{})
+		assertNoError(t, err)
+		assertEqual(t, unserialized1.Nested.A, "Hello world!")
+	})
+
+	t.Run("nested-pointer", func(t *testing.T) {
+		type root2 struct {
+			Nested *nested `json:"nested"`
+		}
+		scope2 := schema.NewTypedScopeSchema[root2](
+			schema.NewStructMappedObjectSchema[root2]("root2", map[string]*schema.PropertySchema{
+				"nested": nestedProperty,
+			}),
+			schema.NewStructMappedObjectSchema[*nested](
+				"nested",
+				map[string]*schema.PropertySchema{
+					"a": schema.NewPropertySchema(
+						schema.NewStringSchema(nil, nil, nil),
+						nil,
+						false,
+						nil,
+						nil,
+						nil,
+						schema.PointerTo("\"Hello world!\""),
+						nil,
+					),
+				},
+			),
+		)
+		unserialized2, err := scope2.UnserializeType(map[string]any{})
+		assertNoError(t, err)
+		assertNil(t, unserialized2.Nested)
+	})
+
+	t.Run("nested-nopointer-double", func(t *testing.T) {
+		type nested2 struct {
+			Nested nested `json:"nested"`
+		}
+		type root3 struct {
+			Nested nested2 `json:"nested"`
+		}
+		scope3 := schema.NewTypedScopeSchema[root3](
+			schema.NewStructMappedObjectSchema[root3]("root3", map[string]*schema.PropertySchema{
+				"nested": schema.NewPropertySchema(
+					schema.NewRefSchema("nested2", nil),
+					nil,
+					false,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			}),
+			schema.NewStructMappedObjectSchema[nested2](
+				"nested2",
+				map[string]*schema.PropertySchema{
+					"nested": nestedProperty,
+				},
+			),
+			schema.NewStructMappedObjectSchema[nested](
+				"nested",
+				map[string]*schema.PropertySchema{
+					"a": schema.NewPropertySchema(
+						schema.NewStringSchema(nil, nil, nil),
+						nil,
+						false,
+						nil,
+						nil,
+						nil,
+						schema.PointerTo("\"Hello world!\""),
+						nil,
+					),
+				},
+			),
+		)
+		unserialized3, err := scope3.UnserializeType(map[string]any{})
+		assertNoError(t, err)
+		assertEqual(t, unserialized3.Nested.Nested.A, "Hello world!")
+	})
+
+}
