@@ -25,20 +25,29 @@ type Client interface {
 	Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, debugLogs string)
 }
 
+// NewClient creates a new ATP client (part of the engine code).
 func NewClient(
 	channel ClientChannel,
 ) Client {
+	decMode, err := cbor.DecOptions{
+		ExtraReturnErrors: cbor.ExtraDecErrorUnknownField,
+	}.DecMode()
+	if err != nil {
+		panic(err)
+	}
 	return &client{
 		channel,
+		decMode,
 	}
 }
 
 type client struct {
 	channel ClientChannel
+	decMode cbor.DecMode
 }
 
 func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
-	cborReader := cbor.NewDecoder(c.channel)
+	cborReader := c.decMode.NewDecoder(c.channel)
 
 	var hello helloMessage
 	if err := cborReader.Decode(&hello); err != nil {
@@ -46,7 +55,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 	}
 
 	if hello.Version != 1 {
-		return nil, fmt.Errorf("Incompatible ATP client version: %d", hello.Version)
+		return nil, fmt.Errorf("Incompatible plugin ATP version: %d", hello.Version)
 	}
 
 	unserializedSchema, err := schema.UnserializeSchema(hello.Schema)
@@ -65,7 +74,7 @@ func (c client) Execute(ctx context.Context, stepID string, input any) (outputID
 		panic(fmt.Errorf("failed to write work start message (%w)", err))
 	}
 
-	cborReader := cbor.NewDecoder(c.channel)
+	cborReader := c.decMode.NewDecoder(c.channel)
 	var doneMessage workDoneMessage
 	if err := cborReader.Decode(&doneMessage); err != nil {
 		panic(fmt.Errorf("failed to read work done message (%w)", err))
