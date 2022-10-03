@@ -10,13 +10,13 @@ import (
 type OneOf[KeyType int64 | string, ItemsInterface any] interface {
 	TypedType[ItemsInterface]
 
-	Types() map[KeyType]*RefSchema
+	Types() map[KeyType]Object
 	DiscriminatorFieldName() string
 }
 
 type OneOfSchema[KeyType int64 | string, ItemsInterface any] struct {
-	TypesValue                  map[KeyType]*RefSchema `json:"types"`
-	DiscriminatorFieldNameValue string                 `json:"discriminator_field_name"`
+	TypesValue                  map[KeyType]Object `json:"types"`
+	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
 }
 
 func (o OneOfSchema[KeyType, ItemsInterface]) TypeID() TypeID {
@@ -31,7 +31,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) TypeID() TypeID {
 	}
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) Types() map[KeyType]*RefSchema {
+func (o OneOfSchema[KeyType, ItemsInterface]) Types() map[KeyType]Object {
 	return o.TypesValue
 }
 
@@ -46,8 +46,9 @@ func (o OneOfSchema[KeyType, ItemsInterface]) ApplyScope(scope Scope) {
 }
 
 func (o OneOfSchema[KeyType, ItemsInterface]) ReflectedType() reflect.Type {
-	var v ItemsInterface
-	return reflect.TypeOf(v)
+	var v *ItemsInterface
+	t := reflect.TypeOf(v).Elem()
+	return t
 }
 
 //nolint:funlen
@@ -105,7 +106,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) UnserializeType(data any) (result 
 		}
 	}
 
-	if !selectedType.HasProperty(o.DiscriminatorFieldNameValue) {
+	if _, ok := selectedType.Properties()[o.DiscriminatorFieldNameValue]; !ok {
 		delete(typedData, o.DiscriminatorFieldNameValue)
 	}
 
@@ -211,7 +212,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) getTypedDiscriminator(discriminato
 	return typedDiscriminator, nil
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) findUnderlyingType(data ItemsInterface) (KeyType, *RefSchema, error) {
+func (o OneOfSchema[KeyType, ItemsInterface]) findUnderlyingType(data ItemsInterface) (KeyType, Object, error) {
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&

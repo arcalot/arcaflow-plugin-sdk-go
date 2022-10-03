@@ -309,7 +309,7 @@ func (o *ObjectSchema) Validate(data any) error {
 	return o.validateMap(d)
 }
 
-func (o *ObjectSchema) applySubObjectDefaultValues(object Object, propertyID string, property *PropertySchema, rawData map[string]any) {
+func (o *ObjectSchema) applySubObjectDefaultValues(propertyID string, property *PropertySchema, rawData map[string]any) {
 	reflectedType := property.ReflectedType()
 	if reflectedType.Kind() == reflect.Pointer {
 		return
@@ -332,7 +332,7 @@ func (o *ObjectSchema) applySubObjectDefaultValues(object Object, propertyID str
 		data[k] = v
 	}
 	for subPropertyID, subProperty := range subObject.Properties() {
-		o.applySubObjectDefaultValues(subObject, subPropertyID, subProperty, data)
+		o.applySubObjectDefaultValues(subPropertyID, subProperty, data)
 	}
 	if len(data) != 0 {
 		rawData[propertyID] = data
@@ -358,7 +358,7 @@ func (o *ObjectSchema) convertData(v reflect.Value) (map[string]any, error) {
 				rawData[propertyID] = defaultValue
 			}
 			if o.fieldCache != nil {
-				o.applySubObjectDefaultValues(o, propertyID, o.PropertiesValue[propertyID], rawData)
+				o.applySubObjectDefaultValues(propertyID, o.PropertiesValue[propertyID], rawData)
 			}
 		}
 	}

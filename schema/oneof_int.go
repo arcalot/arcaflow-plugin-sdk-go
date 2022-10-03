@@ -9,7 +9,7 @@ type OneOfInt[ItemsInterface any] interface {
 
 // NewOneOfIntSchema creates a new OneOf-type with integer discriminators.
 func NewOneOfIntSchema[ItemsInterface any](
-	types map[int64]*RefSchema,
+	types map[int64]Object,
 	discriminatorFieldName string,
 ) *OneOfSchema[int64, ItemsInterface] {
 	return &OneOfSchema[int64, ItemsInterface]{

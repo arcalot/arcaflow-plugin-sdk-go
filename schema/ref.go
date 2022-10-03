@@ -33,6 +33,24 @@ type RefSchema struct {
 	referencedObjectCache Object
 }
 
+func (r *RefSchema) Properties() map[string]*PropertySchema {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "Properties was called before ApplyScope!",
+		})
+	}
+	return r.referencedObjectCache.Properties()
+}
+
+func (r *RefSchema) GetDefaults() map[string]any {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "GetDefaults was called before ApplyScope!",
+		})
+	}
+	return r.referencedObjectCache.GetDefaults()
+}
+
 func (r *RefSchema) TypeID() TypeID {
 	return TypeIDRef
 }
@@ -61,16 +79,6 @@ func (r *RefSchema) ID() string {
 
 func (r *RefSchema) Display() Display {
 	return r.DisplayValue
-}
-
-func (r *RefSchema) HasProperty(propertyID string) bool {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "HasProperty was called before ApplyScope!",
-		})
-	}
-	_, ok := r.referencedObjectCache.Properties()[propertyID]
-	return ok
 }
 
 func (r *RefSchema) ApplyScope(scope Scope) {
