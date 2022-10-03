@@ -31,7 +31,7 @@ var idType = NewStringSchema(
 	regexp.MustCompile("^[$@a-zA-Z0-9-_]+$"),
 )
 var mapKeyType = NewOneOfStringSchema[any](
-	map[string]*RefSchema{
+	map[string]Object{
 		"integer": NewRefSchema(
 			"Int",
 			NewDisplayValue(
@@ -72,7 +72,7 @@ var displayProperty = NewPropertySchema(
 	nil,
 )
 var valueType = NewOneOfStringSchema[any](
-	map[string]*RefSchema{
+	map[string]Object{
 		"bool": NewRefSchema(
 			"BoolSchema",
 			NewDisplayValue(
@@ -138,7 +138,7 @@ var valueType = NewOneOfStringSchema[any](
 			),
 		),
 		"one_of_int": NewRefSchema(
-			"OneOfInt",
+			"OneOfIntSchema",
 			NewDisplayValue(
 				PointerTo("Multiple with int key"),
 				nil,
@@ -506,8 +506,8 @@ var schemaSchema = NewScopeSchema(
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*OneOfSchema[int64, *RefSchema]](
-		"OneOfInt",
+	NewStructMappedObjectSchema[*OneOfSchema[int64, Object]](
+		"OneOfIntSchema",
 		map[string]*PropertySchema{
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
@@ -527,7 +527,14 @@ var schemaSchema = NewScopeSchema(
 			"types": NewPropertySchema(
 				NewMapSchema(
 					NewIntSchema(nil, nil, nil),
-					NewRefSchema("Ref", nil),
+					NewOneOfStringSchema[Object](
+						map[string]Object{
+							string(TypeIDRef):    NewRefSchema("Ref", nil),
+							string(TypeIDScope):  NewRefSchema("Scope", nil),
+							string(TypeIDObject): NewRefSchema("Object", nil),
+						},
+						"type_id",
+					),
 					nil,
 					nil,
 				),
@@ -545,7 +552,7 @@ var schemaSchema = NewScopeSchema(
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*OneOfSchema[string, *RefSchema]](
+	NewStructMappedObjectSchema[*OneOfSchema[string, Object]](
 		"OneOfStringSchema",
 		map[string]*PropertySchema{
 			"discriminator_field_name": NewPropertySchema(
@@ -566,7 +573,14 @@ var schemaSchema = NewScopeSchema(
 			"types": NewPropertySchema(
 				NewMapSchema(
 					NewStringSchema(nil, nil, nil),
-					NewRefSchema("Ref", nil),
+					NewOneOfStringSchema[Object](
+						map[string]Object{
+							string(TypeIDRef):    NewRefSchema("Ref", nil),
+							string(TypeIDScope):  NewRefSchema("Scope", nil),
+							string(TypeIDObject): NewRefSchema("Object", nil),
+						},
+						"type_id",
+					),
 					nil,
 					nil,
 				),
@@ -594,9 +608,9 @@ var schemaSchema = NewScopeSchema(
 			"type": NewPropertySchema(
 				valueType,
 				NewDisplayValue(
-					PointerTo("ReflectedType"),
+					PointerTo("Type"),
 					PointerTo(
-						"ReflectedType definition for this field.",
+						"Type definition for this field.",
 					),
 					nil,
 				),

@@ -15,7 +15,7 @@ var oneOfStringTestObjectASchema = schema.NewScopeSchema(
 		map[string]*schema.PropertySchema{
 			"s": schema.NewPropertySchema(
 				schema.NewOneOfStringSchema[any](
-					map[string]*schema.RefSchema{
+					map[string]schema.Object{
 						"B": schema.NewRefSchema("B", nil),
 						"C": schema.NewRefSchema("C", nil),
 					},
@@ -69,7 +69,7 @@ var oneOfStringTestObjectAType = schema.NewScopeSchema(
 		map[string]*schema.PropertySchema{
 			"s": schema.NewPropertySchema(
 				schema.NewOneOfStringSchema[any](
-					map[string]*schema.RefSchema{
+					map[string]schema.Object{
 						"B": schema.NewRefSchema("B", nil),
 						"C": schema.NewRefSchema("C", nil),
 					},

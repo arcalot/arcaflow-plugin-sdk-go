@@ -59,7 +59,9 @@ func (m MapSchema[K, V]) TypeID() TypeID {
 }
 
 func (m MapSchema[K, V]) ReflectedType() reflect.Type {
-	return reflect.MapOf(m.KeysValue.ReflectedType(), m.ValuesValue.ReflectedType())
+	reflectedKey := m.KeysValue.ReflectedType()
+	reflectedValue := m.ValuesValue.ReflectedType()
+	return reflect.MapOf(reflectedKey, reflectedValue)
 }
 
 func (m MapSchema[K, V]) Keys() K {

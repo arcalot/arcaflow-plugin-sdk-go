@@ -1,113 +1,19 @@
 package schema_test
 
 import (
+	_ "embed"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"gopkg.in/yaml.v3"
 )
 
-var examplePluginSchema = `
-steps:
-  hello-world:
-    display:
-      description: Says hello :)
-      name: Hello world!
-    id: hello-world
-    input:
-      objects:
-        FullName:
-          id: FullName
-          properties:
-            first_name:
-              display:
-                name: First name
-              examples:
-              - '"Arca"'
-              required: true
-              type:
-                min: 1
-                pattern: ^[a-zA-Z]+$
-                type_id: string
-            last_name:
-              display:
-                name: Last name
-              examples:
-              - '"Lot"'
-              required: true
-              type:
-                min: 1
-                pattern: ^[a-zA-Z]+$
-                type_id: string
-        InputParams:
-          id: InputParams
-          properties:
-            name:
-              display:
-                description: Who do we say hello to?
-                name: Name
-              examples:
-              - '{"_type": "fullname", "first_name": "Arca", "last_name": "Lot"}'
-              - '{"_type": "nickname", "nick": "Arcalot"}'
-              required: true
-              type:
-                discriminator_field_name: _type
-                type_id: one_of_string
-                types:
-                  fullname:
-                    display:
-                      name: Full name
-                    id: FullName
-                  nickname:
-                    display:
-                      name: Nick
-                    id: Nickname
-        Nickname:
-          id: Nickname
-          properties:
-            nick:
-              display:
-                name: Nickname
-              examples:
-              - '"Arcalot"'
-              required: true
-              type:
-                min: 1
-                pattern: ^[a-zA-Z]+$
-                type_id: string
-      root: InputParams
-    outputs:
-      error:
-        error: false
-        schema:
-          objects:
-            ErrorOutput:
-              id: ErrorOutput
-              properties:
-                error:
-                  display: {}
-                  required: true
-                  type:
-                    type_id: string
-          root: ErrorOutput
-      success:
-        error: false
-        schema:
-          objects:
-            SuccessOutput:
-              id: SuccessOutput
-              properties:
-                message:
-                  display: {}
-                  required: true
-                  type:
-                    type_id: string
-          root: SuccessOutput
-`
+//go:embed testdata/hello_world_plugin.yaml
+var helloWorldPluginSchema []byte
 
-func TestSchemaUnserialization(t *testing.T) {
+func TestSchemaUnserializationHelloWorld(t *testing.T) {
 	data := map[string]any{}
-	assertNoError(t, yaml.Unmarshal([]byte(examplePluginSchema), &data))
+	assertNoError(t, yaml.Unmarshal(helloWorldPluginSchema, &data))
 	unserializedData, err := schema.UnserializeSchema(data)
 	assertNoError(t, err)
 	steps := assertNotNil(t, unserializedData.Steps())
@@ -118,5 +24,50 @@ func TestSchemaUnserialization(t *testing.T) {
 
 	_, err = unserializedData.SelfSerialize()
 	assertNoError(t, err)
+
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDRef)
+}
+
+//go:embed testdata/embedded_objects.yaml
+var embeddedSchema []byte
+
+func TestSchemaUnserializationEmbeddedObjects(t *testing.T) {
+	data := map[string]any{}
+	assertNoError(t, yaml.Unmarshal(embeddedSchema, &data))
+	unserializedData, err := schema.UnserializeSchema(data)
+	assertNoError(t, err)
+	steps := assertNotNil(t, unserializedData.Steps())
+	helloWorldStep := assertNotNil(t, steps["hello-world"])
+	display := assertNotNil(t, helloWorldStep.Display())
+	name := assertNotNil(t, display.Name())
+	assertEqual(t, *name, "Hello world!")
+
+	_, err = unserializedData.SelfSerialize()
+	assertNoError(t, err)
+
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDObject)
+}
+
+//go:embed testdata/super_scoped.yaml
+var superScopedSchema []byte
+
+func TestSchemaUnserializationSuperScoped(t *testing.T) {
+	data := map[string]any{}
+	assertNoError(t, yaml.Unmarshal(superScopedSchema, &data))
+	unserializedData, err := schema.UnserializeSchema(data)
+	assertNoError(t, err)
+	steps := assertNotNil(t, unserializedData.Steps())
+	helloWorldStep := assertNotNil(t, steps["hello-world"])
+	display := assertNotNil(t, helloWorldStep.Display())
+	name := assertNotNil(t, display.Name())
+	assertEqual(t, *name, "Hello world!")
+
+	_, err = unserializedData.SelfSerialize()
+	assertNoError(t, err)
+
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
 
 }

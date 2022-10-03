@@ -15,7 +15,7 @@ var oneOfIntTestObjectASchema = schema.NewScopeSchema(
 		map[string]*schema.PropertySchema{
 			"s": schema.NewPropertySchema(
 				schema.NewOneOfIntSchema[any](
-					map[int64]*schema.RefSchema{
+					map[int64]schema.Object{
 						1: schema.NewRefSchema("B", nil),
 						2: schema.NewRefSchema("C", nil),
 					},
@@ -69,7 +69,7 @@ var oneOfIntTestObjectAType = schema.NewScopeSchema(
 		map[string]*schema.PropertySchema{
 			"s": schema.NewPropertySchema(
 				schema.NewOneOfIntSchema[any](
-					map[int64]*schema.RefSchema{
+					map[int64]schema.Object{
 						1: schema.NewRefSchema("B", nil),
 						2: schema.NewRefSchema("C", nil),
 					},

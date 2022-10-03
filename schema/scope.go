@@ -41,6 +41,18 @@ type ScopeSchema struct {
 	RootValue    string                   `json:"root,omitempty"`
 }
 
+func (s ScopeSchema) ID() string {
+	return s.ObjectsValue[s.RootValue].ID()
+}
+
+func (s ScopeSchema) Properties() map[string]*PropertySchema {
+	return s.ObjectsValue[s.RootValue].PropertiesValue
+}
+
+func (s ScopeSchema) GetDefaults() map[string]any {
+	return s.ObjectsValue[s.RootValue].GetDefaults()
+}
+
 func (s ScopeSchema) ReflectedType() reflect.Type {
 	return s.ObjectsValue[s.RootValue].ReflectedType()
 }
