@@ -34,6 +34,17 @@ const (
 	TypeIDOneOfInt TypeID = "one_of_string"
 	// TypeIDRef is a type that references an object in a Scope.
 	TypeIDRef TypeID = "ref"
+	// TypeIDAny refers to an any type. This type essentially amounts to unchecked types, as long as they are:
+	//
+	// - maps
+	// - lists
+	// - int64
+	// - float64
+	// - string
+	// - bool
+	//
+	// No other types are accepted.
+	TypeIDAny TypeID = "any"
 )
 
 // Serializable describes the minimum feature set a part of the schema hierarchy must implement.
