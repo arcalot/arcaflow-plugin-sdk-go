@@ -73,6 +73,14 @@ var displayProperty = NewPropertySchema(
 )
 var valueType = NewOneOfStringSchema[any](
 	map[string]Object{
+		"any": NewRefSchema(
+			"AnySchema",
+			NewDisplayValue(
+				PointerTo("Any"),
+				nil,
+				nil,
+			),
+		),
 		"bool": NewRefSchema(
 			"BoolSchema",
 			NewDisplayValue(
@@ -218,6 +226,7 @@ var schemaSchema = NewScopeSchema(
 		},
 	),
 	NewStructMappedObjectSchema[*BoolSchema]("BoolSchema", map[string]*PropertySchema{}),
+	NewStructMappedObjectSchema[*AnySchema]("AnySchema", map[string]*PropertySchema{}),
 	NewStructMappedObjectSchema[*DisplayValue]("Display", map[string]*PropertySchema{
 		"name": NewPropertySchema(
 			NewStringSchema(IntPointer(1), nil, nil),

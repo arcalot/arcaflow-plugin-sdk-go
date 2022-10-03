@@ -79,9 +79,9 @@ func assertNotNil[T any](t *testing.T, value T) T {
 	return value
 }
 
-func assertEqual[T comparable](t *testing.T, got T, expected T) {
+func assertEqual[T any](t *testing.T, got T, expected T) {
 	t.Helper()
-	if expected != got {
+	if !reflect.DeepEqual(expected, got) {
 		t.Fatalf("Mismatch, expected: %v, got: %v", expected, got)
 	}
 }
