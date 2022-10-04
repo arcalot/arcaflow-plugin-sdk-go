@@ -1118,6 +1118,26 @@ var schemaSchema = NewScopeSchema(
 	)...,
 )
 
+// DescribeScope returns a scope that describes the ScopeSchema itself.
+func DescribeScope() *ScopeSchema {
+	return scopeScopeSchema
+}
+
+// DescribeSchema returns a scope that describes a plugin schema.
+func DescribeSchema() *ScopeSchema {
+	return schemaSchema
+}
+
+// UnserializeScope unserializes a scope definition from raw data.
+func UnserializeScope(data any) (*ScopeSchema, error) {
+	s, err := scopeScopeSchema.Unserialize(data)
+	if err != nil {
+		return nil, err
+	}
+	return s.(*ScopeSchema), nil
+}
+
+// UnserializeSchema unserializes an entire schema definition from raw data.
 func UnserializeSchema(data any) (*SchemaSchema, error) {
 	s, err := schemaSchema.Unserialize(data)
 	if err != nil {
