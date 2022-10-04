@@ -14,11 +14,11 @@ type Float interface {
 
 	Min() *float64
 	Max() *float64
-	Units() *Units
+	Units() *UnitsDefinition
 }
 
 // NewFloatSchema creates a new float schema from the specified values.
-func NewFloatSchema(min *float64, max *float64, units *Units) *FloatSchema {
+func NewFloatSchema(min *float64, max *float64, units *UnitsDefinition) *FloatSchema {
 	return &FloatSchema{
 		min,
 		max,
@@ -27,9 +27,9 @@ func NewFloatSchema(min *float64, max *float64, units *Units) *FloatSchema {
 }
 
 type FloatSchema struct {
-	MinValue   *float64 `json:"min"`
-	MaxValue   *float64 `json:"max"`
-	UnitsValue *Units   `json:"units"`
+	MinValue   *float64         `json:"min"`
+	MaxValue   *float64         `json:"max"`
+	UnitsValue *UnitsDefinition `json:"UnitsDefinition"`
 }
 
 func (f FloatSchema) ReflectedType() reflect.Type {
@@ -48,7 +48,7 @@ func (f FloatSchema) Max() *float64 {
 	return f.MaxValue
 }
 
-func (f FloatSchema) Units() *Units {
+func (f FloatSchema) Units() *UnitsDefinition {
 	return f.UnitsValue
 }
 func (f FloatSchema) ApplyScope(scope Scope) {
@@ -102,7 +102,7 @@ func (f FloatSchema) SerializeType(data float64) (any, error) {
 	return f.Serialize(data)
 }
 
-func floatInputMapper(data any, u *Units) (float64, error) {
+func floatInputMapper(data any, u *UnitsDefinition) (float64, error) {
 	switch v := data.(type) {
 	case string:
 		if u != nil {

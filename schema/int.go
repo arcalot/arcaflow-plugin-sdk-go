@@ -13,11 +13,11 @@ type Int interface {
 	TypedType[int64]
 	Min() *int64
 	Max() *int64
-	Units() *Units
+	Units() *UnitsDefinition
 }
 
 // NewIntSchema creates a new integer schema with the specified values.
-func NewIntSchema(min *int64, max *int64, units *Units) *IntSchema {
+func NewIntSchema(min *int64, max *int64, units *UnitsDefinition) *IntSchema {
 	return &IntSchema{
 		min,
 		max,
@@ -26,9 +26,9 @@ func NewIntSchema(min *int64, max *int64, units *Units) *IntSchema {
 }
 
 type IntSchema struct {
-	MinValue   *int64 `json:"min"`
-	MaxValue   *int64 `json:"max"`
-	UnitsValue *Units `json:"units"`
+	MinValue   *int64           `json:"min"`
+	MaxValue   *int64           `json:"max"`
+	UnitsValue *UnitsDefinition `json:"UnitsDefinition"`
 }
 
 func (i IntSchema) ReflectedType() reflect.Type {
@@ -50,7 +50,7 @@ func (i IntSchema) Max() *int64 {
 	return i.MaxValue
 }
 
-func (i IntSchema) Units() *Units {
+func (i IntSchema) Units() *UnitsDefinition {
 	return i.UnitsValue
 }
 
@@ -103,7 +103,7 @@ func (i IntSchema) SerializeType(data int64) (any, error) {
 }
 
 //nolint:funlen
-func intInputMapper(data any, u *Units) (int64, error) {
+func intInputMapper(data any, u *UnitsDefinition) (int64, error) {
 	switch v := data.(type) {
 	case string:
 		if u != nil {

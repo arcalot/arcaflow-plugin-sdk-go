@@ -9,7 +9,7 @@ import (
 func TestUnitsParseInt(t *testing.T) {
 	testMatrix := map[string]struct {
 		input    string
-		units    schema.Units
+		units    *schema.UnitsDefinition
 		expected int64
 	}{
 		"5m5s": {
@@ -54,7 +54,7 @@ func TestUnitsParseInt(t *testing.T) {
 func TestUnitsParseFloat(t *testing.T) {
 	testMatrix := map[string]struct {
 		input    string
-		units    schema.Units
+		units    *schema.UnitsDefinition
 		expected float64
 	}{
 		"5m5s": {

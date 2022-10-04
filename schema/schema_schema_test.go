@@ -69,5 +69,4 @@ func TestSchemaUnserializationSuperScoped(t *testing.T) {
 
 	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
 	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
-
 }
