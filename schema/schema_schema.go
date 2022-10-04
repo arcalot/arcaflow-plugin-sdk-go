@@ -196,35 +196,48 @@ var valueType = NewOneOfStringSchema[any](
 	},
 	"type_id",
 )
-
-var schemaSchema = NewScopeSchema(
-	NewStructMappedObjectSchema[*SchemaSchema](
-		"Schema",
-		map[string]*PropertySchema{
-			"steps": NewPropertySchema(
-				NewMapSchema(
-					idType,
-					NewRefSchema(
-						"Step",
-						nil,
-					),
-					nil,
+var scopeObject = NewStructMappedObjectSchema[*ScopeSchema](
+	"Scope",
+	map[string]*PropertySchema{
+		"objects": NewPropertySchema(
+			NewMapSchema(
+				idType,
+				NewRefSchema(
+					"Object",
 					nil,
 				),
-				NewDisplayValue(
-					PointerTo("Steps"),
-					PointerTo("Steps this schema supports."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
 				nil,
 				nil,
 			),
-		},
-	),
+			NewDisplayValue(
+				PointerTo("Objects"),
+				PointerTo("A set of referencable objects. These objects may contain references themselves."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+		"root": NewPropertySchema(
+			idType,
+			NewDisplayValue(
+				PointerTo("Root object"),
+				PointerTo("ID of the root object of the scope."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
+var basicObjects = []*ObjectSchema{
 	NewStructMappedObjectSchema[*BoolSchema]("BoolSchema", map[string]*PropertySchema{}),
 	NewStructMappedObjectSchema[*AnySchema]("AnySchema", map[string]*PropertySchema{}),
 	NewStructMappedObjectSchema[*DisplayValue]("Display", map[string]*PropertySchema{
@@ -763,143 +776,6 @@ var schemaSchema = NewScopeSchema(
 			"display": displayProperty,
 		},
 	),
-	NewStructMappedObjectSchema[*ScopeSchema](
-		"Scope",
-		map[string]*PropertySchema{
-			"objects": NewPropertySchema(
-				NewMapSchema(
-					idType,
-					NewRefSchema(
-						"Object",
-						nil,
-					),
-					nil,
-					nil,
-				),
-				NewDisplayValue(
-					PointerTo("Objects"),
-					PointerTo("A set of referencable objects. These objects may contain references themselves."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-			"root": NewPropertySchema(
-				idType,
-				NewDisplayValue(
-					PointerTo("Root object"),
-					PointerTo("ID of the root object of the scope."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-		},
-	),
-	NewStructMappedObjectSchema[*StepOutputSchema](
-		"StepOutput",
-		map[string]*PropertySchema{
-			"display": displayProperty,
-			"error": NewPropertySchema(
-				NewBoolSchema(),
-				NewDisplayValue(
-					PointerTo("Error"),
-					PointerTo("If set to true, this output will be treated as an error output."),
-					nil,
-				),
-				false,
-				nil,
-				nil,
-				nil,
-				PointerTo("false"),
-				nil,
-			),
-			"schema": NewPropertySchema(
-				NewRefSchema(
-					"Scope",
-					nil,
-				),
-				NewDisplayValue(
-					PointerTo("Schema"),
-					PointerTo("Data schema for this particular output."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-		},
-	),
-	NewStructMappedObjectSchema[*StepSchema](
-		"Step",
-		map[string]*PropertySchema{
-			"display": displayProperty,
-			"id": NewPropertySchema(
-				idType,
-				NewDisplayValue(
-					PointerTo("ID"),
-					PointerTo("Machine identifier for this step."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-			"input": NewPropertySchema(
-				NewRefSchema(
-					"Scope",
-					nil,
-				),
-				NewDisplayValue(
-					PointerTo("Input"),
-					PointerTo("Input data schema."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-			"outputs": NewPropertySchema(
-				NewMapSchema(
-					idType,
-					NewRefSchema(
-						"StepOutput",
-						nil,
-					),
-					nil,
-					nil,
-				),
-				NewDisplayValue(
-					PointerTo("Input"),
-					PointerTo("Input data schema."),
-					nil,
-				),
-				true,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			),
-		},
-	),
 	NewStructMappedObjectSchema[*StringEnumSchema](
 		"StringEnum",
 		map[string]*PropertySchema{
@@ -1106,6 +982,140 @@ var schemaSchema = NewScopeSchema(
 			),
 		},
 	),
+}
+var schemaObject = NewStructMappedObjectSchema[*SchemaSchema](
+	"Schema",
+	map[string]*PropertySchema{
+		"steps": NewPropertySchema(
+			NewMapSchema(
+				idType,
+				NewRefSchema(
+					"Step",
+					nil,
+				),
+				nil,
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Steps"),
+				PointerTo("Steps this schema supports."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
+var scopeScopeSchema = NewScopeSchema(
+	scopeObject,
+	basicObjects...,
+)
+var schemaSchema = NewScopeSchema(
+	schemaObject,
+	append(
+		basicObjects,
+		scopeObject,
+		NewStructMappedObjectSchema[*StepOutputSchema](
+			"StepOutput",
+			map[string]*PropertySchema{
+				"display": displayProperty,
+				"error": NewPropertySchema(
+					NewBoolSchema(),
+					NewDisplayValue(
+						PointerTo("Error"),
+						PointerTo("If set to true, this output will be treated as an error output."),
+						nil,
+					),
+					false,
+					nil,
+					nil,
+					nil,
+					PointerTo("false"),
+					nil,
+				),
+				"schema": NewPropertySchema(
+					NewRefSchema(
+						"Scope",
+						nil,
+					),
+					NewDisplayValue(
+						PointerTo("Schema"),
+						PointerTo("Data schema for this particular output."),
+						nil,
+					),
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
+		NewStructMappedObjectSchema[*StepSchema](
+			"Step",
+			map[string]*PropertySchema{
+				"display": displayProperty,
+				"id": NewPropertySchema(
+					idType,
+					NewDisplayValue(
+						PointerTo("ID"),
+						PointerTo("Machine identifier for this step."),
+						nil,
+					),
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+				"input": NewPropertySchema(
+					NewRefSchema(
+						"Scope",
+						nil,
+					),
+					NewDisplayValue(
+						PointerTo("Input"),
+						PointerTo("Input data schema."),
+						nil,
+					),
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+				"outputs": NewPropertySchema(
+					NewMapSchema(
+						idType,
+						NewRefSchema(
+							"StepOutput",
+							nil,
+						),
+						nil,
+						nil,
+					),
+					NewDisplayValue(
+						PointerTo("Input"),
+						PointerTo("Input data schema."),
+						nil,
+					),
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
+	)...,
 )
 
 func UnserializeSchema(data any) (*SchemaSchema, error) {

@@ -157,3 +157,12 @@ func TestSerialization(t *testing.T) {
 	assertNoError(t, err)
 	assertEqual(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
 }
+
+func TestSelfSerialization(t *testing.T) {
+	serializedScope, err := scopeTestObjectAType.SelfSerialize()
+	assertNoError(t, err)
+	serializedScopeMap := serializedScope.(map[string]any)
+	if serializedScopeMap["root"] != "scopeTestObjectA" {
+		t.Fatalf("Unexpected root object: %s", serializedScopeMap["root"])
+	}
+}
