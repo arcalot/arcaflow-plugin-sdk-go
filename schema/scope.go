@@ -13,6 +13,8 @@ type Scope interface {
 	Object
 	Objects() map[string]*ObjectSchema
 	Root() string
+
+	SelfSerialize() (any, error)
 }
 
 // NewScopeSchema returns a new scope.
@@ -41,47 +43,51 @@ type ScopeSchema struct {
 	RootValue    string                   `json:"root,omitempty"`
 }
 
-func (s ScopeSchema) ID() string {
+func (s *ScopeSchema) SelfSerialize() (any, error) {
+	return scopeScopeSchema.Serialize(s)
+}
+
+func (s *ScopeSchema) ID() string {
 	return s.ObjectsValue[s.RootValue].ID()
 }
 
-func (s ScopeSchema) Properties() map[string]*PropertySchema {
+func (s *ScopeSchema) Properties() map[string]*PropertySchema {
 	return s.ObjectsValue[s.RootValue].PropertiesValue
 }
 
-func (s ScopeSchema) GetDefaults() map[string]any {
+func (s *ScopeSchema) GetDefaults() map[string]any {
 	return s.ObjectsValue[s.RootValue].GetDefaults()
 }
 
-func (s ScopeSchema) ReflectedType() reflect.Type {
+func (s *ScopeSchema) ReflectedType() reflect.Type {
 	return s.ObjectsValue[s.RootValue].ReflectedType()
 }
 
-func (s ScopeSchema) Unserialize(data any) (any, error) {
+func (s *ScopeSchema) Unserialize(data any) (any, error) {
 	return s.ObjectsValue[s.RootValue].Unserialize(data)
 }
 
-func (s ScopeSchema) Validate(data any) error {
+func (s *ScopeSchema) Validate(data any) error {
 	return s.ObjectsValue[s.RootValue].Validate(data)
 }
 
-func (s ScopeSchema) Serialize(data any) (any, error) {
+func (s *ScopeSchema) Serialize(data any) (any, error) {
 	return s.ObjectsValue[s.RootValue].Serialize(data)
 }
 
-func (s ScopeSchema) ApplyScope(_ Scope) {
+func (s *ScopeSchema) ApplyScope(_ Scope) {
 
 }
 
-func (s ScopeSchema) TypeID() TypeID {
+func (s *ScopeSchema) TypeID() TypeID {
 	return TypeIDScope
 }
 
-func (s ScopeSchema) Objects() map[string]*ObjectSchema {
+func (s *ScopeSchema) Objects() map[string]*ObjectSchema {
 	return s.ObjectsValue
 }
 
-func (s ScopeSchema) Root() string {
+func (s *ScopeSchema) Root() string {
 	return s.RootValue
 }
 
