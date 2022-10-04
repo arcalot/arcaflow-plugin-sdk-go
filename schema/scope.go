@@ -10,7 +10,7 @@ import (
 // embedded into other objects, and scopes can have subscopes. Each Ref will reference objects in its current
 // scope.
 type Scope interface {
-	Type
+	Object
 	Objects() map[string]*ObjectSchema
 	Root() string
 }

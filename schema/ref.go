@@ -9,7 +9,7 @@ import (
 // either directly or indirectly. If several scopes are embedded within each other, the Ref references the object
 // in the current scope.
 type Ref interface {
-	Type
+	Object
 
 	ID() string
 	Display() Display
