@@ -12,7 +12,7 @@ func ExampleNewIntEnumSchema() {
 	var payloadSize schema.IntEnum = schema.NewIntEnumSchema(map[int64]string{
 		1024:    "Small",
 		1048576: "Large",
-	}, schema.PointerTo(schema.UnitBytes))
+	}, schema.UnitBytes)
 
 	// You can now print the valid values:
 	fmt.Println(payloadSize.ValidValues())
@@ -23,7 +23,7 @@ func ExampleIntEnumSchema_unserialize() {
 	payloadSize := schema.NewIntEnumSchema(map[int64]string{
 		1024:    "Small",
 		1048576: "Large",
-	}, schema.PointerTo(schema.UnitBytes))
+	}, schema.UnitBytes)
 
 	// Try to unserialize an invalid value:
 	_, err := payloadSize.Unserialize(2048)
@@ -202,7 +202,7 @@ func TestIntEnumSerialization(t *testing.T) {
 			64:      "XS",
 			1024:    "Small",
 			1048576: "Large",
-		}, schema.PointerTo(schema.UnitBytes)),
+		}, schema.UnitBytes),
 		testIntEnumSerializationDataSet,
 		func(a int64, b int64) bool {
 			return a == b

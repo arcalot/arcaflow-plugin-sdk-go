@@ -314,7 +314,7 @@ var basicObjects = []*ObjectSchema{
 			nil,
 			[]string{"16.0"},
 		),
-		"units": unitsProperty,
+		"UnitsDefinition": unitsProperty,
 	}),
 	NewStructMappedObjectSchema[*IntEnumSchema]("IntEnum", map[string]*PropertySchema{
 		"values": NewPropertySchema(
@@ -339,7 +339,7 @@ var basicObjects = []*ObjectSchema{
 			nil,
 			[]string{"{\"1024\": {\"name\": \"kB\"}, \"1048576\": {\"name\": \"MB\"}}"},
 		),
-		"units": unitsProperty,
+		"UnitsDefinition": unitsProperty,
 	}),
 	NewStructMappedObjectSchema[*IntSchema](
 		"Int",
@@ -372,7 +372,7 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				[]string{"16"},
 			),
-			"units": unitsProperty,
+			"UnitsDefinition": unitsProperty,
 		},
 	),
 	NewStructMappedObjectSchema[*ListSchema](
@@ -815,7 +815,7 @@ var basicObjects = []*ObjectSchema{
 		"String",
 		map[string]*PropertySchema{
 			"min": NewPropertySchema(
-				NewIntSchema(IntPointer(0), nil, PointerTo(UnitCharacters)),
+				NewIntSchema(IntPointer(0), nil, UnitCharacters),
 				NewDisplayValue(
 					PointerTo("Minimum"),
 					PointerTo("Minimum length for this string (inclusive)."),
@@ -829,7 +829,7 @@ var basicObjects = []*ObjectSchema{
 				[]string{"5"},
 			),
 			"max": NewPropertySchema(
-				NewIntSchema(IntPointer(0), nil, PointerTo(UnitCharacters)),
+				NewIntSchema(IntPointer(0), nil, UnitCharacters),
 				NewDisplayValue(
 					PointerTo("Maximum"),
 					PointerTo("Maximum length for this string (inclusive)."),
@@ -858,14 +858,14 @@ var basicObjects = []*ObjectSchema{
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*unit](
+	NewStructMappedObjectSchema[*UnitDefinition](
 		"Unit",
 		map[string]*PropertySchema{
 			"name_long_plural": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
 					PointerTo("Name long (plural)"),
-					PointerTo("Longer name for this unit in plural form."),
+					PointerTo("Longer name for this UnitDefinition in plural form."),
 					nil,
 				),
 				true,
@@ -879,7 +879,7 @@ var basicObjects = []*ObjectSchema{
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
 					PointerTo("Name long (singular)"),
-					PointerTo("Longer name for this unit in singular form."),
+					PointerTo("Longer name for this UnitDefinition in singular form."),
 					nil,
 				),
 				true,
@@ -893,7 +893,7 @@ var basicObjects = []*ObjectSchema{
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
 					PointerTo("Name short (plural)"),
-					PointerTo("Shorter name for this unit in plural form."),
+					PointerTo("Shorter name for this UnitDefinition in plural form."),
 					nil,
 				),
 				true,
@@ -907,7 +907,7 @@ var basicObjects = []*ObjectSchema{
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
 					PointerTo("Name short (singular)"),
-					PointerTo("Shorter name for this unit in singular form."),
+					PointerTo("Shorter name for this UnitDefinition in singular form."),
 					nil,
 				),
 				true,
@@ -919,7 +919,7 @@ var basicObjects = []*ObjectSchema{
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*units](
+	NewStructMappedObjectSchema[*UnitsDefinition](
 		"Units",
 		map[string]*PropertySchema{
 			"base_unit": NewPropertySchema(
@@ -928,8 +928,8 @@ var basicObjects = []*ObjectSchema{
 					nil,
 				),
 				NewDisplayValue(
-					PointerTo("Base unit"),
-					PointerTo("The base unit is the smallest unit of scale for this set of units."),
+					PointerTo("Base UnitDefinition"),
+					PointerTo("The base UnitDefinition is the smallest UnitDefinition of scale for this set of UnitsDefinition."),
 					nil,
 				),
 				true,
@@ -954,8 +954,8 @@ var basicObjects = []*ObjectSchema{
 					nil,
 				),
 				NewDisplayValue(
-					PointerTo("Base unit"),
-					PointerTo("The base unit is the smallest unit of scale for this set of units."),
+					PointerTo("Base UnitDefinition"),
+					PointerTo("The base UnitDefinition is the smallest UnitDefinition of scale for this set of UnitsDefinition."),
 					nil,
 				),
 				false,

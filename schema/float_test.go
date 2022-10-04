@@ -201,7 +201,7 @@ func TestFloatSerialization(t *testing.T) {
 		schema.NewFloatSchema(
 			schema.PointerTo(float64(5)),
 			schema.PointerTo(float64(10)),
-			schema.PointerTo(schema.UnitBytes),
+			schema.UnitBytes,
 		),
 		testFloatSerializationDataSet,
 		func(a float64, b float64) bool {
@@ -256,7 +256,7 @@ func TestFloatParameters(t *testing.T) {
 	floatType := schema.NewFloatSchema(
 		schema.PointerTo(float64(1)),
 		schema.PointerTo(float64(2)),
-		schema.PointerTo(schema.UnitPercentage),
+		schema.UnitPercentage,
 	)
 	assertEqual(t, 1, *floatType.Min())
 	assertEqual(t, 2, *floatType.Max())

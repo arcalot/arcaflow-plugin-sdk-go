@@ -80,7 +80,7 @@ func (b BadArgumentError) Unwrap() error {
 	return b.Cause
 }
 
-// UnitParseError indicates that it failed to parse a unit string.
+// UnitParseError indicates that it failed to parse a UnitDefinition string.
 type UnitParseError struct {
 	Message string
 	Cause   error
