@@ -7,19 +7,20 @@ import (
 )
 
 // OneOf is the root interface for one-of types. It should not be used directly but is provided for convenience.
-type OneOf[KeyType int64 | string, ItemsInterface any] interface {
-	TypedType[ItemsInterface]
+type OneOf[KeyType int64 | string] interface {
+	Type
 
 	Types() map[KeyType]Object
 	DiscriminatorFieldName() string
 }
 
-type OneOfSchema[KeyType int64 | string, ItemsInterface any] struct {
+type OneOfSchema[KeyType int64 | string] struct {
+	interfaceType               reflect.Type
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) TypeID() TypeID {
+func (o OneOfSchema[KeyType]) TypeID() TypeID {
 	var defaultValue KeyType
 	switch any(defaultValue).(type) {
 	case int64:
@@ -31,28 +32,30 @@ func (o OneOfSchema[KeyType, ItemsInterface]) TypeID() TypeID {
 	}
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) Types() map[KeyType]Object {
+func (o OneOfSchema[KeyType]) Types() map[KeyType]Object {
 	return o.TypesValue
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) DiscriminatorFieldName() string {
+func (o OneOfSchema[KeyType]) DiscriminatorFieldName() string {
 	return o.DiscriminatorFieldNameValue
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) ApplyScope(scope Scope) {
+func (o OneOfSchema[KeyType]) ApplyScope(scope Scope) {
 	for _, t := range o.TypesValue {
 		t.ApplyScope(scope)
 	}
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) ReflectedType() reflect.Type {
-	var v *ItemsInterface
-	t := reflect.TypeOf(v).Elem()
-	return t
+func (o OneOfSchema[KeyType]) ReflectedType() reflect.Type {
+	if o.interfaceType == nil {
+		var defaultValue any
+		return reflect.TypeOf(defaultValue)
+	}
+	return o.interfaceType
 }
 
 //nolint:funlen
-func (o OneOfSchema[KeyType, ItemsInterface]) UnserializeType(data any) (result ItemsInterface, err error) {
+func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) {
 	reflectedValue := reflect.ValueOf(data)
 	if reflectedValue.Kind() != reflect.Map {
 		return result, &ConstraintError{
@@ -114,19 +117,13 @@ func (o OneOfSchema[KeyType, ItemsInterface]) UnserializeType(data any) (result 
 	if err != nil {
 		return result, err
 	}
-	if typedData, ok := unserializedData.(ItemsInterface); ok {
-		return typedData, nil
+	if o.interfaceType == nil {
+		return unserializedData, nil
 	}
-	return result, &ConstraintError{
-		Message: fmt.Sprintf(
-			"%T cannot be converted to %s",
-			unserializedData,
-			o.ReflectedType().Name(),
-		),
-	}
+	return saveConvertTo(unserializedData, o.interfaceType)
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) ValidateType(data ItemsInterface) error {
+func (o OneOfSchema[KeyType]) ValidateType(data any) error {
 	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return err
@@ -137,7 +134,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) ValidateType(data ItemsInterface) 
 	return nil
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) SerializeType(data ItemsInterface) (any, error) {
+func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return nil, err
@@ -153,31 +150,33 @@ func (o OneOfSchema[KeyType, ItemsInterface]) SerializeType(data ItemsInterface)
 	return mapData, nil
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) Unserialize(data any) (any, error) {
+func (o OneOfSchema[KeyType]) Unserialize(data any) (any, error) {
 	return o.UnserializeType(data)
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) Validate(data any) error {
-	d, ok := data.(ItemsInterface)
-	if !ok {
-		return &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type, expected %s.", d, o.ReflectedType().Name()),
-		}
+func (o OneOfSchema[KeyType]) Validate(data any) error {
+	if o.interfaceType == nil {
+		return o.ValidateType(data)
+	}
+	d, err := saveConvertTo(data, o.interfaceType)
+	if err != nil {
+		return err
 	}
 	return o.ValidateType(d)
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) Serialize(data any) (result any, err error) {
-	d, ok := data.(ItemsInterface)
-	if !ok {
-		return result, &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type, expected %s.", d, o.ReflectedType().Name()),
-		}
+func (o OneOfSchema[KeyType]) Serialize(data any) (result any, err error) {
+	if o.interfaceType == nil {
+		return nil, o.ValidateType(data)
+	}
+	d, err := saveConvertTo(data, o.interfaceType)
+	if err != nil {
+		return nil, err
 	}
 	return o.SerializeType(d)
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) getTypedDiscriminator(discriminator any) (KeyType, error) {
+func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType, error) {
 	var typedDiscriminator KeyType
 	switch any(typedDiscriminator).(type) {
 	case int64:
@@ -212,7 +211,7 @@ func (o OneOfSchema[KeyType, ItemsInterface]) getTypedDiscriminator(discriminato
 	return typedDiscriminator, nil
 }
 
-func (o OneOfSchema[KeyType, ItemsInterface]) findUnderlyingType(data ItemsInterface) (KeyType, Object, error) {
+func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&

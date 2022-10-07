@@ -1,6 +1,9 @@
 package schema
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // TypeID is the identifier for types supported in the type system.
 type TypeID string
@@ -86,4 +89,33 @@ type MapKeyType interface {
 // NumberType is a type collection of number types.
 type NumberType interface {
 	int64 | float64
+}
+
+func saveConvertTo(value any, to reflect.Type) (any, error) {
+	var recoveredError error
+	var result any
+	func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				var ok bool
+				recoveredError, ok = e.(error)
+				if !ok {
+					recoveredError = fmt.Errorf("%v", e)
+				}
+			}
+		}()
+		result = reflect.ValueOf(value).Convert(to).Interface()
+	}()
+	if recoveredError != nil {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"%T cannot be converted to %s",
+				value,
+				to.String(),
+			),
+			Cause: recoveredError,
+		}
+	}
+	return result, nil
 }

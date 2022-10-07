@@ -25,7 +25,7 @@ func TestSchemaUnserializationHelloWorld(t *testing.T) {
 	_, err = unserializedData.SelfSerialize()
 	assertNoError(t, err)
 
-	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
 	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDRef)
 }
 
@@ -46,7 +46,7 @@ func TestSchemaUnserializationEmbeddedObjects(t *testing.T) {
 	_, err = unserializedData.SelfSerialize()
 	assertNoError(t, err)
 
-	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
 	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDObject)
 }
 
@@ -67,6 +67,6 @@ func TestSchemaUnserializationSuperScoped(t *testing.T) {
 	_, err = unserializedData.SelfSerialize()
 	assertNoError(t, err)
 
-	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string, schema.Object])
+	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
 	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
 }
