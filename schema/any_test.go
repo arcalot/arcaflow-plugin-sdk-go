@@ -139,3 +139,8 @@ func TestAny(t *testing.T) {
 		})
 	}
 }
+
+func TestAnyTypeReflectedType(t *testing.T) {
+	a := schema.NewAnySchema()
+	assertNotNil(t, a.ReflectedType())
+}

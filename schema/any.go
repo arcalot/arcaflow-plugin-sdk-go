@@ -16,7 +16,7 @@ type AnySchema struct {
 
 func (a *AnySchema) ReflectedType() reflect.Type {
 	var defaultValue any
-	return reflect.TypeOf(defaultValue)
+	return reflect.TypeOf(&defaultValue).Elem()
 }
 
 func (a *AnySchema) Unserialize(data any) (any, error) {
