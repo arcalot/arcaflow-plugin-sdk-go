@@ -528,7 +528,7 @@ var basicObjects = []*ObjectSchema{
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*OneOfSchema[int64, Object]](
+	NewStructMappedObjectSchema[*OneOfSchema[int64]](
 		"OneOfIntSchema",
 		map[string]*PropertySchema{
 			"discriminator_field_name": NewPropertySchema(
@@ -574,7 +574,7 @@ var basicObjects = []*ObjectSchema{
 			),
 		},
 	),
-	NewStructMappedObjectSchema[*OneOfSchema[string, Object]](
+	NewStructMappedObjectSchema[*OneOfSchema[string]](
 		"OneOfStringSchema",
 		map[string]*PropertySchema{
 			"discriminator_field_name": NewPropertySchema(
