@@ -18,12 +18,14 @@ type Object interface {
 
 // NewObjectSchema creates a new object definition.
 func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
+	var anyValue any
 	return &ObjectSchema{
 		id,
 		properties,
 
 		extractObjectDefaultValues(properties),
 		nil,
+		reflect.TypeOf(anyValue),
 		nil,
 	}
 }
@@ -35,13 +37,14 @@ type ObjectSchema struct {
 
 	defaultValues map[string]any
 
-	defaultValue any
-	fieldCache   map[string]reflect.StructField
+	defaultValue     any
+	defaultValueType reflect.Type
+	fieldCache       map[string]reflect.StructField
 }
 
 func (o *ObjectSchema) ReflectedType() reflect.Type {
 	if o.fieldCache != nil {
-		return reflect.TypeOf(o.defaultValue)
+		return o.defaultValueType
 	}
 	return reflect.TypeOf(map[string]any{})
 }
@@ -497,8 +500,9 @@ func NewStructMappedObjectSchema[T any](id string, properties map[string]*Proper
 
 		defaultValues: extractObjectDefaultValues(properties),
 
-		defaultValue: defaultValue,
-		fieldCache:   buildObjectFieldCache[T](properties),
+		defaultValue:     defaultValue,
+		defaultValueType: reflect.TypeOf(&defaultValue).Elem(),
+		fieldCache:       buildObjectFieldCache[T](properties),
 	}
 }
 

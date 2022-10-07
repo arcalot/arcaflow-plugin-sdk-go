@@ -236,10 +236,21 @@ func (o OneOfSchema[KeyType, ItemsInterface]) findUnderlyingType(data ItemsInter
 	}
 	if foundKey == nil {
 		var defaultValue KeyType
+		dataType := reflect.TypeOf(data)
+		values := make([]string, len(o.TypesValue))
+		i := 0
+		for _, ref := range o.TypesValue {
+			values[i] = ref.ReflectedType().String()
+			if values[i] == "" {
+				panic(fmt.Errorf("bug: reflected type name is empty"))
+			}
+			i++
+		}
 		return defaultValue, nil, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid type: '%s'",
-				reflect.TypeOf(data).Name(),
+				"Invalid type for one-of schema: '%s' (valid types are: %s)",
+				dataType.String(),
+				strings.Join(values, ", "),
 			),
 		}
 	}

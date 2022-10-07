@@ -94,12 +94,14 @@ func (s *ScopeSchema) Root() string {
 // NewTypedScopeSchema returns a new scope that is typed.
 func NewTypedScopeSchema[T any](rootObject *ObjectSchema, objects ...*ObjectSchema) *TypedScopeSchema[T] {
 	var defaultValue T
-	if reflect.TypeOf(defaultValue) != rootObject.ReflectedType() {
+	defaultValueType := reflect.TypeOf(defaultValue)
+	rootObjectType := rootObject.ReflectedType()
+	if defaultValueType != rootObjectType {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"Incorrect type definition: type %T does not match the root object type of %s",
 				defaultValue,
-				rootObject.ReflectedType().Name(),
+				rootObject.ReflectedType().String(),
 			),
 		})
 	}
