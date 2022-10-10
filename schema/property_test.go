@@ -88,3 +88,38 @@ func TestPropertyTypeInvalidTypes(t *testing.T) {
 	assertError(t, propertyType.Validate(struct{}{}))
 	assertError2(t)(propertyType.Serialize(struct{}{}))
 }
+
+func TestPropertyEmptyAsDefault(t *testing.T) {
+	type TestData struct {
+		Foo string `json:"foo"`
+	}
+
+	s := schema.NewStructMappedObjectSchema[TestData](
+		"TestData",
+		map[string]*schema.PropertySchema{
+			"foo": schema.NewPropertySchema(
+				// We force validation on string length.
+				schema.NewStringSchema(schema.IntPointer(1), nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			).TreatEmptyAsDefaultValue(),
+		},
+	)
+
+	// Here we pass an empty struct, setting the string to the default value.
+	data, err := s.Serialize(TestData{})
+	assertNoError(t, err)
+	assertEqual(t, len(data.(map[string]any)), 0)
+
+	assertNoError(t, s.Validate(TestData{}))
+
+	_, err = s.Unserialize(map[string]any{
+		"foo": "",
+	})
+	assertError(t, err)
+}
