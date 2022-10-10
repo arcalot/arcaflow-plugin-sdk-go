@@ -210,7 +210,7 @@ func (o *ObjectSchema) extractPropertyValue(propertyID string, v reflect.Value, 
 
 	if property.emptyIsDefault {
 		// Handle the case where the empty value corresponds to the default value.
-		defaultValue := reflect.New(property.ReflectedType()).Elem().Interface()
+		defaultValue := reflect.New(property.ReflectedType()).Elem().Convert(valPtr.Type()).Interface()
 		if defaultValue == value {
 			return nil, nil
 		}
@@ -300,7 +300,7 @@ func (o *ObjectSchema) validateStruct(data any) error {
 		value := valPtr.Interface()
 		if property.emptyIsDefault {
 			// Handle the case where the empty value corresponds to the default value.
-			defaultValue := reflect.New(property.ReflectedType()).Elem().Interface()
+			defaultValue := reflect.New(property.ReflectedType()).Elem().Convert(valPtr.Type()).Interface()
 			if defaultValue == value {
 				continue
 			}
