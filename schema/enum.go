@@ -34,16 +34,23 @@ func (e EnumSchema[T]) ReflectedType() reflect.Type {
 	return reflect.TypeOf(defaultValue)
 }
 
-func (e EnumSchema[T]) Validate(data any) error {
-	if _, ok := data.(T); !ok {
-		return &ConstraintError{
-			Message: fmt.Sprintf(
-				"%T is not a valid for an enum of %s",
-				data,
-				e.ReflectedType().Name(),
-			),
-		}
+func (e EnumSchema[T]) Validate(d any) error {
+	data, err := e.asType(d)
+	if err != nil {
+		return err
 	}
+	return e.ValidateType(data)
+}
+
+func (e EnumSchema[T]) Serialize(d any) (any, error) {
+	data, err := e.asType(d)
+	if err != nil {
+		return data, err
+	}
+	return data, e.Validate(data)
+}
+
+func (e EnumSchema[T]) ValidateType(data T) error {
 	for validValue := range e.ValidValuesMap {
 		if validValue == data {
 			return nil
@@ -67,14 +74,22 @@ func (e EnumSchema[T]) Validate(data any) error {
 	}
 }
 
-func (e EnumSchema[T]) Serialize(data any) (any, error) {
+func (e EnumSchema[T]) SerializeType(data T) (any, error) {
 	return data, e.Validate(data)
 }
 
-func (e EnumSchema[T]) ValidateType(data T) error {
-	return e.Validate(data)
-}
-
-func (e EnumSchema[T]) SerializeType(data T) (any, error) {
-	return e.Serialize(data)
+func (e EnumSchema[T]) asType(d any) (T, error) {
+	data, ok := d.(T)
+	if !ok {
+		var defaultValue T
+		tType := reflect.TypeOf(defaultValue)
+		dValue := reflect.ValueOf(d)
+		if !dValue.CanConvert(tType) {
+			return defaultValue, &ConstraintError{
+				Message: fmt.Sprintf("%T is not a valid data type for an int schema.", d),
+			}
+		}
+		data = dValue.Convert(tType).Interface().(T)
+	}
+	return data, nil
 }

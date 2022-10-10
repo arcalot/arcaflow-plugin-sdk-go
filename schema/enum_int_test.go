@@ -213,6 +213,18 @@ func TestIntEnumSerialization(t *testing.T) {
 	)
 }
 
+func TestIntEnumTypedSerialization(t *testing.T) {
+	type Bytes int64
+	s := schema.NewIntEnumSchema(map[int64]string{
+		64:      "XS",
+		1024:    "Small",
+		1048576: "Large",
+	}, schema.UnitBytes)
+	serializedData, err := s.Serialize(Bytes(64))
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(int64), 64)
+}
+
 func TestIntEnumSchema(t *testing.T) {
 	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
 	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
