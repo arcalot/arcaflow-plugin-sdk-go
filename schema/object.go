@@ -220,7 +220,7 @@ func (o *ObjectSchema) extractPropertyValue(propertyID string, v reflect.Value, 
 	if err != nil {
 		return nil, ConstraintErrorAddPathSegment(err, propertyID)
 	}
-	if defaultValue, ok := o.defaultValues[propertyID]; !ok || defaultValue == serializedData {
+	if defaultValue, ok := o.defaultValues[propertyID]; !ok || defaultValue != serializedData {
 		return &serializedData, nil
 	}
 	return nil, nil
