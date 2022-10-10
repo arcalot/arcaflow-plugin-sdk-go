@@ -208,6 +208,14 @@ func (o *ObjectSchema) extractPropertyValue(propertyID string, v reflect.Value, 
 	}
 	value := valPtr.Interface()
 
+	if property.emptyIsDefault {
+		// Handle the case where the empty value corresponds to the default value.
+		defaultValue := reflect.New(property.ReflectedType()).Elem().Interface()
+		if defaultValue == value {
+			return nil, nil
+		}
+	}
+
 	serializedData, err := property.Serialize(value)
 	if err != nil {
 		return nil, ConstraintErrorAddPathSegment(err, propertyID)
@@ -290,6 +298,13 @@ func (o *ObjectSchema) validateStruct(data any) error {
 			continue
 		}
 		value := valPtr.Interface()
+		if property.emptyIsDefault {
+			// Handle the case where the empty value corresponds to the default value.
+			defaultValue := reflect.New(property.ReflectedType()).Elem().Interface()
+			if defaultValue == value {
+				continue
+			}
+		}
 		if err := property.Validate(value); err != nil {
 			return ConstraintErrorAddPathSegment(err, propertyID)
 		}
