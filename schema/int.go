@@ -62,28 +62,43 @@ func (i IntSchema) Unserialize(data any) (any, error) {
 	return unserialized, i.Validate(unserialized)
 }
 
-func (i IntSchema) Validate(d any) error {
-	data, ok := d.(int64)
-	if !ok {
-		return &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type for an int schema.", d),
-		}
+func (i IntSchema) Serialize(d any) (any, error) {
+	data, err := asInt(d)
+	if err != nil {
+		return data, err
 	}
 	if i.MinValue != nil && data < *i.MinValue {
-		return &ConstraintError{
+		return data, &ConstraintError{
 			Message: fmt.Sprintf("Must be at least %d", *i.MinValue),
 		}
 	}
 	if i.MaxValue != nil && data > *i.MaxValue {
-		return &ConstraintError{
+		return data, &ConstraintError{
 			Message: fmt.Sprintf("Must be at most %d", *i.MaxValue),
 		}
 	}
-	return nil
+	return data, nil
 }
 
-func (i IntSchema) Serialize(data any) (any, error) {
-	return data, i.Validate(data)
+func asInt(d any) (int64, error) {
+	data, ok := d.(int64)
+	if !ok {
+		var i int64
+		intType := reflect.TypeOf(i)
+		dValue := reflect.ValueOf(d)
+		if !dValue.CanConvert(intType) {
+			return 0, &ConstraintError{
+				Message: fmt.Sprintf("%T is not a valid data type for an int schema.", d),
+			}
+		}
+		data = dValue.Convert(intType).Int()
+	}
+	return data, nil
+}
+
+func (i IntSchema) Validate(d any) error {
+	_, err := i.Serialize(d)
+	return err
 }
 
 func (i IntSchema) UnserializeType(data any) (int64, error) {

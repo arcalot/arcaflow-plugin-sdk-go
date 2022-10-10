@@ -99,6 +99,15 @@ func ExampleBoolSchema_unserialize() {
 	// true
 }
 
+func TestBoolAliasSerialization(t *testing.T) {
+	type T bool
+
+	s := schema.NewBoolSchema()
+	serializedData, err := s.Serialize(T(true))
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(bool), true)
+}
+
 var boolTestSerializationCases = map[string]struct {
 	input         interface{}
 	expectedError bool

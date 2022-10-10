@@ -3,6 +3,7 @@ package schema_test
 import (
 	"math"
 	"testing"
+	"time"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
@@ -178,6 +179,13 @@ func TestIntSerialization(t *testing.T) {
 			return a == b
 		},
 	)
+}
+
+func TestDurationSerialization(t *testing.T) {
+	s := schema.NewIntSchema(nil, nil, schema.UnitDurationNanoseconds)
+	serializedTime, err := s.Serialize(time.Second)
+	assertNoError(t, err)
+	assertEqual(t, serializedTime.(int64), int64(time.Second))
 }
 
 func TestIntSerializationNoValidation(t *testing.T) {

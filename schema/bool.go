@@ -72,20 +72,32 @@ func (b BoolSchema) UnserializeType(data any) (bool, error) {
 }
 
 func (b BoolSchema) Validate(data any) error {
-	if _, ok := data.(bool); ok {
-		return nil
-	}
-	return &ConstraintError{
-		Message: fmt.Sprintf("Invalid type for boolean: %T", data),
-	}
+	_, err := b.Serialize(data)
+	return err
 }
 
 func (b BoolSchema) ValidateType(data bool) error {
 	return b.Validate(data)
 }
 
-func (b BoolSchema) Serialize(data any) (any, error) {
-	return data, b.Validate(data)
+func (b BoolSchema) Serialize(d any) (any, error) {
+	return asBool(d)
+}
+
+func asBool(d any) (bool, error) {
+	data, ok := d.(bool)
+	if !ok {
+		var i bool
+		intType := reflect.TypeOf(i)
+		dValue := reflect.ValueOf(d)
+		if !dValue.CanConvert(intType) {
+			return false, &ConstraintError{
+				Message: fmt.Sprintf("%T is not a valid data type for a bool schema.", d),
+			}
+		}
+		data = dValue.Convert(intType).Bool()
+	}
+	return data, nil
 }
 
 func (b BoolSchema) SerializeType(data bool) (any, error) {

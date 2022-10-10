@@ -66,14 +66,9 @@ func (s StringSchema) UnserializeType(data any) (string, error) {
 	return unserialized, s.ValidateType(unserialized)
 }
 
-func (s StringSchema) Validate(data any) error {
-	d, ok := data.(string)
-	if !ok {
-		return &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type for a string schema.", data),
-		}
-	}
-	return s.ValidateType(d)
+func (s StringSchema) Validate(d any) error {
+	_, err := s.Serialize(d)
+	return err
 }
 
 func (s StringSchema) ValidateType(data string) error {
@@ -95,14 +90,43 @@ func (s StringSchema) ValidateType(data string) error {
 	return nil
 }
 
-func (s StringSchema) Serialize(data any) (any, error) {
-	d, ok := data.(string)
-	if !ok {
-		return "", &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type for a string schema.", d),
+func (s StringSchema) Serialize(d any) (any, error) {
+	data, err := asString(d)
+	if err != nil {
+		return data, err
+	}
+	if s.MinValue != nil && int64(len(data)) < *s.MinValue {
+		return data, &ConstraintError{
+			Message: fmt.Sprintf("String must be at least %d characters, %d given", *s.MinValue, int64(len(data))),
 		}
 	}
-	return s.SerializeType(d)
+	if s.MaxValue != nil && int64(len(data)) > *s.MaxValue {
+		return data, &ConstraintError{
+			Message: fmt.Sprintf("String must be at most %d characters, %d given", *s.MaxValue, int64(len(data))),
+		}
+	}
+	if s.PatternValue != nil && !(*s.PatternValue).MatchString(data) {
+		return data, &ConstraintError{
+			Message: fmt.Sprintf("String must match the pattern %s", (*s.PatternValue).String()),
+		}
+	}
+	return data, nil
+}
+
+func asString(d any) (string, error) {
+	data, ok := d.(string)
+	if !ok {
+		var i string
+		stringType := reflect.TypeOf(i)
+		dValue := reflect.ValueOf(d)
+		if !dValue.CanConvert(stringType) {
+			return "", &ConstraintError{
+				Message: fmt.Sprintf("%T is not a valid data type for a string schema.", d),
+			}
+		}
+		data = dValue.Convert(stringType).String()
+	}
+	return data, nil
 }
 
 func (s StringSchema) SerializeType(data string) (any, error) {
