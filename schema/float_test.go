@@ -252,6 +252,15 @@ func TestFloatSerializationNoValidation(t *testing.T) {
 	)
 }
 
+func TestFloatAliasSerialization(t *testing.T) {
+	type T float64
+
+	s := schema.NewFloatSchema(nil, nil, nil)
+	serializedData, err := s.Serialize(T(1))
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(float64), float64(1))
+}
+
 func TestFloatParameters(t *testing.T) {
 	floatType := schema.NewFloatSchema(
 		schema.PointerTo(float64(1)),

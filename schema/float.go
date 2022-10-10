@@ -71,31 +71,46 @@ func (f FloatSchema) UnserializeType(data any) (float64, error) {
 }
 
 func (f FloatSchema) Validate(d any) error {
-	data, ok := d.(float64)
-	if !ok {
-		return &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type for a float schema.", d),
-		}
-	}
-	if f.MinValue != nil && data < *f.MinValue {
-		return &ConstraintError{
-			Message: fmt.Sprintf("Must be at least %f", *f.MinValue),
-		}
-	}
-	if f.MaxValue != nil && data > *f.MaxValue {
-		return &ConstraintError{
-			Message: fmt.Sprintf("Must be at most %f", *f.MaxValue),
-		}
-	}
-	return nil
+	_, err := f.Serialize(d)
+	return err
 }
 
 func (f FloatSchema) ValidateType(data float64) error {
 	return f.Validate(data)
 }
 
-func (f FloatSchema) Serialize(data any) (any, error) {
-	return data, f.Validate(data)
+func (f FloatSchema) Serialize(d any) (any, error) {
+	data, err := asFloat(d)
+	if err != nil {
+		return data, err
+	}
+	if f.MinValue != nil && data < *f.MinValue {
+		return data, &ConstraintError{
+			Message: fmt.Sprintf("Must be at least %f", *f.MinValue),
+		}
+	}
+	if f.MaxValue != nil && data > *f.MaxValue {
+		return data, &ConstraintError{
+			Message: fmt.Sprintf("Must be at most %f", *f.MaxValue),
+		}
+	}
+	return data, nil
+}
+
+func asFloat(d any) (float64, error) {
+	data, ok := d.(float64)
+	if !ok {
+		var i float64
+		intType := reflect.TypeOf(i)
+		dValue := reflect.ValueOf(d)
+		if !dValue.CanConvert(intType) {
+			return 0, &ConstraintError{
+				Message: fmt.Sprintf("%T is not a valid data type for a float schema.", d),
+			}
+		}
+		data = dValue.Convert(intType).Float()
+	}
+	return data, nil
 }
 
 func (f FloatSchema) SerializeType(data float64) (any, error) {

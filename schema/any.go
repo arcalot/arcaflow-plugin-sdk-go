@@ -67,11 +67,11 @@ func (a *AnySchema) checkAndConvert(data any) (any, error) {
 	case reflect.Float32:
 		return floatInputMapper(data, nil)
 	case reflect.Float64:
-		return data.(float64), nil
+		return asFloat(data)
 	case reflect.String:
 		return data.(string), nil
 	case reflect.Bool:
-		return data.(bool), nil
+		return asBool(data)
 	case reflect.Slice:
 		result := make([]any, t.Len())
 		for i := 0; i < t.Len(); i++ {

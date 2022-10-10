@@ -48,6 +48,15 @@ func ExampleStringSchema() {
 	// asdfg
 }
 
+func TestStringTypeAlias(t *testing.T) {
+	type T string
+
+	s := schema.NewStringSchema(nil, nil, nil)
+	serializedData, err := s.Serialize(T("Hello world!"))
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(string), "Hello world!")
+}
+
 func TestStringMinValidation(t *testing.T) {
 	stringType := schema.NewStringSchema(schema.IntPointer(5), nil, nil)
 
