@@ -79,6 +79,17 @@ func TestStringEnumSerialization(t *testing.T) {
 	)
 }
 
+func TestStringEnumTypedSerialization(t *testing.T) {
+	type Size string
+	s := schema.NewStringEnumSchema(map[string]string{
+		"small": "Small",
+		"large": "Large",
+	})
+	serializedData, err := s.Serialize(Size("small"))
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(string), "small")
+}
+
 func TestStringEnumJSONMarshal(t *testing.T) {
 	typeUnderTest := schema.NewStringEnumSchema(map[string]string{
 		"small": "Small",
