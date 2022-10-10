@@ -370,3 +370,28 @@ func TestTypedString(t *testing.T) {
 	assertNoError(t, err)
 	assertEqual(t, *result.(testStruct).T2, "Hello world!")
 }
+
+func TestNonDefaultSerialization(t *testing.T) {
+	type TestData struct {
+		Foo *string `json:"foo"`
+	}
+	s := schema.NewStructMappedObjectSchema[TestData](
+		"TestData",
+		map[string]*schema.PropertySchema{
+			"foo": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo(`"Hello world!"`),
+				nil,
+			),
+		},
+	)
+	text := "Hello Arca Lot!"
+	serializedData, err := s.Serialize(TestData{&text})
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(map[string]any)["foo"].(string), text)
+}
