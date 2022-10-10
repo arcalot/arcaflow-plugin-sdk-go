@@ -90,8 +90,9 @@ func TestPropertyTypeInvalidTypes(t *testing.T) {
 }
 
 func TestPropertyEmptyAsDefault(t *testing.T) {
+	type tString string
 	type TestData struct {
-		Foo string `json:"foo"`
+		Foo tString `json:"foo"`
 	}
 
 	s := schema.NewStructMappedObjectSchema[TestData](
