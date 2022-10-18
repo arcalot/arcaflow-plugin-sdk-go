@@ -11,7 +11,7 @@ import (
 )
 
 // RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
-func RunATPServer(
+func RunATPServer( //nolint:funlen
 	ctx context.Context,
 	stdin io.ReadCloser,
 	stdout io.WriteCloser,
@@ -41,6 +41,13 @@ func RunATPServer(
 
 		cborStdin := cbor.NewDecoder(stdin)
 		cborStdout := cbor.NewEncoder(stdout)
+
+		var empty any
+		if err := cborStdin.Decode(&empty); err != nil {
+			goroutineError = fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
+			panic(goroutineError)
+		}
+
 		if err := cborStdout.Encode(helloMessage{1, serializedSchema}); err != nil {
 			goroutineError = fmt.Errorf("failed to CBOR-encode schema (%w)", err)
 			panic(goroutineError)

@@ -52,6 +52,8 @@ func NewClientWithLogger(
 		channel,
 		decMode,
 		logger,
+		decMode.NewDecoder(channel),
+		cbor.NewEncoder(channel),
 	}
 }
 
@@ -59,14 +61,20 @@ type client struct {
 	channel ClientChannel
 	decMode cbor.DecMode
 	logger  log.Logger
+	decoder *cbor.Decoder
+	encoder *cbor.Encoder
 }
 
 func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 	c.logger.Debugf("Reading plugin schema...")
-	cborReader := c.decMode.NewDecoder(c.channel)
+
+	if err := c.encoder.Encode(nil); err != nil {
+		c.logger.Errorf("Failed to encode ATP start output message: %v", err)
+		return nil, fmt.Errorf("failed to encode start output message (%w)", err)
+	}
 
 	var hello helloMessage
-	if err := cborReader.Decode(&hello); err != nil {
+	if err := c.decoder.Decode(&hello); err != nil {
 		c.logger.Errorf("Failed to decode ATP hello message: %v", err)
 		return nil, fmt.Errorf("failed to decode hello message (%w)", err)
 	}
@@ -88,8 +96,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 
 func (c client) Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, err error) {
 	c.logger.Debugf("Executing step %s...", stepID)
-	cborWriter := cbor.NewEncoder(c.channel)
-	if err := cborWriter.Encode(startWorkMessage{
+	if err := c.encoder.Encode(startWorkMessage{
 		StepID: stepID,
 		Config: input,
 	}); err != nil {
