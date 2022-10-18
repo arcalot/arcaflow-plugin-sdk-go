@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"go.arcalot.io/log"
 	"go.flow.arcalot.io/pluginsdk/atp"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
@@ -112,12 +113,12 @@ func TestProtocol(t *testing.T) {
 		defer wg.Done()
 		defer cancel()
 
-		cli := atp.NewClient(channel{
+		cli := atp.NewClientWithLogger(channel{
 			Reader:  stdoutReader,
 			Writer:  stdinWriter,
 			Context: ctx,
 			cancel:  cancel,
-		})
+		}, log.NewTestLogger(t))
 
 		_, err := cli.ReadSchema()
 		if err != nil {
