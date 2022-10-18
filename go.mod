@@ -7,4 +7,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/x448/float16 v0.8.4 // indirect
+require (
+	github.com/x448/float16 v0.8.4 // indirect
+	go.arcalot.io/log v1.2.0 // indirect
+)
