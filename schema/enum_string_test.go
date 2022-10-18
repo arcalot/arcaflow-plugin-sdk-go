@@ -10,20 +10,20 @@ import (
 
 func ExampleNewStringEnumSchema() {
 	// Create a new enum type by defining its valid values:
-	portionSize := schema.NewStringEnumSchema(map[string]string{
-		"small": "Small",
-		"large": "Large",
+	portionSize := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"small": {NameValue: schema.PointerTo("Small")},
+		"large": {NameValue: schema.PointerTo("Large")},
 	})
 
 	// You can now print the valid values:
-	fmt.Println(portionSize.ValidValues())
-	// Output: map[large:Large small:Small]
+	fmt.Println(*portionSize.ValidValues()["large"].NameValue)
+	// Output: Large
 }
 
 func ExampleStringEnumSchema_Unserialize() {
-	portionSize := schema.NewStringEnumSchema(map[string]string{
-		"small": "Small",
-		"large": "Large",
+	portionSize := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"small": {NameValue: schema.PointerTo("Small")},
+		"large": {NameValue: schema.PointerTo("Large")},
 	})
 
 	// Try to unserialize an invalid value:
@@ -65,9 +65,9 @@ var testStringEnumSerializationDataSet = map[string]serializationTestCase[string
 func TestStringEnumSerialization(t *testing.T) {
 	performSerializationTest[string](
 		t,
-		schema.NewStringEnumSchema(map[string]string{
-			"small": "Small",
-			"large": "Large",
+		schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+			"small": {NameValue: schema.PointerTo("Small")},
+			"large": {NameValue: schema.PointerTo("Large")},
 		}),
 		testStringEnumSerializationDataSet,
 		func(a string, b string) bool {
@@ -81,9 +81,9 @@ func TestStringEnumSerialization(t *testing.T) {
 
 func TestStringEnumTypedSerialization(t *testing.T) {
 	type Size string
-	s := schema.NewStringEnumSchema(map[string]string{
-		"small": "Small",
-		"large": "Large",
+	s := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"small": {NameValue: schema.PointerTo("Small")},
+		"large": {NameValue: schema.PointerTo("Large")},
 	})
 	serializedData, err := s.Serialize(Size("small"))
 	assertNoError(t, err)
@@ -91,27 +91,27 @@ func TestStringEnumTypedSerialization(t *testing.T) {
 }
 
 func TestStringEnumJSONMarshal(t *testing.T) {
-	typeUnderTest := schema.NewStringEnumSchema(map[string]string{
-		"small": "Small",
-		"large": "Large",
+	typeUnderTest := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"small": {NameValue: schema.PointerTo("Small")},
+		"large": {NameValue: schema.PointerTo("Large")},
 	})
 
 	marshalled, err := json.Marshal(typeUnderTest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(marshalled) != `{"values":{"large":"Large","small":"Small"}}` {
+	if string(marshalled) != `{"values":{"large":{"name":"Large","description":null,"icon":null},"small":{"name":"Small","description":null,"icon":null}}}` {
 		t.Fatalf("Invalid marshalled JSON output: %s", marshalled)
 	}
-	typeUnderTest = schema.NewStringEnumSchema(map[string]string{})
+	typeUnderTest = schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})
 	if err := json.Unmarshal(marshalled, &typeUnderTest); err != nil {
 		t.Fatal(err)
 	}
-	if typeUnderTest.ValidValues()["small"] != "Small" {
+	if *typeUnderTest.ValidValues()["small"].NameValue != "Small" {
 		t.Fatalf("Unmarshalling failed.")
 	}
 }
 
 func TestStringEnumType(t *testing.T) {
-	assertEqual(t, schema.NewStringEnumSchema(map[string]string{}).TypeID(), schema.TypeIDStringEnum)
+	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
 }

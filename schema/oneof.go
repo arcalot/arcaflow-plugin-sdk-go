@@ -49,7 +49,7 @@ func (o OneOfSchema[KeyType]) ApplyScope(scope Scope) {
 func (o OneOfSchema[KeyType]) ReflectedType() reflect.Type {
 	if o.interfaceType == nil {
 		var defaultValue any
-		return reflect.TypeOf(defaultValue)
+		return reflect.TypeOf(&defaultValue).Elem()
 	}
 	return o.interfaceType
 }

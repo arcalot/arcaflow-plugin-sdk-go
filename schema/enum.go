@@ -15,14 +15,14 @@ type enumValue interface {
 type Enum[T enumValue] interface {
 	TypedType[T]
 
-	ValidValues() map[T]string
+	ValidValues() map[T]*DisplayValue
 }
 
 type EnumSchema[T enumValue] struct {
-	ValidValuesMap map[T]string `json:"values"`
+	ValidValuesMap map[T]*DisplayValue `json:"values"`
 }
 
-func (e EnumSchema[T]) ValidValues() map[T]string {
+func (e EnumSchema[T]) ValidValues() map[T]*DisplayValue {
 	return e.ValidValuesMap
 }
 

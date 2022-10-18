@@ -167,7 +167,7 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 	assertEqual(t, s2.Values().TypeID(), schema.TypeIDString)
 
 	s3 := schema.NewMapSchema(
-		schema.NewIntEnumSchema(map[int64]string{1024: "Small"}, nil),
+		schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{1024: {NameValue: schema.PointerTo("Small")}}, nil),
 		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		nil,
@@ -177,7 +177,7 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 	assertEqual(t, s3.Values().TypeID(), schema.TypeIDString)
 
 	s4 := schema.NewMapSchema(
-		schema.NewStringEnumSchema(map[string]string{"s": "Small"}),
+		schema.NewStringEnumSchema(map[string]*schema.DisplayValue{"s": {NameValue: schema.PointerTo("Small")}}),
 		schema.NewIntSchema(nil, nil, nil),
 		nil,
 		nil,

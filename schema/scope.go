@@ -76,7 +76,9 @@ func (s *ScopeSchema) Serialize(data any) (any, error) {
 }
 
 func (s *ScopeSchema) ApplyScope(_ Scope) {
-
+	for _, v := range s.ObjectsValue {
+		v.ApplyScope(s)
+	}
 }
 
 func (s *ScopeSchema) TypeID() TypeID {

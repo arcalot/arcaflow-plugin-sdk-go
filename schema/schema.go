@@ -42,6 +42,16 @@ func (s SchemaSchema) Steps() map[string]Step {
 	return result
 }
 
+func (s SchemaSchema) applyScope() {
+	for _, step := range s.StepsValue {
+		// We can apply an empty scope because the scope does not need another scope.
+		step.InputValue.ApplyScope(nil)
+		for _, output := range step.OutputsValue {
+			output.ApplyScope(nil)
+		}
+	}
+}
+
 func NewCallableSchema(
 	steps ...CallableStep,
 ) *CallableSchema {

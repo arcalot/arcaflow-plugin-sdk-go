@@ -3,7 +3,7 @@ package schema
 import "fmt"
 
 // NewStringEnumSchema creates a new enum of string values.
-func NewStringEnumSchema(validValues map[string]string) *StringEnumSchema {
+func NewStringEnumSchema(validValues map[string]*DisplayValue) *StringEnumSchema {
 	return &StringEnumSchema{
 		EnumSchema[string]{
 			validValues,
