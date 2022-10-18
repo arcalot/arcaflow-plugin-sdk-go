@@ -781,7 +781,7 @@ var basicObjects = []*ObjectSchema{
 		map[string]*PropertySchema{
 			"values": NewPropertySchema(
 				NewMapSchema(
-					NewIntSchema(nil, nil, nil),
+					NewStringSchema(nil, nil, nil),
 					NewRefSchema(
 						"Display",
 						nil,
@@ -1143,5 +1143,7 @@ func UnserializeSchema(data any) (*SchemaSchema, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.(*SchemaSchema), nil
+	result := s.(*SchemaSchema)
+	result.applyScope()
+	return result, nil
 }

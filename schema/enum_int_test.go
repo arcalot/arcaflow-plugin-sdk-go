@@ -9,20 +9,20 @@ import (
 
 func ExampleNewIntEnumSchema() {
 	// Create a new enum type by defining its valid values:
-	var payloadSize schema.IntEnum = schema.NewIntEnumSchema(map[int64]string{
-		1024:    "Small",
-		1048576: "Large",
+	var payloadSize schema.IntEnum = schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		1024:    {NameValue: schema.PointerTo("Small")},
+		1048576: {NameValue: schema.PointerTo("Large")},
 	}, schema.UnitBytes)
 
 	// You can now print the valid values:
-	fmt.Println(payloadSize.ValidValues())
-	// Output: map[1024:Small 1048576:Large]
+	fmt.Println(*payloadSize.ValidValues()[1024].NameValue)
+	// Output: Small
 }
 
 func ExampleIntEnumSchema_unserialize() {
-	payloadSize := schema.NewIntEnumSchema(map[int64]string{
-		1024:    "Small",
-		1048576: "Large",
+	payloadSize := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		1024:    {NameValue: schema.PointerTo("Small")},
+		1048576: {NameValue: schema.PointerTo("Large")},
 	}, schema.UnitBytes)
 
 	// Try to unserialize an invalid value:
@@ -198,10 +198,10 @@ var testIntEnumSerializationDataSet = map[string]serializationTestCase[int64]{
 func TestIntEnumSerialization(t *testing.T) {
 	performSerializationTest[int64](
 		t,
-		schema.NewIntEnumSchema(map[int64]string{
-			64:      "XS",
-			1024:    "Small",
-			1048576: "Large",
+		schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+			64:      {NameValue: schema.PointerTo("XS")},
+			1024:    {NameValue: schema.PointerTo("Small")},
+			1048576: {NameValue: schema.PointerTo("Large")},
 		}, schema.UnitBytes),
 		testIntEnumSerializationDataSet,
 		func(a int64, b int64) bool {
@@ -215,10 +215,10 @@ func TestIntEnumSerialization(t *testing.T) {
 
 func TestIntEnumTypedSerialization(t *testing.T) {
 	type Bytes int64
-	s := schema.NewIntEnumSchema(map[int64]string{
-		64:      "XS",
-		1024:    "Small",
-		1048576: "Large",
+	s := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		64:      {NameValue: schema.PointerTo("XS")},
+		1024:    {NameValue: schema.PointerTo("Small")},
+		1048576: {NameValue: schema.PointerTo("Large")},
 	}, schema.UnitBytes)
 	serializedData, err := s.Serialize(Bytes(64))
 	assertNoError(t, err)
@@ -226,6 +226,6 @@ func TestIntEnumTypedSerialization(t *testing.T) {
 }
 
 func TestIntEnumSchema(t *testing.T) {
-	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
-	assertEqual(t, schema.NewIntEnumSchema(map[int64]string{}, nil).TypeID(), schema.TypeIDIntEnum)
+	assertEqual(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
+	assertEqual(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
 }

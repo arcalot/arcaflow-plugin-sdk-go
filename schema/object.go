@@ -301,7 +301,7 @@ func (o *ObjectSchema) validateStruct(data any) error {
 		if property.emptyIsDefault {
 			// Handle the case where the empty value corresponds to the default value.
 			defaultValue := reflect.New(property.ReflectedType()).Elem().Convert(valPtr.Type()).Interface()
-			if defaultValue == value {
+			if reflect.DeepEqual(defaultValue, value) {
 				continue
 			}
 		}

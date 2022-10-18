@@ -3,7 +3,7 @@ package schema
 import "fmt"
 
 // NewIntEnumSchema creates a new enum of integer values.
-func NewIntEnumSchema(validValues map[int64]string, units *UnitsDefinition) *IntEnumSchema {
+func NewIntEnumSchema(validValues map[int64]*DisplayValue, units *UnitsDefinition) *IntEnumSchema {
 	return &IntEnumSchema{
 		EnumSchema[int64]{
 			validValues,

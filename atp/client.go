@@ -87,7 +87,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 
 	unserializedSchema, err := schema.UnserializeSchema(hello.Schema)
 	if err != nil {
-		c.logger.Errorf("Invalid schema received from plugion: %v", err)
+		c.logger.Errorf("Invalid schema received from plugin: %v", err)
 		return nil, fmt.Errorf("invalid schema (%w)", err)
 	}
 	c.logger.Debugf("Schema unserialization complete.")
