@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"gopkg.in/yaml.v3"
 )
@@ -13,20 +14,23 @@ var helloWorldPluginSchema []byte
 
 func TestSchemaUnserializationHelloWorld(t *testing.T) {
 	data := map[string]any{}
-	assertNoError(t, yaml.Unmarshal(helloWorldPluginSchema, &data))
+	assert.NoError(t, yaml.Unmarshal(helloWorldPluginSchema, &data))
 	unserializedData, err := schema.UnserializeSchema(data)
-	assertNoError(t, err)
-	steps := assertNotNil(t, unserializedData.Steps())
-	helloWorldStep := assertNotNil(t, steps["hello-world"])
-	display := assertNotNil(t, helloWorldStep.Display())
-	name := assertNotNil(t, display.Name())
-	assertEqual(t, *name, "Hello world!")
+	assert.NoError(t, err)
+	assert.NotNil(t, unserializedData.Steps())
+	steps := unserializedData.Steps()
+	assert.NotNil(t, steps["hello-world"])
+	helloWorldStep := steps["hello-world"]
+	assert.NotNil(t, helloWorldStep.Display())
+	display := helloWorldStep.Display()
+	assert.NotNil(t, display.Name())
+	assert.Equals(t, *display.Name(), "Hello world!")
 
 	_, err = unserializedData.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 
 	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDRef)
+	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDRef)
 }
 
 //go:embed testdata/embedded_objects.yaml
@@ -34,20 +38,23 @@ var embeddedSchema []byte
 
 func TestSchemaUnserializationEmbeddedObjects(t *testing.T) {
 	data := map[string]any{}
-	assertNoError(t, yaml.Unmarshal(embeddedSchema, &data))
+	assert.NoError(t, yaml.Unmarshal(embeddedSchema, &data))
 	unserializedData, err := schema.UnserializeSchema(data)
-	assertNoError(t, err)
-	steps := assertNotNil(t, unserializedData.Steps())
-	helloWorldStep := assertNotNil(t, steps["hello-world"])
-	display := assertNotNil(t, helloWorldStep.Display())
-	name := assertNotNil(t, display.Name())
-	assertEqual(t, *name, "Hello world!")
+	assert.NoError(t, err)
+	assert.NotNil(t, unserializedData.Steps())
+	steps := unserializedData.Steps()
+	assert.NotNil(t, steps["hello-world"])
+	helloWorldStep := steps["hello-world"]
+	assert.NotNil(t, helloWorldStep.Display())
+	display := helloWorldStep.Display()
+	assert.NotNil(t, display.Name())
+	assert.Equals(t, *display.Name(), "Hello world!")
 
 	_, err = unserializedData.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 
 	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDObject)
+	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDObject)
 }
 
 //go:embed testdata/super_scoped.yaml
@@ -55,18 +62,21 @@ var superScopedSchema []byte
 
 func TestSchemaUnserializationSuperScoped(t *testing.T) {
 	data := map[string]any{}
-	assertNoError(t, yaml.Unmarshal(superScopedSchema, &data))
+	assert.NoError(t, yaml.Unmarshal(superScopedSchema, &data))
 	unserializedData, err := schema.UnserializeSchema(data)
-	assertNoError(t, err)
-	steps := assertNotNil(t, unserializedData.Steps())
-	helloWorldStep := assertNotNil(t, steps["hello-world"])
-	display := assertNotNil(t, helloWorldStep.Display())
-	name := assertNotNil(t, display.Name())
-	assertEqual(t, *name, "Hello world!")
+	assert.NoError(t, err)
+	assert.NotNil(t, unserializedData.Steps())
+	steps := unserializedData.Steps()
+	assert.NotNil(t, steps["hello-world"])
+	helloWorldStep := steps["hello-world"]
+	assert.NotNil(t, helloWorldStep.Display())
+	display := helloWorldStep.Display()
+	assert.NotNil(t, display.Name())
+	assert.Equals(t, *display.Name(), "Hello world!")
 
 	_, err = unserializedData.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 
 	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assertEqual(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
+	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
 }

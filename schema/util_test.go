@@ -1,7 +1,6 @@
 package schema_test
 
 import (
-	"reflect"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -56,66 +55,5 @@ func performSerializationTest[T any](
 				)
 			}
 		})
-	}
-}
-
-func assertInstanceOf[T any](_ *testing.T, _ T) {
-
-}
-
-func assertNil[T any](t *testing.T, value T) T {
-	t.Helper()
-	if !reflect.ValueOf(value).IsNil() {
-		t.Fatalf("Unexpected non-nil value: %v", value)
-	}
-	return value
-}
-
-func assertNotNil[T any](t *testing.T, value T) T {
-	t.Helper()
-	if reflect.ValueOf(value).IsNil() {
-		t.Fatalf("Unexpected nil value")
-	}
-	return value
-}
-
-func assertEqual[T any](t *testing.T, got T, expected T) {
-	t.Helper()
-	if !reflect.DeepEqual(expected, got) {
-		t.Fatalf("Mismatch, expected: %v, got: %v", expected, got)
-	}
-}
-
-func assertError(t *testing.T, err error) {
-	t.Helper()
-	if err == nil {
-		t.Fatalf("Expected error, no error returned")
-	}
-}
-
-func assertNoError(t *testing.T, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatalf("Unexpected error returned: %v", err)
-	}
-}
-
-func assertError2(t *testing.T) func(_ any, err error) {
-	t.Helper()
-	return func(_ any, err error) {
-		t.Helper()
-		if err == nil {
-			t.Fatalf("Expected error, no error returned")
-		}
-	}
-}
-
-func assertNoError2(t *testing.T) func(_ any, err error) {
-	t.Helper()
-	return func(_ any, err error) {
-		t.Helper()
-		if err != nil {
-			t.Fatalf("Unexpected error returned: %v", err)
-		}
 	}
 }

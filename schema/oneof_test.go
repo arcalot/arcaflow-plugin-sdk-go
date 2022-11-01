@@ -3,6 +3,7 @@ package schema_test
 import (
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -15,6 +16,7 @@ func (o oneOfTestObjectB) String() string {
 }
 
 // golangci-lint does not detect types used in type parameters.
+//
 //nolint:unused
 type oneOfTestObjectC struct {
 	M string `json:"m"`
@@ -25,7 +27,7 @@ type oneOfTestObjectA struct {
 }
 
 func TestOneOfTypeID(t *testing.T) {
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfStringTestObjectASchema.
 			Objects()["A"].
@@ -34,7 +36,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfString,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfStringTestObjectAType.
 			Objects()["A"].
@@ -43,7 +45,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfString,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfIntTestObjectASchema.
 			Objects()["A"].
@@ -52,7 +54,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfInt,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfIntTestObjectAType.
 			Objects()["A"].

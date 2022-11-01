@@ -3,6 +3,7 @@ package schema_test
 import (
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -23,14 +24,14 @@ func TestPropertySchemaParameters(t *testing.T) {
 		[]string{`"Hello world!"`},
 	)
 
-	assertEqual(t, propertySchema.Type().TypeID(), schema.TypeIDString)
-	assertEqual(t, *(propertySchema.Display().Name()), "Greeting")
-	assertEqual(t, propertySchema.Required(), true)
-	assertEqual(t, propertySchema.RequiredIf()[0], "somefield1")
-	assertEqual(t, propertySchema.RequiredIfNot()[0], "somefield2")
-	assertEqual(t, propertySchema.Conflicts()[0], "somefield3")
-	assertEqual(t, propertySchema.Examples()[0], `"Hello world!"`)
-	assertEqual(t, *propertySchema.Default(), `"Hello world!"`)
+	assert.Equals(t, propertySchema.Type().TypeID(), schema.TypeIDString)
+	assert.Equals(t, *(propertySchema.Display().Name()), "Greeting")
+	assert.Equals(t, propertySchema.Required(), true)
+	assert.Equals(t, propertySchema.RequiredIf()[0], "somefield1")
+	assert.Equals(t, propertySchema.RequiredIfNot()[0], "somefield2")
+	assert.Equals(t, propertySchema.Conflicts()[0], "somefield3")
+	assert.Equals(t, propertySchema.Examples()[0], `"Hello world!"`)
+	assert.Equals(t, *propertySchema.Default(), `"Hello world!"`)
 }
 
 //nolint:dupl
@@ -50,14 +51,14 @@ func TestPropertyTypeParameters(t *testing.T) {
 		[]string{`"Hello world!"`},
 	)
 
-	assertEqual(t, propertySchema.Type().TypeID(), schema.TypeIDString)
-	assertEqual(t, *(propertySchema.Display().Name()), "Greeting")
-	assertEqual(t, propertySchema.Required(), true)
-	assertEqual(t, propertySchema.RequiredIf()[0], "somefield1")
-	assertEqual(t, propertySchema.RequiredIfNot()[0], "somefield2")
-	assertEqual(t, propertySchema.Conflicts()[0], "somefield3")
-	assertEqual(t, propertySchema.Examples()[0], `"Hello world!"`)
-	assertEqual(t, *propertySchema.Default(), `"Hello world!"`)
+	assert.Equals(t, propertySchema.Type().TypeID(), schema.TypeIDString)
+	assert.Equals(t, *(propertySchema.Display().Name()), "Greeting")
+	assert.Equals(t, propertySchema.Required(), true)
+	assert.Equals(t, propertySchema.RequiredIf()[0], "somefield1")
+	assert.Equals(t, propertySchema.RequiredIfNot()[0], "somefield2")
+	assert.Equals(t, propertySchema.Conflicts()[0], "somefield3")
+	assert.Equals(t, propertySchema.Examples()[0], `"Hello world!"`)
+	assert.Equals(t, *propertySchema.Default(), `"Hello world!"`)
 }
 
 func TestPropertyTypeTypeID(t *testing.T) {
@@ -71,7 +72,7 @@ func TestPropertyTypeTypeID(t *testing.T) {
 		nil,
 		nil,
 	)
-	assertEqual(t, propertyType.TypeID(), schema.TypeIDString)
+	assert.Equals(t, propertyType.TypeID(), schema.TypeIDString)
 }
 
 func TestPropertyTypeInvalidTypes(t *testing.T) {
@@ -85,8 +86,8 @@ func TestPropertyTypeInvalidTypes(t *testing.T) {
 		nil,
 		nil,
 	)
-	assertError(t, propertyType.Validate(struct{}{}))
-	assertError2(t)(propertyType.Serialize(struct{}{}))
+	assert.Error(t, propertyType.Validate(struct{}{}))
+	assert.ErrorR[any](t)(propertyType.Serialize(struct{}{}))
 }
 
 func TestPropertyEmptyAsDefault(t *testing.T) {
@@ -114,13 +115,13 @@ func TestPropertyEmptyAsDefault(t *testing.T) {
 
 	// Here we pass an empty struct, setting the string to the default value.
 	data, err := s.Serialize(TestData{})
-	assertNoError(t, err)
-	assertEqual(t, len(data.(map[string]any)), 0)
+	assert.NoError(t, err)
+	assert.Equals(t, len(data.(map[string]any)), 0)
 
-	assertNoError(t, s.Validate(TestData{}))
+	assert.NoError(t, s.Validate(TestData{}))
 
 	_, err = s.Unserialize(map[string]any{
 		"foo": "",
 	})
-	assertError(t, err)
+	assert.Error(t, err)
 }

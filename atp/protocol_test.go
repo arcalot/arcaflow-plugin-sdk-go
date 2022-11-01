@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.arcalot.io/log"
 	"go.flow.arcalot.io/pluginsdk/atp"
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -27,7 +28,7 @@ func helloWorldHandler(input helloWorldInput) (string, any) {
 }
 
 var helloWorldSchema = schema.NewCallableSchema(
-	schema.NewCallableStep[helloWorldInput](
+	schema.NewCallableStep(
 		"hello-world",
 		schema.NewScopeSchema(
 			schema.NewStructMappedObjectSchema[helloWorldInput](
@@ -136,7 +137,5 @@ func TestProtocol(t *testing.T) {
 		}
 	}()
 	wg.Wait()
-	if testError != nil {
-		t.Fatal(testError)
-	}
+	assert.NoError(t, testError)
 }

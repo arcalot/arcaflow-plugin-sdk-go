@@ -3,6 +3,7 @@ package schema_test
 import (
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -16,8 +17,8 @@ func TestSchemaCall(t *testing.T) {
 	}
 
 	outputID, outputData, err := schemaTestSchema.Call("hello", data)
-	assertNoError(t, err)
-	assertEqual(t, outputID, "success")
+	assert.NoError(t, err)
+	assert.Equals(t, outputID, "success")
 	typedData := outputData.(map[string]any)
-	assertEqual(t, typedData["message"].(string), "Hello, Arca Lot!")
+	assert.Equals(t, typedData["message"].(string), "Hello, Arca Lot!")
 }

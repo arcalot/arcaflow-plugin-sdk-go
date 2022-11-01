@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -53,8 +54,8 @@ func TestStringTypeAlias(t *testing.T) {
 
 	s := schema.NewStringSchema(nil, nil, nil)
 	serializedData, err := s.Serialize(T("Hello world!"))
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(string), "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(string), "Hello world!")
 }
 
 func TestStringMinValidation(t *testing.T) {
@@ -154,20 +155,20 @@ func testStringSerialization(
 
 func TestStringParameters(t *testing.T) {
 	stringType := schema.NewStringSchema(nil, nil, nil)
-	assertEqual(t, stringType.Min(), nil)
-	assertEqual(t, stringType.Max(), nil)
-	assertEqual(t, stringType.Pattern(), nil)
+	assert.Equals(t, stringType.Min(), nil)
+	assert.Equals(t, stringType.Max(), nil)
+	assert.Equals(t, stringType.Pattern(), nil)
 
 	stringType = schema.NewStringSchema(
 		schema.IntPointer(1),
 		schema.IntPointer(2),
 		regexp.MustCompile("^[a-z]+$"),
 	)
-	assertEqual(t, *stringType.Min(), int64(1))
-	assertEqual(t, *stringType.Max(), int64(2))
-	assertEqual(t, (*stringType.Pattern()).String(), "^[a-z]+$")
+	assert.Equals(t, *stringType.Min(), int64(1))
+	assert.Equals(t, *stringType.Max(), int64(2))
+	assert.Equals(t, (*stringType.Pattern()).String(), "^[a-z]+$")
 }
 
 func TestStringID(t *testing.T) {
-	assertEqual(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
+	assert.Equals(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
 }

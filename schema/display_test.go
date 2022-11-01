@@ -3,6 +3,7 @@ package schema_test
 import (
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -12,7 +13,7 @@ func TestDisplayValue(t *testing.T) {
 		schema.PointerTo("Hello world!"),
 		schema.PointerTo("<svg ...></svg>"),
 	)
-	assertEqual(t, *dv.Name(), "Greeting")
-	assertEqual(t, *dv.Description(), "Hello world!")
-	assertEqual(t, *dv.Icon(), "<svg ...></svg>")
+	assert.Equals(t, *dv.Name(), "Greeting")
+	assert.Equals(t, *dv.Description(), "Hello world!")
+	assert.Equals(t, *dv.Icon(), "<svg ...></svg>")
 }

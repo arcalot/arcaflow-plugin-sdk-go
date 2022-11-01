@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -16,6 +17,7 @@ type stepTestSuccessOutput struct {
 }
 
 // golangci-lint does not detect types used in type parameters.
+//
 //nolint:unused
 type stepTestErrorOutput struct {
 	Error string `json:"message"`
@@ -96,7 +98,7 @@ func stepTestHandler(input stepTestInputData) (string, any) {
 
 func TestStepExecution(t *testing.T) {
 	outputID, outputData, err := testStepSchema.Call(stepTestInputData{Name: "Arca Lot"})
-	assertNoError(t, err)
-	assertEqual(t, outputID, "success")
-	assertEqual(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
+	assert.NoError(t, err)
+	assert.Equals(t, outputID, "success")
+	assert.Equals(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
 }

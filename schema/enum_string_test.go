@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -86,8 +87,8 @@ func TestStringEnumTypedSerialization(t *testing.T) {
 		"large": {NameValue: schema.PointerTo("Large")},
 	})
 	serializedData, err := s.Serialize(Size("small"))
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(string), "small")
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(string), "small")
 }
 
 func TestStringEnumJSONMarshal(t *testing.T) {
@@ -113,5 +114,5 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 }
 
 func TestStringEnumType(t *testing.T) {
-	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
+	assert.Equals(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
 }

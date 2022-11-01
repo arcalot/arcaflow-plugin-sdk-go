@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -119,24 +120,24 @@ var scopeTestObjectATypePtr = schema.NewScopeSchema(
 )
 
 func TestScopeConstructor(t *testing.T) {
-	assertEqual(t, scopeTestObjectASchema.TypeID(), schema.TypeIDScope)
-	assertEqual(t, scopeTestObjectAType.TypeID(), schema.TypeIDScope)
+	assert.Equals(t, scopeTestObjectASchema.TypeID(), schema.TypeIDScope)
+	assert.Equals(t, scopeTestObjectAType.TypeID(), schema.TypeIDScope)
 }
 
 func TestUnserialization(t *testing.T) {
 	data := `{"b":{"c": "Hello world!"}}`
 	var input any
-	assertNoError(t, json.Unmarshal([]byte(data), &input))
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 
 	result, err := scopeTestObjectAType.Unserialize(input)
-	assertNoError(t, err)
-	assertInstanceOf[scopeTestObjectA](t, result.(scopeTestObjectA))
-	assertEqual(t, result.(scopeTestObjectA).B.C, "Hello world!")
+	assert.NoError(t, err)
+	assert.InstanceOf[scopeTestObjectA](t, result)
+	assert.Equals(t, result.(scopeTestObjectA).B.C, "Hello world!")
 
 	resultPtr, err := scopeTestObjectATypePtr.Unserialize(input)
-	assertNoError(t, err)
-	assertInstanceOf[*scopeTestObjectAPtr](t, resultPtr.(*scopeTestObjectAPtr))
-	assertEqual(t, resultPtr.(*scopeTestObjectAPtr).B.C, "Hello world!")
+	assert.NoError(t, err)
+	assert.InstanceOf[*scopeTestObjectAPtr](t, resultPtr)
+	assert.Equals(t, resultPtr.(*scopeTestObjectAPtr).B.C, "Hello world!")
 }
 
 func TestValidation(t *testing.T) {
@@ -145,7 +146,7 @@ func TestValidation(t *testing.T) {
 			"Hello world!",
 		},
 	})
-	assertNoError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestSerialization(t *testing.T) {
@@ -154,13 +155,13 @@ func TestSerialization(t *testing.T) {
 			"Hello world!",
 		},
 	})
-	assertNoError(t, err)
-	assertEqual(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
 }
 
 func TestSelfSerialization(t *testing.T) {
 	serializedScope, err := scopeTestObjectAType.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 	serializedScopeMap := serializedScope.(map[string]any)
 	if serializedScopeMap["root"] != "scopeTestObjectA" {
 		t.Fatalf("Unexpected root object: %s", serializedScopeMap["root"])
