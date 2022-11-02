@@ -2,8 +2,8 @@ github.com/fxamacker/cbor/v2 v2.4.0 h1:ri0ArlOR+5XunOP8CRUowT0pSJOwhW098ZCUyskZD
 github.com/fxamacker/cbor/v2 v2.4.0/go.mod h1:TA1xS00nchWmaBnEIxPSE5oHLuJBAVvqrtAnWBwBCVo=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
-go.arcalot.io/assert v1.2.2-0.20221101164921-b92c8eaf34db h1:l0iHWCwSaT1X71XWKpKyprA7F4/xNO+olFK9SQj/zWM=
-go.arcalot.io/assert v1.2.2-0.20221101164921-b92c8eaf34db/go.mod h1:Xy3ScX0p9IMY89gdsgexOKxnmDr0nGHG9dV7p8Uxg7w=
+go.arcalot.io/assert v1.2.2-0.20221101210920-b50b3ef34b2b h1:ItPR39d1hto0AdW6FQ/yVw1qnGonMdW5hxdpxo2RgCw=
+go.arcalot.io/assert v1.2.2-0.20221101210920-b50b3ef34b2b/go.mod h1:Xy3ScX0p9IMY89gdsgexOKxnmDr0nGHG9dV7p8Uxg7w=
 go.arcalot.io/log v1.2.0 h1:EOfehJoycnpYXOBwYribLzfYb9y2YKVNWJ0kCzqnJSw=
 go.arcalot.io/log v1.2.0/go.mod h1:g/oBcBi33s6GxFyiEdbnKtEPBg62t2Uc9cdF3fSuuyg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=

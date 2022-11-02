@@ -33,21 +33,21 @@ type RefSchema struct {
 	referencedObjectCache Object
 }
 
-func (r *RefSchema) Properties() map[string]*PropertySchema {
+func (r *RefSchema) checkCache(failMsg string) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Properties was called before ApplyScope!",
+			Message: failMsg,
 		})
 	}
+}
+
+func (r *RefSchema) Properties() map[string]*PropertySchema {
+	r.checkCache("Properties was called before ApplyScope!")
 	return r.referencedObjectCache.Properties()
 }
 
 func (r *RefSchema) GetDefaults() map[string]any {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "GetDefaults was called before ApplyScope!",
-		})
-	}
+	r.checkCache("GetDefaults was called before ApplyScope!")
 	return r.referencedObjectCache.GetDefaults()
 }
 
@@ -56,20 +56,12 @@ func (r *RefSchema) TypeID() TypeID {
 }
 
 func (r *RefSchema) GetObject() Object {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "GetObject was called before ApplyScope!",
-		})
-	}
+	r.checkCache("GetObject was called before ApplyScope!")
 	return r.referencedObjectCache
 }
 
 func (r *RefSchema) ReflectedType() reflect.Type {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "ReflectedType was called before ApplyScope!",
-		})
-	}
+	r.checkCache("ReflectedType was called before ApplyScope!")
 	return r.referencedObjectCache.ReflectedType()
 }
 
@@ -93,28 +85,16 @@ func (r *RefSchema) ApplyScope(scope Scope) {
 }
 
 func (r *RefSchema) Unserialize(data any) (any, error) {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
-		})
-	}
+	r.checkCache("Unserialize called before ApplyScope. Did you add your RefType to a scope?")
 	return r.referencedObjectCache.Unserialize(data)
 }
 
 func (r *RefSchema) Validate(data any) error {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
-		})
-	}
+	r.checkCache("Validate called before ApplyScope. Did you add your RefType to a scope?")
 	return r.referencedObjectCache.Validate(data)
 }
 
 func (r *RefSchema) Serialize(data any) (any, error) {
-	if r.referencedObjectCache == nil {
-		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
-		})
-	}
+	r.checkCache("Serialize called before ApplyScope. Did you add your RefType to a scope?")
 	return r.referencedObjectCache.Serialize(data)
 }
