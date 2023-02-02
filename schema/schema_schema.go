@@ -314,7 +314,7 @@ var basicObjects = []*ObjectSchema{
 			nil,
 			[]string{"16.0"},
 		),
-		"UnitsDefinition": unitsProperty,
+		"units": unitsProperty,
 	}),
 	NewStructMappedObjectSchema[*IntEnumSchema]("IntEnum", map[string]*PropertySchema{
 		"values": NewPropertySchema(
@@ -339,7 +339,7 @@ var basicObjects = []*ObjectSchema{
 			nil,
 			[]string{"{\"1024\": {\"name\": \"kB\"}, \"1048576\": {\"name\": \"MB\"}}"},
 		),
-		"UnitsDefinition": unitsProperty,
+		"units": unitsProperty,
 	}),
 	NewStructMappedObjectSchema[*IntSchema](
 		"Int",
@@ -372,7 +372,7 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				[]string{"16"},
 			),
-			"UnitsDefinition": unitsProperty,
+			"units": unitsProperty,
 		},
 	),
 	NewStructMappedObjectSchema[*ListSchema](
