@@ -82,11 +82,12 @@ func (r *RefSchema) Display() Display {
 }
 
 func (r *RefSchema) ApplyScope(scope Scope) {
+
 	objects := scope.Objects()
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("Referenced object %s not found in scope", r.IDValue),
+			Message: fmt.Sprintf("Referenced object '%s' not found in scope", r.IDValue),
 		})
 	}
 	r.referencedObjectCache = referencedObject
