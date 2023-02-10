@@ -19,7 +19,7 @@ type Enum[T enumValue] interface {
 }
 
 type EnumSchema[T enumValue] struct {
-	ValidValuesMap map[T]*DisplayValue `json:"values"`
+	ValidValuesMap map[T]*DisplayValue `json:"values" yaml:"values"`
 }
 
 func (e EnumSchema[T]) ValidValues() map[T]*DisplayValue {

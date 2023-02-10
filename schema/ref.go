@@ -21,16 +21,17 @@ func NewRefSchema(id string, display Display) *RefSchema {
 	return &RefSchema{
 		id,
 		display,
-
 		nil,
+		TypeIDRef,
 	}
 }
 
 type RefSchema struct {
-	IDValue      string  `json:"id"`
-	DisplayValue Display `json:"display"`
+	IDValue      string  `json:"id" yaml:"id"`
+	DisplayValue Display `json:"display" yaml:"display"`
 
 	referencedObjectCache Object
+	Type                  TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (r *RefSchema) Properties() map[string]*PropertySchema {

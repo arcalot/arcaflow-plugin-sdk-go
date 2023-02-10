@@ -43,15 +43,17 @@ func NewMapSchema(keys Type, values Type, min *int64, max *int64) *MapSchema[Typ
 		values,
 		min,
 		max,
+		TypeIDMap,
 	}
 }
 
 // MapSchema is the implementation of tye map types.
 type MapSchema[K Type, V Type] struct {
-	KeysValue   K      `json:"keys"`
-	ValuesValue V      `json:"values"`
-	MinValue    *int64 `json:"min"`
-	MaxValue    *int64 `json:"max"`
+	KeysValue   K      `json:"keys" yaml:"keys"`
+	ValuesValue V      `json:"values" yaml:"values"`
+	MinValue    *int64 `json:"min,omitempty" yaml:"min,omitempty"`
+	MaxValue    *int64 `json:"max,omitempty" yaml:"max,omitempty"`
+	Type        TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (m MapSchema[K, V]) TypeID() TypeID {
@@ -197,12 +199,15 @@ func NewTypedMapSchema[KeyType comparable, ValueType any](
 			values,
 			min,
 			max,
+			TypeIDMap,
 		},
+		TypeIDMap,
 	}
 }
 
 type TypedMapSchema[KeyType comparable, ValueType any] struct {
 	MapSchema[TypedType[KeyType], TypedType[ValueType]]
+	Type TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (m TypedMapSchema[KeyType, ValueType]) UnserializeType(data any) (result map[KeyType]ValueType, err error) {

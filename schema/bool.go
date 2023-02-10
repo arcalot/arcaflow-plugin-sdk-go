@@ -18,6 +18,7 @@ func NewBoolSchema() *BoolSchema {
 
 // BoolSchema holds the schema information for boolean types.
 type BoolSchema struct {
+	Type TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (b BoolSchema) Unserialize(data any) (any, error) {

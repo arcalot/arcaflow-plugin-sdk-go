@@ -12,6 +12,7 @@ func NewAnySchema() *AnySchema {
 
 // AnySchema is a wildcard allowing maps, lists, integers, strings, bools. and floats.
 type AnySchema struct {
+	Type TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (a *AnySchema) ReflectedType() reflect.Type {

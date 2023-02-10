@@ -30,9 +30,9 @@ func NewStepOutputSchema(
 }
 
 type StepOutputSchema struct {
-	SchemaValue  Scope         `json:"schema"`
-	DisplayValue *DisplayValue `json:"display"`
-	ErrorValue   bool          `json:"error"`
+	SchemaValue  Scope         `json:"schema" yaml:"schema"`
+	DisplayValue *DisplayValue `json:"display" yaml:"display"`
+	ErrorValue   bool          `json:"error" yaml:"error"`
 }
 
 func (s StepOutputSchema) ReflectedType() reflect.Type {

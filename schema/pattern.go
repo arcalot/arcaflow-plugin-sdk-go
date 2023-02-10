@@ -19,6 +19,7 @@ func NewPatternSchema() *PatternSchema {
 }
 
 type PatternSchema struct {
+	Type TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (p PatternSchema) TypeID() TypeID {

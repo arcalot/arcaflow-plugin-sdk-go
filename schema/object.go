@@ -27,19 +27,21 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 		nil,
 		reflect.TypeOf(anyValue),
 		nil,
+		TypeIDObject,
 	}
 }
 
 // ObjectSchema is the implementation of the object schema type.
 type ObjectSchema struct {
-	IDValue         string                     `json:"id"`
-	PropertiesValue map[string]*PropertySchema `json:"properties"`
+	IDValue         string                     `json:"id" yaml:"id"`
+	PropertiesValue map[string]*PropertySchema `json:"properties" yaml:"properties"`
 
 	defaultValues map[string]any
 
 	defaultValue     any
 	defaultValueType reflect.Type
 	fieldCache       map[string]reflect.StructField
+	Type             TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (o *ObjectSchema) ReflectedType() reflect.Type {
@@ -525,11 +527,13 @@ func NewTypedObject[T any](id string, properties map[string]*PropertySchema) *Ty
 	objectSchema := NewStructMappedObjectSchema[T](id, properties)
 	return &TypedObjectSchema[T]{
 		*objectSchema,
+		TypeIDObject,
 	}
 }
 
 type TypedObjectSchema[T any] struct {
-	ObjectSchema `json:",inline"`
+	ObjectSchema `json:",inline" yaml:",inline"`
+	Type         TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (t TypedObjectSchema[T]) UnserializeType(data any) (T, error) {
