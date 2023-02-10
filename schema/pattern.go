@@ -15,7 +15,9 @@ type Pattern interface {
 
 // NewPatternSchema creates a new pattern schema.
 func NewPatternSchema() *PatternSchema {
-	return &PatternSchema{}
+	return &PatternSchema{
+		Type: TypeIDPattern,
+	}
 }
 
 type PatternSchema struct {

@@ -75,5 +75,5 @@ func TestPatternSerializeInvalid(t *testing.T) {
 
 func TestPatternID(t *testing.T) {
 	assertEqual(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
-	assertEqual(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
+	assertEqual(t, schema.NewPatternSchema().Type, schema.TypeIDPattern)
 }

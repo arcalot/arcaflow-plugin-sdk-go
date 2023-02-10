@@ -170,4 +170,5 @@ func TestStringParameters(t *testing.T) {
 
 func TestStringID(t *testing.T) {
 	assertEqual(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
+	assertEqual(t, schema.NewStringSchema(nil, nil, nil).Type, schema.TypeIDString)
 }

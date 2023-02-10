@@ -13,7 +13,9 @@ type Bool interface {
 
 // NewBoolSchema creates a new boolean representation.
 func NewBoolSchema() *BoolSchema {
-	return &BoolSchema{}
+	return &BoolSchema{
+		Type: TypeIDBool,
+	}
 }
 
 // BoolSchema holds the schema information for boolean types.

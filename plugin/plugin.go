@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -35,6 +36,13 @@ func Run(s *schema.CallableSchema) {
 		as_yaml_bytes, err := yaml.Marshal(s)
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error while marshaling schema to YAML.\n")
+			os.Exit(1)
+		}
+		fmt.Printf("serialized_schema: %v\n", string(as_yaml_bytes))
+	} else if os.Args[1] == "--json-schema" {
+		as_yaml_bytes, err := json.MarshalIndent(s, "", "    ")
+		if err != nil {
+			_, _ = os.Stderr.WriteString("Error while marshaling schema to JSON.\n")
 			os.Exit(1)
 		}
 		fmt.Printf("serialized_schema: %v\n", string(as_yaml_bytes))

@@ -184,7 +184,7 @@ func TestBoolJSONMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(j) != "{}" {
+	if string(j) != "{\"type_id\":\"bool\"}" {
 		t.Fatalf("Unexpected JSON output: %s", j)
 	}
 	boolType := schema.NewBoolSchema()
@@ -195,5 +195,5 @@ func TestBoolJSONMarshal(t *testing.T) {
 
 func TestBoolSchema(t *testing.T) {
 	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
-	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
+	assertEqual(t, schema.NewBoolSchema().Type, schema.TypeIDBool)
 }

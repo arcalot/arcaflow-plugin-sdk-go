@@ -100,7 +100,7 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(marshalled) != `{"values":{"large":{"name":"Large","description":null,"icon":null},"small":{"name":"Small","description":null,"icon":null}}}` {
+	if string(marshalled) != `{"values":{"large":{"name":"Large","description":null},"small":{"name":"Small","description":null}},"type_id":"enum_string"}` {
 		t.Fatalf("Invalid marshalled JSON output: %s", marshalled)
 	}
 	typeUnderTest = schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})
@@ -114,4 +114,5 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 
 func TestStringEnumType(t *testing.T) {
 	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
+	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).Type, schema.TypeIDStringEnum)
 }

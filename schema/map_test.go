@@ -198,4 +198,6 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		)
 		t.Fatalf("Bool keys did not result in an error")
 	}()
+
+	assertEqual(t, s4.Type, schema.TypeIDMap)
 }
