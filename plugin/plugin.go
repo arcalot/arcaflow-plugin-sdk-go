@@ -50,7 +50,8 @@ func Run(s *schema.CallableSchema) {
 		}
 		fmt.Printf("serialized_schema: %v\n", string(as_yaml_bytes))
 	case "--json-schema":
-		fmt.Println("Json schema currently isn't supported by the Go SDK plugins.")
+		_, _ = os.Stderr.WriteString("Json schema currently isn't supported by the Go SDK plugins.\n")
+		os.Exit(1)
 	default:
 		_, _ = os.Stderr.WriteString(fmt.Sprintf("\"%s\" is not a supported input.\n", os.Args[1]))
 		print_usage()
