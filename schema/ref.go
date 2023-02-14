@@ -27,11 +27,11 @@ func NewRefSchema(id string, display Display) *RefSchema {
 }
 
 type RefSchema struct {
-	IDValue      string  `json:"id" yaml:"id"`
-	DisplayValue Display `json:"display" yaml:"display"`
+	IDValue      string  `json:"id"`
+	DisplayValue Display `json:"display"`
 
 	referencedObjectCache Object
-	Type                  TypeID `json:"type_id" yaml:"type_id"`
+	Type                  TypeID `json:"type_id"`
 }
 
 func (r *RefSchema) Properties() map[string]*PropertySchema {

@@ -47,19 +47,19 @@ func NewTypedListSchema[UnserializedType any](
 
 // ListSchema is the untyped representation of a list.
 type ListSchema struct {
-	AbstractListSchema[Type] `json:",inline" yaml:",inline"`
+	AbstractListSchema[Type] `json:",inline"`
 }
 
 // TypedListSchema is the typed variant of the list.
 type TypedListSchema[UnserializedType any, ItemType TypedType[UnserializedType]] struct {
-	AbstractListSchema[ItemType] `json:",inline" yaml:",inline"`
+	AbstractListSchema[ItemType] `json:",inline"`
 }
 
 // AbstractListSchema is a root type for both the untyped and the typed lists.
 type AbstractListSchema[ItemType Type] struct {
-	ItemsValue ItemType `json:"items" yaml:"items"`
-	MinValue   *int64   `json:"min" yaml:"min"`
-	MaxValue   *int64   `json:"max" yaml:"max"`
+	ItemsValue ItemType `json:"items"`
+	MinValue   *int64   `json:"min"`
+	MaxValue   *int64   `json:"max"`
 }
 
 func (l AbstractListSchema[ItemType]) TypeID() TypeID {

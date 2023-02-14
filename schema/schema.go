@@ -19,7 +19,7 @@ func NewSchema(
 }
 
 type SchemaSchema struct {
-	StepsValue map[string]*StepSchema `json:"steps" yaml:"steps"`
+	StepsValue map[string]*StepSchema `json:"steps"`
 }
 
 func (s SchemaSchema) SelfSerialize() (any, error) {
@@ -67,7 +67,7 @@ func NewCallableSchema(
 }
 
 type CallableSchema struct {
-	StepsValue map[string]CallableStep `json:"steps" yaml:"steps"`
+	StepsValue map[string]CallableStep `json:"steps"`
 }
 
 func (s CallableSchema) Call(

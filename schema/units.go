@@ -35,10 +35,10 @@ func NewUnit(nameSortSingular string, nameShortPlural string, nameLongSingular s
 }
 
 type UnitDefinition struct {
-	NameShortSingularValue string `json:"name_short_singular" yaml:"name_short_singular"`
-	NameShortPluralValue   string `json:"name_short_plural" yaml:"name_short_plural"`
-	NameLongSingularValue  string `json:"name_long_singular" yaml:"name_long_singular"`
-	NameLongPluralValue    string `json:"name_long_plural" yaml:"name_long_plural"`
+	NameShortSingularValue string `json:"name_short_singular"`
+	NameShortPluralValue   string `json:"name_short_plural"`
+	NameLongSingularValue  string `json:"name_long_singular"`
+	NameLongPluralValue    string `json:"name_long_plural"`
 }
 
 func (u *UnitDefinition) NameShortSingular() string {

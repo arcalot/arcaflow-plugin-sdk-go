@@ -45,14 +45,14 @@ func NewPropertySchema(
 }
 
 type PropertySchema struct {
-	TypeValue          Type     `json:"type" yaml:"type"`
-	DisplayValue       Display  `json:"display,omitempty" yaml:"display,omitempty"`
-	RequiredValue      bool     `json:"required" yaml:"required"`
-	RequiredIfValue    []string `json:"required_if,omitempty" yaml:"required_if,omitempty"`
-	RequiredIfNotValue []string `json:"required_if_not,omitempty" yaml:"required_if_not,omitempty"`
-	ConflictsValue     []string `json:"conflicts,omitempty" yaml:"conflicts,omitempty"`
-	DefaultValue       *string  `json:"default,omitempty" yaml:"default,omitempty"`
-	ExamplesValue      []string `json:"examples,omitempty" yaml:"examples,omitempty"`
+	TypeValue          Type     `json:"type"`
+	DisplayValue       Display  `json:"display,omitempty"`
+	RequiredValue      bool     `json:"required"`
+	RequiredIfValue    []string `json:"required_if,omitempty"`
+	RequiredIfNotValue []string `json:"required_if_not,omitempty"`
+	ConflictsValue     []string `json:"conflicts,omitempty"`
+	DefaultValue       *string  `json:"default,omitempty"`
+	ExamplesValue      []string `json:"examples,omitempty"`
 
 	emptyIsDefault bool
 }

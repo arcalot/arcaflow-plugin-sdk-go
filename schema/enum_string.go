@@ -18,7 +18,7 @@ type StringEnum interface {
 
 // StringEnumSchema is an enum type with string values.
 type StringEnumSchema struct {
-	EnumSchema[string] `json:",inline" yaml:",inline"`
+	EnumSchema[string] `json:",inline"`
 }
 
 func (s StringEnumSchema) TypeID() TypeID {

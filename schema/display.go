@@ -18,9 +18,9 @@ func NewDisplayValue(name *string, description *string, icon *string) *DisplayVa
 
 // DisplayValue holds the data related to displaying fields.
 type DisplayValue struct {
-	NameValue        *string `json:"name" yaml:"name"`
-	DescriptionValue *string `json:"description" yaml:"description"`
-	IconValue        *string `json:"icon,omitempty" yaml:"icon,omitempty"`
+	NameValue        *string `json:"name"`
+	DescriptionValue *string `json:"description"`
+	IconValue        *string `json:"icon,omitempty"`
 }
 
 func (d DisplayValue) Name() *string {

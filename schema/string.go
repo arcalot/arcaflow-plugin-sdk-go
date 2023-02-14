@@ -26,9 +26,9 @@ func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) *StringSche
 }
 
 type StringSchema struct {
-	MinValue     *int64         `json:"min,omitempty" yaml:"min,omitempty"`
-	MaxValue     *int64         `json:"max,omitempty" yaml:"max,omitempty"`
-	PatternValue *regexp.Regexp `json:"pattern,omitempty" yaml:"pattern,omitempty"`
+	MinValue     *int64         `json:"min,omitempty"`
+	MaxValue     *int64         `json:"max,omitempty"`
+	PatternValue *regexp.Regexp `json:"pattern,omitempty"`
 }
 
 func (s StringSchema) TypeID() TypeID {

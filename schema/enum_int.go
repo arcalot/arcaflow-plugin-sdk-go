@@ -20,8 +20,8 @@ type IntEnum interface {
 
 // IntEnumSchema is an enum type with integer values.
 type IntEnumSchema struct {
-	EnumSchema[int64] `json:",inline" yaml:",inline"`
-	IntUnits          *UnitsDefinition `json:"units" yaml:"units"`
+	EnumSchema[int64] `json:",inline"`
+	IntUnits          *UnitsDefinition `json:"units"`
 }
 
 func (i IntEnumSchema) TypeID() TypeID {

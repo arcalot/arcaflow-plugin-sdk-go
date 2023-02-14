@@ -35,10 +35,10 @@ func NewStepSchema(
 // StepSchema describes a single step in a schema to execute one task. It has a fixed input and one or more outputs,
 // denominated by a string output ID.
 type StepSchema struct {
-	IDValue      string                       `json:"id" yaml:"id"`
-	InputValue   Scope                        `json:"input" yaml:"input"`
-	OutputsValue map[string]*StepOutputSchema `json:"outputs" yaml:"outputs"`
-	DisplayValue Display                      `json:"display,omitempty" yaml:"display,omitempty"`
+	IDValue      string                       `json:"id"`
+	InputValue   Scope                        `json:"input"`
+	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
+	DisplayValue Display                      `json:"display,omitempty"`
 }
 
 func (s StepSchema) ID() string {
@@ -76,10 +76,10 @@ func NewCallableStep[InputType any](
 
 // CallableStepSchema is a step that can be directly called and is typed to a specific input type.
 type CallableStepSchema[InputType any] struct {
-	IDValue      string                       `json:"id" yaml:"id"`
-	InputValue   *ScopeSchema                 `json:"input" yaml:"input"`
-	OutputsValue map[string]*StepOutputSchema `json:"outputs" yaml:"outputs"`
-	DisplayValue Display                      `json:"display,omitempty" yaml:"display,omitempty"`
+	IDValue      string                       `json:"id"`
+	InputValue   *ScopeSchema                 `json:"input"`
+	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
+	DisplayValue Display                      `json:"display,omitempty"`
 	handler      func(InputType) (string, any)
 }
 

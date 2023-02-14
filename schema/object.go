@@ -32,8 +32,8 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 
 // ObjectSchema is the implementation of the object schema type.
 type ObjectSchema struct {
-	IDValue         string                     `json:"id" yaml:"id"`
-	PropertiesValue map[string]*PropertySchema `json:"properties" yaml:"properties"`
+	IDValue         string                     `json:"id"`
+	PropertiesValue map[string]*PropertySchema `json:"properties"`
 
 	defaultValues map[string]any
 
@@ -529,7 +529,7 @@ func NewTypedObject[T any](id string, properties map[string]*PropertySchema) *Ty
 }
 
 type TypedObjectSchema[T any] struct {
-	ObjectSchema `json:",inline" yaml:",inline"`
+	ObjectSchema `json:",inline"`
 }
 
 func (t TypedObjectSchema[T]) UnserializeType(data any) (T, error) {

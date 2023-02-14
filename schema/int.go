@@ -26,9 +26,9 @@ func NewIntSchema(min *int64, max *int64, units *UnitsDefinition) *IntSchema {
 }
 
 type IntSchema struct {
-	MinValue   *int64           `json:"min,omitempty" yaml:"min,omitempty"`
-	MaxValue   *int64           `json:"max,omitempty" yaml:"max,omitempty"`
-	UnitsValue *UnitsDefinition `json:"units,omitempty" yaml:"units,omitempty"`
+	MinValue   *int64           `json:"min,omitempty"`
+	MaxValue   *int64           `json:"max,omitempty"`
+	UnitsValue *UnitsDefinition `json:"units,omitempty"`
 }
 
 func (i IntSchema) ReflectedType() reflect.Type {
