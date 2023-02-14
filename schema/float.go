@@ -23,7 +23,6 @@ func NewFloatSchema(min *float64, max *float64, units *UnitsDefinition) *FloatSc
 		min,
 		max,
 		units,
-		TypeIDFloat,
 	}
 }
 
@@ -31,7 +30,6 @@ type FloatSchema struct {
 	MinValue   *float64         `json:"min,omitempty" yaml:"min,omitempty"`
 	MaxValue   *float64         `json:"max,omitempty" yaml:"max,omitempty"`
 	UnitsValue *UnitsDefinition `json:"units,omitempty" yaml:"units,omitempty"`
-	Type       TypeID           `json:"type_id" yaml:"type_id"`
 }
 
 func (f FloatSchema) ReflectedType() reflect.Type {

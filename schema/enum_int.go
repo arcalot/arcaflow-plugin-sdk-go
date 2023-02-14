@@ -9,7 +9,6 @@ func NewIntEnumSchema(validValues map[int64]*DisplayValue, units *UnitsDefinitio
 			validValues,
 		},
 		units,
-		TypeIDIntEnum,
 	}
 }
 
@@ -23,7 +22,6 @@ type IntEnum interface {
 type IntEnumSchema struct {
 	EnumSchema[int64] `json:",inline" yaml:",inline"`
 	IntUnits          *UnitsDefinition `json:"units" yaml:"units"`
-	Type              TypeID           `json:"type_id" yaml:"type_id"`
 }
 
 func (i IntEnumSchema) TypeID() TypeID {

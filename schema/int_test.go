@@ -240,5 +240,4 @@ func TestIntParameters(t *testing.T) {
 
 func TestIntType(t *testing.T) {
 	assertEqual(t, schema.NewIntSchema(nil, nil, nil).TypeID(), schema.TypeIDInt)
-	assertEqual(t, schema.NewIntSchema(nil, nil, nil).Type, schema.TypeIDInt)
 }

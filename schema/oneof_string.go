@@ -19,6 +19,5 @@ func NewOneOfStringSchema[ItemsInterface any](
 		reflect.TypeOf(&defaultValue).Elem(),
 		types,
 		discriminatorFieldName,
-		TypeIDString,
 	}
 }

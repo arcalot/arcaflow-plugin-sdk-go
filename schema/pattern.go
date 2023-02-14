@@ -15,13 +15,10 @@ type Pattern interface {
 
 // NewPatternSchema creates a new pattern schema.
 func NewPatternSchema() *PatternSchema {
-	return &PatternSchema{
-		Type: TypeIDPattern,
-	}
+	return &PatternSchema{}
 }
 
 type PatternSchema struct {
-	Type TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (p PatternSchema) TypeID() TypeID {

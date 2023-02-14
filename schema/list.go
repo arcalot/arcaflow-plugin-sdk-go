@@ -26,7 +26,6 @@ func NewListSchema(items Type, min *int64, max *int64) *ListSchema {
 			items,
 			min,
 			max,
-			TypeIDList,
 		},
 	}
 }
@@ -42,7 +41,6 @@ func NewTypedListSchema[UnserializedType any](
 			items,
 			min,
 			max,
-			TypeIDList,
 		},
 	}
 }
@@ -62,7 +60,6 @@ type AbstractListSchema[ItemType Type] struct {
 	ItemsValue ItemType `json:"items" yaml:"items"`
 	MinValue   *int64   `json:"min" yaml:"min"`
 	MaxValue   *int64   `json:"max" yaml:"max"`
-	Type       TypeID   `json:"type_id" yaml:"type_id"`
 }
 
 func (l AbstractListSchema[ItemType]) TypeID() TypeID {

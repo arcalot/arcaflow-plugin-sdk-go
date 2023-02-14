@@ -227,5 +227,4 @@ func TestIntEnumTypedSerialization(t *testing.T) {
 
 func TestIntEnumSchema(t *testing.T) {
 	assertEqual(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
-	assertEqual(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).Type, schema.TypeIDIntEnum)
 }

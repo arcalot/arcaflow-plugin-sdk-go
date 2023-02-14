@@ -18,7 +18,6 @@ type OneOfSchema[KeyType int64 | string] struct {
 	interfaceType               reflect.Type
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
-	Type                        TypeID             `json:"type_id" yaml:"type_id"`
 }
 
 func (o OneOfSchema[KeyType]) TypeID() TypeID {

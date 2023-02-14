@@ -114,5 +114,4 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 
 func TestStringEnumType(t *testing.T) {
 	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
-	assertEqual(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).Type, schema.TypeIDStringEnum)
 }

@@ -278,5 +278,4 @@ func TestFloatParameters(t *testing.T) {
 
 func TestFloatType(t *testing.T) {
 	assertEqual(t, schema.NewFloatSchema(nil, nil, nil).TypeID(), schema.TypeIDFloat)
-	assertEqual(t, schema.NewFloatSchema(nil, nil, nil).Type, schema.TypeIDFloat)
 }

@@ -33,7 +33,12 @@ func Run(s *schema.CallableSchema) {
 			panic(err)
 		}
 	} else if os.Args[1] == "--schema" {
-		as_yaml_bytes, err := yaml.Marshal(s)
+		serialized_schema, err := s.SelfSerialize()
+		if err != nil {
+			_, _ = os.Stderr.WriteString("Error while serializing schema.\n")
+			os.Exit(1)
+		}
+		as_yaml_bytes, err := yaml.Marshal(serialized_schema)
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error while marshaling schema to YAML.\n")
 			os.Exit(1)

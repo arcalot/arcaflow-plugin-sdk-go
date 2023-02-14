@@ -8,7 +8,6 @@ func NewStringEnumSchema(validValues map[string]*DisplayValue) *StringEnumSchema
 		EnumSchema[string]{
 			validValues,
 		},
-		TypeIDStringEnum,
 	}
 }
 
@@ -20,7 +19,6 @@ type StringEnum interface {
 // StringEnumSchema is an enum type with string values.
 type StringEnumSchema struct {
 	EnumSchema[string] `json:",inline" yaml:",inline"`
-	Type               TypeID `json:"type_id" yaml:"type_id"`
 }
 
 func (s StringEnumSchema) TypeID() TypeID {
