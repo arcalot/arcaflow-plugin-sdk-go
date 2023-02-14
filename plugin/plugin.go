@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -13,7 +12,12 @@ import (
 )
 
 func print_usage() {
-	fmt.Printf("At least one of --atp or --schema must be specified\n")
+	fmt.Println("At least one of --atp, --schema, or --json-schema must be specified")
+	fmt.Println("--atp runs the ATP server to interface with the arcaflow engine.")
+	fmt.Println("--schema outputs the arcaflow schema of the plugin as YAML")
+	fmt.Println("--json-schema outputs the schema of a specific step's input or output" +
+		" according to standardized formats for use with other applications, like" +
+		" editors for code autocompletion.")
 }
 
 // The run interface for a plugin.
@@ -25,14 +29,15 @@ func Run(s *schema.CallableSchema) {
 		print_usage()
 		os.Exit(1)
 	}
-	if os.Args[1] == "--atp" {
+	switch os.Args[1] {
+	case "--atp":
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		if err := atp.RunATPServer(ctx, os.Stdin, os.Stdout, s); err != nil {
 			panic(err)
 		}
-	} else if os.Args[1] == "--schema" {
+	case "--schema":
 		serialized_schema, err := s.SelfSerialize()
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error while serializing schema.\n")
@@ -44,14 +49,9 @@ func Run(s *schema.CallableSchema) {
 			os.Exit(1)
 		}
 		fmt.Printf("serialized_schema: %v\n", string(as_yaml_bytes))
-	} else if os.Args[1] == "--json-schema" {
-		as_yaml_bytes, err := json.MarshalIndent(s, "", "    ")
-		if err != nil {
-			_, _ = os.Stderr.WriteString("Error while marshaling schema to JSON.\n")
-			os.Exit(1)
-		}
-		fmt.Printf("serialized_schema: %v\n", string(as_yaml_bytes))
-	} else {
+	case "--json-schema":
+		fmt.Println("Json schema currently isn't supported by the Go SDK plugins.")
+	default:
 		_, _ = os.Stderr.WriteString(fmt.Sprintf("\"%s\" is not a supported input.\n", os.Args[1]))
 		print_usage()
 		os.Exit(1)

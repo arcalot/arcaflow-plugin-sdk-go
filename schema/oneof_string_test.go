@@ -1,4 +1,5 @@
 // golangci-lint does not accurately detect changes in type parameters.
+//
 //nolint:dupl
 package schema_test
 
