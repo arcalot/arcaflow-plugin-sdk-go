@@ -22,7 +22,6 @@ func NewRefSchema(id string, display Display) *RefSchema {
 		id,
 		display,
 		nil,
-		TypeIDRef,
 	}
 }
 
@@ -31,7 +30,6 @@ type RefSchema struct {
 	DisplayValue Display `json:"display"`
 
 	referencedObjectCache Object
-	Type                  TypeID `json:"type_id"`
 }
 
 func (r *RefSchema) Properties() map[string]*PropertySchema {

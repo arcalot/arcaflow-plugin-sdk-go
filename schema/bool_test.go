@@ -184,7 +184,7 @@ func TestBoolJSONMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(j) != "{\"type_id\":\"bool\"}" {
+	if string(j) != "{}" {
 		t.Fatalf("Unexpected JSON output: %s", j)
 	}
 	boolType := schema.NewBoolSchema()
