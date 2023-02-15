@@ -15,6 +15,7 @@ func (o oneOfTestObjectB) String() string {
 }
 
 // golangci-lint does not detect types used in type parameters.
+//
 //nolint:unused
 type oneOfTestObjectC struct {
 	M string `json:"m"`

@@ -38,7 +38,7 @@ type StepSchema struct {
 	IDValue      string                       `json:"id"`
 	InputValue   Scope                        `json:"input"`
 	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
-	DisplayValue Display                      `json:"display,omitempty"`
+	DisplayValue Display                      `json:"display"`
 }
 
 func (s StepSchema) ID() string {
@@ -79,7 +79,7 @@ type CallableStepSchema[InputType any] struct {
 	IDValue      string                       `json:"id"`
 	InputValue   *ScopeSchema                 `json:"input"`
 	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
-	DisplayValue Display                      `json:"display,omitempty"`
+	DisplayValue Display                      `json:"display"`
 	handler      func(InputType) (string, any)
 }
 

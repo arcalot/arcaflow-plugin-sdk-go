@@ -195,5 +195,4 @@ func TestBoolJSONMarshal(t *testing.T) {
 
 func TestBoolSchema(t *testing.T) {
 	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
-	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
 }
