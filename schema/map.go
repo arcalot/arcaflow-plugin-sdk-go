@@ -50,8 +50,8 @@ func NewMapSchema(keys Type, values Type, min *int64, max *int64) *MapSchema[Typ
 type MapSchema[K Type, V Type] struct {
 	KeysValue   K      `json:"keys"`
 	ValuesValue V      `json:"values"`
-	MinValue    *int64 `json:"min,omitempty"`
-	MaxValue    *int64 `json:"max,omitempty"`
+	MinValue    *int64 `json:"min"`
+	MaxValue    *int64 `json:"max"`
 }
 
 func (m MapSchema[K, V]) TypeID() TypeID {

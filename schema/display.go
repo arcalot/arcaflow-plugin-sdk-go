@@ -20,7 +20,7 @@ func NewDisplayValue(name *string, description *string, icon *string) *DisplayVa
 type DisplayValue struct {
 	NameValue        *string `json:"name"`
 	DescriptionValue *string `json:"description"`
-	IconValue        *string `json:"icon,omitempty"`
+	IconValue        *string `json:"icon"`
 }
 
 func (d DisplayValue) Name() *string {

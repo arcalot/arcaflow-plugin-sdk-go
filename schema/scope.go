@@ -40,7 +40,7 @@ func NewScopeSchema(rootObject *ObjectSchema, objects ...*ObjectSchema) *ScopeSc
 
 type ScopeSchema struct {
 	ObjectsValue map[string]*ObjectSchema `json:"objects"`
-	RootValue    string                   `json:"root,omitempty"`
+	RootValue    string                   `json:"root"`
 }
 
 func (s *ScopeSchema) SelfSerialize() (any, error) {
