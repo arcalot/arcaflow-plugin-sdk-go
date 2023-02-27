@@ -549,6 +549,33 @@ func (t TypedObjectSchema[T]) SerializeType(data T) (any, error) {
 	return t.ObjectSchema.Serialize(data)
 }
 
+func (t TypedObjectSchema[T]) Any() TypedObject[any] {
+	return &AnyTypedObject[T]{
+		t.ObjectSchema,
+	}
+}
+
+// AnyTypedObject is an object that pretends to be typed, but accepts any type.
+type AnyTypedObject[T any] struct {
+	ObjectSchema `json:",inline"`
+}
+
+func (a *AnyTypedObject[T]) UnserializeType(data any) (any, error) {
+	return a.ObjectSchema.Unserialize(data)
+}
+
+func (a *AnyTypedObject[T]) ValidateType(data any) error {
+	return a.ObjectSchema.Validate(data)
+}
+
+func (a *AnyTypedObject[T]) SerializeType(data any) (any, error) {
+	return a.ObjectSchema.Serialize(data)
+}
+
+func (a *AnyTypedObject[T]) Any() TypedObject[any] {
+	return a
+}
+
 func validateObjectIsStruct[T any]() {
 	var defaultValue T
 	reflectValue := reflect.TypeOf(defaultValue)
