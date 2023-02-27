@@ -395,3 +395,32 @@ func TestNonDefaultSerialization(t *testing.T) {
 	assertNoError(t, err)
 	assertEqual(t, serializedData.(map[string]any)["foo"].(string), text)
 }
+
+func TestTypedObjectSchema_Any(t *testing.T) {
+	type TestData struct {
+		Foo *string `json:"foo"`
+	}
+	s := schema.NewTypedObject[TestData](
+		"TestData",
+		map[string]*schema.PropertySchema{
+			"foo": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo(`"Hello world!"`),
+				nil,
+			),
+		},
+	)
+	anyObject := s.Any()
+	text := "Hello Arca Lot!"
+	serializedData, err := anyObject.SerializeType(TestData{&text})
+	assertNoError(t, err)
+	assertEqual(t, serializedData.(map[string]any)["foo"].(string), text)
+
+	_, err = anyObject.SerializeType(text)
+	assertError(t, err)
+}
