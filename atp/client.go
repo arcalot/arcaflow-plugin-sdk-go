@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/fxamacker/cbor/v2"
-	"go.arcalot.io/log"
+	log "go.arcalot.io/log/v2"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
