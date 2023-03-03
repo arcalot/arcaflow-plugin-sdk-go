@@ -34,7 +34,7 @@ const (
 	// TypeIDOneOfString is a type that satisfies the OneOfStringSchema.
 	TypeIDOneOfString TypeID = "one_of_string"
 	// TypeIDOneOfInt is a type that satisfies the OneOfInt.
-	TypeIDOneOfInt TypeID = "one_of_string"
+	TypeIDOneOfInt TypeID = "one_of_int"
 	// TypeIDRef is a type that references an object in a Scope.
 	TypeIDRef TypeID = "ref"
 	// TypeIDAny refers to an any type. This type essentially amounts to unchecked types, as long as they are:
