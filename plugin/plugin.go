@@ -41,7 +41,7 @@ func Run(s *schema.CallableSchema) {
 		serializedSchema, err := s.SelfSerialize()
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error while serializing schema.\n")
-			os.Exit(1)
+			os.Exit(1) //nolint:gocritic
 		}
 		asYamlBytes, err := yaml.Marshal(serializedSchema)
 		if err != nil {
