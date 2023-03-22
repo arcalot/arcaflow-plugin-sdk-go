@@ -19,6 +19,9 @@ type TypedList[UnserializedType any, ItemType TypedType[UnserializedType]] inter
 	TypedType[[]UnserializedType]
 }
 
+// UntypedList specifies a list that has no specific type.
+type UntypedList = List[Type]
+
 // NewListSchema creates a new list schema from the specified values.
 func NewListSchema(items Type, min *int64, max *int64) *ListSchema {
 	return &ListSchema{
