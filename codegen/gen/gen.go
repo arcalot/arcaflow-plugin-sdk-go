@@ -26,6 +26,11 @@ import (
 )
 `
 
+const (
+	IntegerType string = "integer"
+	FloatType   string = "float"
+)
+
 type property struct {
 	Type struct {
 		TypeID string `yaml:"type_id"`
@@ -87,9 +92,9 @@ func mustGenerateTypeDef(schema schema) []byte {
 
 func parseType(schemaType string) string {
 	switch schemaType {
-	case "integer":
+	case IntegerType:
 		return "int64"
-	case "float":
+	case FloatType:
 		return "float64"
 	default:
 		return schemaType
