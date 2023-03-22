@@ -10,4 +10,4 @@ Copy a valid Arcaflow schema to be used as input of the code generator into this
 $ go generate
 ```
 
-The output will be stored in the `output/typedef_output.go` file.
+The output will be stored in the `typedef_output.go` file.

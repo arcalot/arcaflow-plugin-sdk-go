@@ -97,10 +97,7 @@ func parseType(schemaType string) string {
 }
 
 func mustWriteTypeDef(generatedTypeDef []byte) {
-	err := os.MkdirAll("output", os.ModePerm)
-	check(err)
-
-	err = os.WriteFile("output/typedef_output.go", generatedTypeDef, 0644)
+	err := os.WriteFile("typedef_output.go", generatedTypeDef, 0644)
 	check(err)
 }
 
