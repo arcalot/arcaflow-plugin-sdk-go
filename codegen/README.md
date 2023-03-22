@@ -7,7 +7,12 @@ The Arcaflow Engine golang code generator takes an Arcaflow schema YAML structur
 Copy a valid Arcaflow schema to be used as input of the code generator into this folder and name it `schema_input.yaml`. Then run:
 
 ```
-$ go generate
+$ [ARG=object_to_ignore] go generate
 ```
+
+An example for Kubernetes related schemas:
+```
+$ ARG=ObjectMeta go generate
+``` 
 
 The output will be stored in the `typedef_output.go` file.
