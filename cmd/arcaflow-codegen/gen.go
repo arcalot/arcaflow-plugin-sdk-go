@@ -1,6 +1,7 @@
 // Generator that converts a schema yaml file to schema and type definitions golang files.
 // Usage of gen:
 // 	gen schema_input.yaml
+//go:generate go run gen.go schema_input.yaml $ARG
 
 package main
 
@@ -139,5 +140,5 @@ func main() {
 
 	// Output to file
 	mustWriteTypeDef(generatedTypeDef)
-	fmt.Println("\nOutput written to file: output/typedef_output.go")
+	fmt.Println("\nOutput written to file: typedef_output.go")
 }
