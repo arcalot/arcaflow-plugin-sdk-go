@@ -23,12 +23,12 @@ The output will be stored in the `typedef_output.go` file.
 
 Add this line to the source files:
 ```
-//go:generate go run arcaflow-plugin-sdk-go/cmd/arcaflow-codegen/gen.go schema_input.yaml
+//go:generate go run go.flow.arcalot.io/pluginsdk/cmd/arcaflow-codegen/gen.go@latest schema_input.yaml
 ```
 
 Optionally, you can specify objects to ignore, i.e. in a Kubernetes scenario:
 ```
-//go:generate go run arcaflow-plugin-sdk-go/cmd/arcaflow-codegen/gen.go schema_input.yaml ObjectMeta
+//go:generate go run go.flow.arcalot.io/pluginsdk/cmd/arcaflow-codegen/gen.go@latest schema_input.yaml ObjectMeta
 ```
 
 The output will be stored in the `typedef_output.go` file.
