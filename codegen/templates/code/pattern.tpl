@@ -1,0 +1,2 @@
+{{- import "regexp" -}}
+*regexp.Pattern

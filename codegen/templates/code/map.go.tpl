@@ -1,0 +1,1 @@
+map[{{ partial "type" .Keys }}]{{ partial "type" .Values }}
