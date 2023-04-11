@@ -1014,113 +1014,127 @@ var scopeScopeSchema = NewScopeSchema(
 	scopeObject,
 	basicObjects...,
 )
+var stepOutputSchemaObject = NewStructMappedObjectSchema[*StepOutputSchema](
+	"StepOutput",
+	map[string]*PropertySchema{
+		"display": displayProperty,
+		"error": NewPropertySchema(
+			NewBoolSchema(),
+			NewDisplayValue(
+				PointerTo("Error"),
+				PointerTo("If set to true, this output will be treated as an error output."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			PointerTo("false"),
+			nil,
+		),
+		"schema": NewPropertySchema(
+			NewRefSchema(
+				"Scope",
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Schema"),
+				PointerTo("Data schema for this particular output."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
+var stepSchemaObject = NewStructMappedObjectSchema[*StepSchema](
+	"Step",
+	map[string]*PropertySchema{
+		"display": displayProperty,
+		"id": NewPropertySchema(
+			idType,
+			NewDisplayValue(
+				PointerTo("ID"),
+				PointerTo("Machine identifier for this step."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+		"input": NewPropertySchema(
+			NewRefSchema(
+				"Scope",
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Input"),
+				PointerTo("Input data schema."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+		"outputs": NewPropertySchema(
+			NewMapSchema(
+				idType,
+				NewRefSchema(
+					"StepOutput",
+					nil,
+				),
+				nil,
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Input"),
+				PointerTo("Input data schema."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
+var stepOutputSchema = NewScopeSchema(
+	stepOutputSchemaObject,
+	append(
+		basicObjects,
+		scopeObject,
+	)...,
+)
 var schemaSchema = NewScopeSchema(
 	schemaObject,
 	append(
 		basicObjects,
 		scopeObject,
-		NewStructMappedObjectSchema[*StepOutputSchema](
-			"StepOutput",
-			map[string]*PropertySchema{
-				"display": displayProperty,
-				"error": NewPropertySchema(
-					NewBoolSchema(),
-					NewDisplayValue(
-						PointerTo("Error"),
-						PointerTo("If set to true, this output will be treated as an error output."),
-						nil,
-					),
-					false,
-					nil,
-					nil,
-					nil,
-					PointerTo("false"),
-					nil,
-				),
-				"schema": NewPropertySchema(
-					NewRefSchema(
-						"Scope",
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Schema"),
-						PointerTo("Data schema for this particular output."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		),
-		NewStructMappedObjectSchema[*StepSchema](
-			"Step",
-			map[string]*PropertySchema{
-				"display": displayProperty,
-				"id": NewPropertySchema(
-					idType,
-					NewDisplayValue(
-						PointerTo("ID"),
-						PointerTo("Machine identifier for this step."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"input": NewPropertySchema(
-					NewRefSchema(
-						"Scope",
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Input"),
-						PointerTo("Input data schema."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"outputs": NewPropertySchema(
-					NewMapSchema(
-						idType,
-						NewRefSchema(
-							"StepOutput",
-							nil,
-						),
-						nil,
-						nil,
-					),
-					NewDisplayValue(
-						PointerTo("Input"),
-						PointerTo("Input data schema."),
-						nil,
-					),
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		),
+		stepOutputSchemaObject,
+		stepSchemaObject,
 	)...,
 )
 
 // DescribeScope returns a scope that describes the ScopeSchema itself.
 func DescribeScope() *ScopeSchema {
 	return scopeScopeSchema
+}
+
+// DescribeStepOutput returns a scope that describes a step output.
+func DescribeStepOutput() *ScopeSchema {
+	return stepOutputSchema
 }
 
 // DescribeSchema returns a scope that describes a plugin schema.
