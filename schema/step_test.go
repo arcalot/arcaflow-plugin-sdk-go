@@ -15,9 +15,6 @@ type stepTestSuccessOutput struct {
 	Message string `json:"message"`
 }
 
-// golangci-lint does not detect types used in type parameters.
-//
-//nolint:unused
 type stepTestErrorOutput struct {
 	Error string `json:"message"`
 }
