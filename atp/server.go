@@ -19,22 +19,19 @@ func RunATPServer( //nolint:funlen
 ) error {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
-	workDone := make(chan struct{})
-	closed := false // If this becomes a problem, switch this out for an atomic bool.
+	workDone := make(chan error, 1)
+	var work_error error
 	go func() {
 		defer wg.Done()
 		select {
+		case work_error = <-workDone:
+			_ = stdin.Close()
 		case <-ctx.Done():
-			// The context is closed! That means this was instructed to stop.
-			// First let the code know that it was closed so that it doesn't panic.
-			closed = true
 			// Now close the pipe that it gets input from.
 			_ = stdin.Close()
-		case <-workDone:
-			// Done, so let it move on to the deferred wg.Done
 		}
 	}()
-	var goroutineError error
+
 	go func() {
 		defer wg.Done()
 		defer close(workDone)
@@ -42,60 +39,59 @@ func RunATPServer( //nolint:funlen
 		// Start by serializing the schema, since the protocol requires sending the schema on the hello message.
 		serializedSchema, err := s.SelfSerialize()
 		if err != nil {
-			goroutineError = err
-			panic(goroutineError)
+			workDone <- err
+			return
 		}
 
 		// The ATP protocol uses CBOR.
 		cborStdin := cbor.NewDecoder(stdin)
 		cborStdout := cbor.NewEncoder(stdout)
 
-		if closed { // Stop if closed.
-			return
-		}
-
 		// First, the start message, which is just an empty message.
 		var empty any
-		if err := cborStdin.Decode(&empty); err != nil && !closed {
-			goroutineError = fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
-			panic(goroutineError)
+		err = cborStdin.Decode(&empty)
+		if err != nil {
+			workDone <- fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
+			return
 		}
 
 		// Next, send the hello message, which includes the version and schema.
-		if err := cborStdout.Encode(helloMessage{1, serializedSchema}); err != nil && !closed {
-			goroutineError = fmt.Errorf("failed to CBOR-encode schema (%w)", err)
-			panic(goroutineError)
+		err = cborStdout.Encode(HelloMessage{1, serializedSchema})
+		if err != nil {
+			workDone <- fmt.Errorf("failed to CBOR-encode schema (%w)", err)
+			return
 		}
 
 		// Now, get the work message that dictates which step to run and the config info.
-		req := startWorkMessage{}
-		if err := cborStdin.Decode(&req); err != nil && !closed {
-			goroutineError = fmt.Errorf("failed to CBOR-decode start work message (%w)", err)
-			panic(goroutineError)
-		}
-		if closed { // Stop if closed.
+		req := StartWorkMessage{}
+		err = cborStdin.Decode(&req)
+		if err != nil {
+			workDone <- fmt.Errorf("failed to CBOR-decode start work message (%w)", err)
 			return
 		}
+
 		outputID, outputData, err := s.Call(req.StepID, req.Config)
 		if err != nil {
-			panic(err)
-		}
-		if closed { // Stop if closed.
+			workDone <- err
 			return
 		}
 
 		// Lastly, send the work done message.
-		if err := cborStdout.Encode(workDoneMessage{
+		err = cborStdout.Encode(workDoneMessage{
 			outputID,
 			outputData,
 			"",
-		}); err != nil && !closed {
-			goroutineError = fmt.Errorf("failed to encode CBOR response (%w)", err)
-			panic(goroutineError)
+		})
+		if err != nil {
+			workDone <- fmt.Errorf("failed to encode CBOR response (%w)", err)
+			return
 		}
+
+		// finished with no error!
+		workDone <- nil
 	}()
 
 	// Keep running until both goroutines are done
 	wg.Wait()
-	return goroutineError
+	return work_error
 }
