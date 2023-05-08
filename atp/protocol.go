@@ -1,11 +1,11 @@
 package atp
 
-type helloMessage struct {
+type HelloMessage struct {
 	Version int64 `cbor:"version"`
 	Schema  any   `cbor:"schema"`
 }
 
-type startWorkMessage struct {
+type StartWorkMessage struct {
 	StepID string `cbor:"id"`
 	Config any    `cbor:"config"`
 }
