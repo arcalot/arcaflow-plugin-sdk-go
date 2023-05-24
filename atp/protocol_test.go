@@ -22,7 +22,7 @@ type helloWorldOutput struct {
 	Message string `json:"message"`
 }
 
-func helloWorldHandler(input helloWorldInput) (string, any) {
+func helloWorldHandler(_ context.Context, input helloWorldInput) (string, any) {
 	return "success", helloWorldOutput{
 		Message: fmt.Sprintf("Hello, %s!", input.Name),
 	}

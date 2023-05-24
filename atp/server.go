@@ -20,11 +20,11 @@ func RunATPServer( //nolint:funlen
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	workDone := make(chan error, 1)
-	var work_error error
+	var workError error
 	go func() {
 		defer wg.Done()
 		select {
-		case work_error = <-workDone:
+		case workError = <-workDone:
 			_ = stdin.Close()
 		case <-ctx.Done():
 			// Now close the pipe that it gets input from.
@@ -70,7 +70,7 @@ func RunATPServer( //nolint:funlen
 			return
 		}
 
-		outputID, outputData, err := s.Call(req.StepID, req.Config)
+		outputID, outputData, err := s.Call(ctx, req.StepID, req.Config)
 		if err != nil {
 			workDone <- err
 			return
@@ -93,5 +93,5 @@ func RunATPServer( //nolint:funlen
 
 	// Keep running until both goroutines are done
 	wg.Wait()
-	return work_error
+	return workError
 }

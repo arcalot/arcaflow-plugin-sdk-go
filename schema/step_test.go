@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -86,14 +87,15 @@ var testStepSchema = schema.NewCallableStep(
 	stepTestHandler,
 )
 
-func stepTestHandler(input stepTestInputData) (string, any) {
+func stepTestHandler(_ context.Context, input stepTestInputData) (string, any) {
 	return "success", stepTestSuccessOutput{
 		Message: fmt.Sprintf("Hello, %s!", input.Name),
 	}
 }
 
 func TestStepExecution(t *testing.T) {
-	outputID, outputData, err := testStepSchema.Call(stepTestInputData{Name: "Arca Lot"})
+	ctx := context.Background()
+	outputID, outputData, err := testStepSchema.Call(ctx, stepTestInputData{Name: "Arca Lot"})
 	assertNoError(t, err)
 	assertEqual(t, outputID, "success")
 	assertEqual(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
