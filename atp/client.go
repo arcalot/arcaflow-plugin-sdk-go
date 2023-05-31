@@ -25,6 +25,8 @@ type Client interface {
 	ReadSchema() (schema.Schema[schema.Step], error)
 	// Execute executes a step with a given context and returns the resulting output.
 	Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, err error)
+	Encoder() *cbor.Encoder
+	Decoder() *cbor.Decoder
 }
 
 // NewClient creates a new ATP client (part of the engine code).
@@ -57,6 +59,14 @@ func NewClientWithLogger(
 	}
 }
 
+func (c client) Decoder() *cbor.Decoder {
+	return c.decoder
+}
+
+func (c client) Encoder() *cbor.Encoder {
+	return c.encoder
+}
+
 type client struct {
 	channel ClientChannel
 	decMode cbor.DecMode
@@ -73,7 +83,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 		return nil, fmt.Errorf("failed to encode start output message (%w)", err)
 	}
 
-	var hello helloMessage
+	var hello HelloMessage
 	if err := c.decoder.Decode(&hello); err != nil {
 		c.logger.Errorf("Failed to decode ATP hello message: %v", err)
 		return nil, fmt.Errorf("failed to decode hello message (%w)", err)
@@ -96,7 +106,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 
 func (c client) Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, err error) {
 	c.logger.Debugf("Executing step %s...", stepID)
-	if err := c.encoder.Encode(startWorkMessage{
+	if err := c.encoder.Encode(StartWorkMessage{
 		StepID: stepID,
 		Config: input,
 	}); err != nil {

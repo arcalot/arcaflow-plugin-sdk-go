@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"context"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -15,7 +16,8 @@ func TestSchemaCall(t *testing.T) {
 		"name": "Arca Lot",
 	}
 
-	outputID, outputData, err := schemaTestSchema.Call("hello", data)
+	ctx := context.Background()
+	outputID, outputData, err := schemaTestSchema.Call(ctx, "hello", data)
 	assertNoError(t, err)
 	assertEqual(t, outputID, "success")
 	typedData := outputData.(map[string]any)

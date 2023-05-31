@@ -1,6 +1,9 @@
 package schema
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // Step holds the definition for a single step, it's input and output definitions.
 type Step interface {
@@ -14,7 +17,7 @@ type Step interface {
 type CallableStep interface {
 	Step
 	ToStepSchema() *StepSchema
-	Call(data any) (outputID string, outputData any, err error)
+	Call(ctx context.Context, data any) (outputID string, outputData any, err error)
 }
 
 // NewStepSchema defines a new step.
@@ -63,7 +66,7 @@ func NewCallableStep[InputType any](
 	input *ScopeSchema,
 	outputs map[string]*StepOutputSchema,
 	display Display,
-	handler func(InputType) (string, any),
+	handler func(context.Context, InputType) (string, any),
 ) CallableStep {
 	return &CallableStepSchema[InputType]{
 		IDValue:      id,
@@ -80,7 +83,7 @@ type CallableStepSchema[InputType any] struct {
 	InputValue   *ScopeSchema                 `json:"input"`
 	OutputsValue map[string]*StepOutputSchema `json:"outputs"`
 	DisplayValue Display                      `json:"display"`
-	handler      func(InputType) (string, any)
+	handler      func(context.Context, InputType) (string, any)
 }
 
 func (s CallableStepSchema[InputType]) ID() string {
@@ -108,12 +111,12 @@ func (s CallableStepSchema[InputType]) ToStepSchema() *StepSchema {
 	}
 }
 
-func (s CallableStepSchema[InputType]) Call(input any) (string, any, error) {
+func (s CallableStepSchema[InputType]) Call(ctx context.Context, input any) (string, any, error) {
 	if err := s.InputValue.Validate(input); err != nil {
 		return "", nil, InvalidInputError{err}
 	}
 
-	outputID, outputData := s.handler(input.(InputType))
+	outputID, outputData := s.handler(ctx, input.(InputType))
 	output, ok := s.OutputsValue[outputID]
 	if !ok {
 		return "", nil, InvalidOutputError{

@@ -1,6 +1,9 @@
 package schema
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // Schema is a collection of steps supported by a plugin.
 type Schema[S Step] interface {
@@ -71,6 +74,7 @@ type CallableSchema struct {
 }
 
 func (s CallableSchema) Call(
+	ctx context.Context,
 	stepID string,
 	serializedInputData any,
 ) (
@@ -88,7 +92,7 @@ func (s CallableSchema) Call(
 	if err != nil {
 		return "", nil, InvalidInputError{err}
 	}
-	outputID, unserializedOutput, err := step.Call(unserializedInputData)
+	outputID, unserializedOutput, err := step.Call(ctx, unserializedInputData)
 	if err != nil {
 		return outputID, nil, err
 	}
