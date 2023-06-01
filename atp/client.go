@@ -1,7 +1,6 @@
 package atp
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -22,9 +21,9 @@ type ClientChannel interface {
 // once.
 type Client interface {
 	// ReadSchema reads the schema from the ATP server.
-	ReadSchema(ctx context.Context) (schema.Schema[schema.Step], error)
+	ReadSchema() (schema.Schema[schema.Step], error)
 	// Execute executes a step with a given context and returns the resulting output.
-	Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, err error)
+	Execute(stepID string, input any) (outputID string, outputData any, err error)
 	Encoder() *cbor.Encoder
 	Decoder() *cbor.Decoder
 }
@@ -75,7 +74,7 @@ type client struct {
 	encoder *cbor.Encoder
 }
 
-func (c *client) ReadSchema(ctx context.Context) (schema.Schema[schema.Step], error) {
+func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 	c.logger.Debugf("Reading plugin schema...")
 
 	if err := c.encoder.Encode(nil); err != nil {
@@ -104,7 +103,7 @@ func (c *client) ReadSchema(ctx context.Context) (schema.Schema[schema.Step], er
 	return unserializedSchema, nil
 }
 
-func (c client) Execute(ctx context.Context, stepID string, input any) (outputID string, outputData any, err error) {
+func (c client) Execute(stepID string, input any) (outputID string, outputData any, err error) {
 	c.logger.Debugf("Executing step %s...", stepID)
 	if err := c.encoder.Encode(StartWorkMessage{
 		StepID: stepID,
