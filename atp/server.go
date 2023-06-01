@@ -3,11 +3,14 @@ package atp
 import (
 	"context"
 	"fmt"
-	"io"
-	"sync"
-
 	"github.com/fxamacker/cbor/v2"
 	"go.flow.arcalot.io/pluginsdk/schema"
+	"io"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 )
 
 // RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
@@ -17,18 +20,39 @@ func RunATPServer( //nolint:funlen
 	stdout io.WriteCloser,
 	s *schema.CallableSchema,
 ) error {
+	subCtx, cancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	workDone := make(chan error, 1)
 	var workError error
 	go func() {
 		defer wg.Done()
+		// Wait for work done or context complete.
 		select {
 		case workError = <-workDone:
-			_ = stdin.Close()
-		case <-ctx.Done():
-			// Now close the pipe that it gets input from.
-			_ = stdin.Close()
+		case <-subCtx.Done():
+			// Wait up to 20 seconds for work to finish.
+			// This context is the same one that's passed into the step. So now we need to wait for it to finish,
+			// or exit early.
+			// Exiting too early will result in the client (usually the engine's plugin provider) erroring out
+			// due to the pipe being closed unexpectedly.
+			select {
+			case workError = <-workDone:
+			case <-time.After(time.Duration(20) * time.Second):
+			}
+		}
+		// Now close the pipe that it gets input from.
+		_ = stdin.Close()
+	}()
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-sigs:
+			// Got sigterm. So cancel context.
+			cancel()
+		case <-subCtx.Done():
+			// Done. No sigterm.
 		}
 	}()
 
@@ -70,7 +94,7 @@ func RunATPServer( //nolint:funlen
 			return
 		}
 
-		outputID, outputData, err := s.Call(ctx, req.StepID, req.Config)
+		outputID, outputData, err := s.Call(subCtx, req.StepID, req.Config)
 		if err != nil {
 			workDone <- err
 			return

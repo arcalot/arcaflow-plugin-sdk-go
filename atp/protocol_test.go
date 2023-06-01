@@ -115,7 +115,7 @@ func TestProtocol_Client_Execute(t *testing.T) {
 			cancel:  cancel,
 		}, log.NewTestLogger(t))
 
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.NoError(t, err)
 
 		outputID, outputData, err := cli.Execute(ctx, "hello-world", map[string]any{"name": "Arca Lot"})
@@ -157,7 +157,7 @@ func TestProtocol_Client_ReadSchema(t *testing.T) {
 			Context: nil,
 			cancel:  cancel,
 		}, log.NewTestLogger(t))
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.NoError(t, err)
 	}()
 
@@ -186,7 +186,7 @@ func TestProtocol_Error_Client_StartOutput(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.Error(t, err)
 	}()
 
@@ -244,7 +244,7 @@ func TestProtocol_Error_Client_Hello(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.Error(t, err)
 	}()
 
@@ -387,7 +387,7 @@ func TestProtocol_Error_Client_WorkStart(t *testing.T) {
 
 	go func() {
 		defer wgcli.Done()
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.NoError(t, err)
 
 		// close client's cbor encoder's io pipe
@@ -497,7 +497,7 @@ func TestProtocol_Error_Server_WorkDone(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		_, err := cli.ReadSchema()
+		_, err := cli.ReadSchema(nil)
 		assert.NoError(t, err)
 
 		// close server's cbor encoder's io pipe
