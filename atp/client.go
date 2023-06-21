@@ -129,18 +129,26 @@ func (c *client) Execute(stepID string, input any) (outputID string, outputData 
 		// Loop and get all messages
 
 		// Get the generic message, so we can find the type and decide the full message next.
-		var runtimeMessage RuntimeMessage
+		var runtimeMessage DecodedRuntimeMessage
 		for {
 			if err := cborReader.Decode(&runtimeMessage); err != nil {
-				c.logger.Errorf("Step %s failed to read runtime message: %v", stepID, err)
-				return "", nil, fmt.Errorf("failed to read runtime message (%w)", err)
+				c.logger.Errorf("Step %s failed to read or decode runtime message: %v", stepID, err)
+				return "", nil,
+					fmt.Errorf("failed to read or decode runtime message (%w)", err)
 			}
 			switch runtimeMessage.MessageID {
 			case MessageTypeWorkDone:
-				doneMessage = runtimeMessage.MessageData.(workDoneMessage)
+				if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
+					c.logger.Errorf("Failed to decode work done message (%v) for step ID %s ", err, stepID)
+					return "", nil,
+						fmt.Errorf("failed to read work done message (%w)", err)
+				}
 				break
 			case MessageTypeSignal:
-				signalMessage := runtimeMessage.MessageData.(signalMessage)
+				var signalMessage signalMessage
+				if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
+					c.logger.Errorf("Step %s failed to decode work done message: %v", stepID, err)
+				}
 				c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
 					signalMessage.SignalID)
 			default:
@@ -149,8 +157,9 @@ func (c *client) Execute(stepID string, input any) (outputID string, outputData 
 		}
 	} else {
 		if err := cborReader.Decode(&doneMessage); err != nil {
-			c.logger.Errorf("Step %s failed to read work done message: %v", stepID, err)
-			return "", nil, fmt.Errorf("failed to read work done message (%w)", err)
+			c.logger.Errorf("Failed to read or decode work done message: %v", stepID, err, stepID)
+			return "", nil,
+				fmt.Errorf("failed to read or decode work done message (%w) for step %s", err, stepID)
 		}
 	}
 	c.logger.Debugf("Step %s completed with output ID '%s'.", stepID, doneMessage.OutputID)
