@@ -6,27 +6,38 @@ import (
 )
 
 // Schema is a collection of steps supported by a plugin.
-type Schema[S Step] interface {
+type Schema[S Step, I Signal] interface {
 	Steps() map[string]S
+	ListeningSignals() map[string]I
+	EmittingSignals() map[string]I
 
 	SelfSerialize() (any, error)
 }
 
-// NewSchema builds a new schema with the specified steps.
-func NewSchema(
-	steps map[string]*StepSchema,
-) Schema[Step] {
-	return &SchemaSchema{
-		steps,
-	}
-}
+//
+//// NewSchema builds a new schema with the specified steps.
+//func NewSchema(
+//	steps map[string]*StepSchema,
+//	listeningSignals map[string]*SignalSchema,
+//	emittingSignals map[string]*SignalSchema,
+//) Schema[Step, Signal] {
+//	return &SchemaSchema{
+//		steps,
+//		listeningSignals,
+//		emittingSignals,
+//	}
+//}
 
 type SchemaSchema struct {
-	StepsValue map[string]*StepSchema `json:"steps"`
+	StepsValue            map[string]*StepSchema   `json:"steps"`
+	ListeningSignalsValue map[string]*SignalSchema `json:"listening_signals"`
+	EmittingSignalsValue  map[string]*SignalSchema `json:"emitting_signals"`
 }
 
 func (s SchemaSchema) SelfSerialize() (any, error) {
 	steps := make(map[string]*StepSchema, len(s.StepsValue))
+	listeningSignals := make(map[string]*SignalSchema, len(s.ListeningSignalsValue))
+	emittingSignals := make(map[string]*SignalSchema, len(s.EmittingSignalsValue))
 
 	for id, step := range s.StepsValue {
 		steps[id] = step
@@ -34,6 +45,8 @@ func (s SchemaSchema) SelfSerialize() (any, error) {
 
 	return schemaSchema.Serialize(&SchemaSchema{
 		steps,
+		listeningSignals,
+		emittingSignals,
 	})
 }
 
@@ -55,25 +68,38 @@ func (s SchemaSchema) applyScope() {
 	}
 }
 
-func NewCallableSchema(
-	steps ...CallableStep,
-) *CallableSchema {
-
+func NewPluginCallableSchema(
+	steps []CallableStep,
+	listening_signals []CallableSignal,
+	emitting_signals []SignalSchema,
+) *CallablePluginSchema {
 	stepMap := make(map[string]CallableStep, len(steps))
 	for _, s := range steps {
 		stepMap[s.ID()] = s
 	}
+	listeningSignalMap := make(map[string]CallableSignal, len(listening_signals))
+	for _, s := range listening_signals {
+		listeningSignalMap[s.ID()] = s
+	}
+	emittingSignalMap := make(map[string]SignalSchema, len(emitting_signals))
+	for _, s := range emitting_signals {
+		emittingSignalMap[s.ID()] = s
+	}
 
-	return &CallableSchema{
+	return &CallablePluginSchema{
 		stepMap,
+		listeningSignalMap,
+		emittingSignalMap,
 	}
 }
 
-type CallableSchema struct {
-	StepsValue map[string]CallableStep `json:"steps"`
+type CallablePluginSchema struct {
+	StepsValue     map[string]CallableStep   `json:"steps"`
+	SignalHandlers map[string]CallableSignal `json:"signal_handlers"`
+	SignalEmitters map[string]SignalSchema   `json:"signal_emitters"`
 }
 
-func (s CallableSchema) Call(
+func (s CallablePluginSchema) CallStep(
 	ctx context.Context,
 	stepID string,
 	serializedInputData any,
@@ -104,14 +130,25 @@ func (s CallableSchema) Call(
 	return outputID, serializedData, nil
 }
 
-func (s CallableSchema) SelfSerialize() (any, error) {
+func (s CallablePluginSchema) SelfSerialize() (any, error) {
 	steps := make(map[string]*StepSchema, len(s.StepsValue))
+	receivedSignals := make(map[string]*SignalSchema, len(s.SignalHandlers))
+	emittedSignals := make(map[string]*SignalSchema, len(s.SignalEmitters))
 
 	for id, step := range s.StepsValue {
 		steps[id] = step.ToStepSchema()
 	}
 
+	for id, signal := range s.SignalEmitters {
+		emittedSignals[id] = &signal
+	}
+	for id, signal := range s.SignalHandlers {
+		receivedSignals[id] = signal.ToSignalSchema()
+	}
+
 	return schemaSchema.Serialize(&SchemaSchema{
 		steps,
+		receivedSignals,
+		emittedSignals,
 	})
 }

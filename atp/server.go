@@ -18,7 +18,7 @@ func RunATPServer( //nolint:funlen
 	ctx context.Context,
 	stdin io.ReadCloser,
 	stdout io.WriteCloser,
-	s *schema.CallableSchema,
+	s *schema.CallablePluginSchema,
 ) error {
 	subCtx, cancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
@@ -80,7 +80,7 @@ func RunATPServer( //nolint:funlen
 		}
 
 		// Next, send the hello message, which includes the version and schema.
-		err = cborStdout.Encode(HelloMessage{1, serializedSchema})
+		err = cborStdout.Encode(HelloMessage{ProtocolVersion, serializedSchema})
 		if err != nil {
 			workDone <- fmt.Errorf("failed to CBOR-encode schema (%w)", err)
 			return
@@ -94,18 +94,23 @@ func RunATPServer( //nolint:funlen
 			return
 		}
 
-		outputID, outputData, err := s.Call(subCtx, req.StepID, req.Config)
+		outputID, outputData, err := s.CallStep(subCtx, req.StepID, req.Config)
 		if err != nil {
 			workDone <- err
 			return
 		}
 
 		// Lastly, send the work done message.
-		err = cborStdout.Encode(workDoneMessage{
-			outputID,
-			outputData,
-			"",
-		})
+		err = cborStdout.Encode(
+			RuntimeMessage{
+				MessageTypeWorkDone,
+				workDoneMessage{
+					outputID,
+					outputData,
+					"",
+				},
+			},
+		)
 		if err != nil {
 			workDone <- fmt.Errorf("failed to encode CBOR response (%w)", err)
 			return
