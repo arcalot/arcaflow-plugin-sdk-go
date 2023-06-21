@@ -10,6 +10,9 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
+const MinSupportedATPVersion = 1
+const MaxSupportedATPVersion = 2
+
 // ClientChannel holds the methods to talking to an ATP server (plugin).
 type ClientChannel interface {
 	io.Reader
@@ -17,11 +20,11 @@ type ClientChannel interface {
 	io.Closer
 }
 
-// Client is the way to read information from the ATP server and then send a task to it. A task can only be sent
-// once.
+// Client is the way to read information from the ATP server and then send a task to it in the form of a step.
+// A step can only be sent once, but signals can be sent until the step is over.
 type Client interface {
 	// ReadSchema reads the schema from the ATP server.
-	ReadSchema() (schema.Schema[schema.Step], error)
+	ReadSchema() (*schema.SchemaSchema, error)
 	// Execute executes a step with a given context and returns the resulting output.
 	Execute(stepID string, input any) (outputID string, outputData any, err error)
 	Encoder() *cbor.Encoder
@@ -50,6 +53,7 @@ func NewClientWithLogger(
 		logger = log.NewLogger(log.LevelDebug, log.NewNOOPLogger())
 	}
 	return &client{
+		-1, // unknown
 		channel,
 		decMode,
 		logger,
@@ -58,23 +62,24 @@ func NewClientWithLogger(
 	}
 }
 
-func (c client) Decoder() *cbor.Decoder {
+func (c *client) Decoder() *cbor.Decoder {
 	return c.decoder
 }
 
-func (c client) Encoder() *cbor.Encoder {
+func (c *client) Encoder() *cbor.Encoder {
 	return c.encoder
 }
 
 type client struct {
-	channel ClientChannel
-	decMode cbor.DecMode
-	logger  log.Logger
-	decoder *cbor.Decoder
-	encoder *cbor.Encoder
+	atpVersion int64 // TODO: Should this be persisted here or returned?
+	channel    ClientChannel
+	decMode    cbor.DecMode
+	logger     log.Logger
+	decoder    *cbor.Decoder
+	encoder    *cbor.Encoder
 }
 
-func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
+func (c *client) ReadSchema() (*schema.SchemaSchema, error) {
 	c.logger.Debugf("Reading plugin schema...")
 
 	if err := c.encoder.Encode(nil); err != nil {
@@ -89,10 +94,13 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 	}
 	c.logger.Debugf("Hello message read, ATP version %d.", hello.Version)
 
-	if hello.Version != 1 {
-		c.logger.Errorf("Incompatible plugin ATP version: %d", hello.Version)
-		return nil, fmt.Errorf("Incompatible plugin ATP version: %d", hello.Version)
+	if hello.Version < MinSupportedATPVersion || hello.Version > MaxSupportedATPVersion {
+		c.logger.Errorf("Incompatible plugin ATP version: %d; expected between %d and %d.", hello.Version,
+			MinSupportedATPVersion, MaxSupportedATPVersion)
+		return nil, fmt.Errorf("incompatible plugin ATP version: %d; expected between %d and %d", hello.Version,
+			MinSupportedATPVersion, MaxSupportedATPVersion)
 	}
+	c.atpVersion = hello.Version
 
 	unserializedSchema, err := schema.UnserializeSchema(hello.Schema)
 	if err != nil {
@@ -103,7 +111,7 @@ func (c *client) ReadSchema() (schema.Schema[schema.Step], error) {
 	return unserializedSchema, nil
 }
 
-func (c client) Execute(stepID string, input any) (outputID string, outputData any, err error) {
+func (c *client) Execute(stepID string, input any) (outputID string, outputData any, err error) {
 	c.logger.Debugf("Executing step %s...", stepID)
 	if err := c.encoder.Encode(StartWorkMessage{
 		StepID: stepID,
@@ -115,10 +123,35 @@ func (c client) Execute(stepID string, input any) (outputID string, outputData a
 	c.logger.Debugf("Step %s started, waiting for response...", stepID)
 
 	cborReader := c.decMode.NewDecoder(c.channel)
+
 	var doneMessage workDoneMessage
-	if err := cborReader.Decode(&doneMessage); err != nil {
-		c.logger.Errorf("Step %s failed to read work done message: %v", stepID, err)
-		return "", nil, fmt.Errorf("failed to read work done message (%w)", err)
+	if c.atpVersion > 1 {
+		// Loop and get all messages
+
+		// Get the generic message, so we can find the type and decide the full message next.
+		var runtimeMessage RuntimeMessage
+		for {
+			if err := cborReader.Decode(&runtimeMessage); err != nil {
+				c.logger.Errorf("Step %s failed to read runtime message: %v", stepID, err)
+				return "", nil, fmt.Errorf("failed to read runtime message (%w)", err)
+			}
+			switch runtimeMessage.MessageID {
+			case MessageTypeWorkDone:
+				doneMessage = runtimeMessage.MessageData.(workDoneMessage)
+				break
+			case MessageTypeSignal:
+				signalMessage := runtimeMessage.MessageData.(signalMessage)
+				c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
+					signalMessage.SignalID)
+			default:
+				c.logger.Warningf("Step %s sent unknown message type: %s", stepID, runtimeMessage.MessageID)
+			}
+		}
+	} else {
+		if err := cborReader.Decode(&doneMessage); err != nil {
+			c.logger.Errorf("Step %s failed to read work done message: %v", stepID, err)
+			return "", nil, fmt.Errorf("failed to read work done message (%w)", err)
+		}
 	}
 	c.logger.Debugf("Step %s completed with output ID '%s'.", stepID, doneMessage.OutputID)
 	debugLogs := strings.Split(doneMessage.DebugLogs, "\n")
