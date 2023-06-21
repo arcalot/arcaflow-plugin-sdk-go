@@ -1,5 +1,7 @@
 package atp
 
+import "github.com/fxamacker/cbor/v2"
+
 const ProtocolVersion int64 = 2
 
 type HelloMessage struct {
@@ -21,6 +23,11 @@ const (
 type RuntimeMessage struct {
 	MessageID   uint32 `cbor:"id"`
 	MessageData any    `cbor:"data"`
+}
+
+type DecodedRuntimeMessage struct {
+	MessageID      uint32          `cbor:"id"`
+	RawMessageData cbor.RawMessage `cbor:"data"`
 }
 
 type workDoneMessage struct {
