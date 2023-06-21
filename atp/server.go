@@ -101,14 +101,19 @@ func RunATPServer( //nolint:funlen
 		}
 
 		// Lastly, send the work done message.
+		messageData, err := cbor.Marshal(workDoneMessage{
+			outputID,
+			outputData,
+			"",
+		})
+		if err != nil {
+			workDone <- fmt.Errorf("failed to encode CBOR response data (%w)", err)
+			return
+		}
 		err = cborStdout.Encode(
-			RuntimeMessage{
+			DecodedRuntimeMessage{
 				MessageTypeWorkDone,
-				workDoneMessage{
-					outputID,
-					outputData,
-					"",
-				},
+				messageData,
 			},
 		)
 		if err != nil {
