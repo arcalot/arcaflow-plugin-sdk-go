@@ -94,6 +94,30 @@ func RunATPServer( //nolint:funlen
 			return
 		}
 
+		// Now, loop through stdin inputs until the step ends.
+		go func() { // Listen for signals in another thread
+			// The message is generic, so we must find the type and decode the full message next.
+			var runtimeMessage DecodedRuntimeMessage
+			for {
+				if err := cborStdin.Decode(&runtimeMessage); err != nil {
+					workDone <- fmt.Errorf("failed to read or decode runtime message: %v", err)
+					return
+				}
+				switch runtimeMessage.MessageID {
+				case MessageTypeSignal:
+					var signalMessage signalMessage
+					if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
+						workDone <- fmt.Errorf("failed to decode signal message: %v", err)
+					}
+					if err := s.CallSignal(ctx, signalMessage.SignalID, signalMessage.Data); err != nil {
+						workDone <- fmt.Errorf("failed while running signal ID %s: %v",
+							signalMessage.SignalID, err)
+					}
+				}
+				// TODO: Do something better than running until erroring out when stdin closes.
+			}
+		}()
+
 		outputID, outputData, err := s.CallStep(subCtx, req.StepID, req.Config)
 		if err != nil {
 			workDone <- err
@@ -101,19 +125,14 @@ func RunATPServer( //nolint:funlen
 		}
 
 		// Lastly, send the work done message.
-		messageData, err := cbor.Marshal(workDoneMessage{
-			outputID,
-			outputData,
-			"",
-		})
-		if err != nil {
-			workDone <- fmt.Errorf("failed to encode CBOR response data (%w)", err)
-			return
-		}
 		err = cborStdout.Encode(
-			DecodedRuntimeMessage{
+			RuntimeMessage{
 				MessageTypeWorkDone,
-				messageData,
+				workDoneMessage{
+					outputID,
+					outputData,
+					"",
+				},
 			},
 		)
 		if err != nil {

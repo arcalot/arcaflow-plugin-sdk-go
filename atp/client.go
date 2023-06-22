@@ -127,9 +127,9 @@ func (c *client) Execute(stepID string, input any) (outputID string, outputData 
 	var doneMessage workDoneMessage
 	if c.atpVersion > 1 {
 		// Loop and get all messages
-
-		// Get the generic message, so we can find the type and decide the full message next.
+		// The message is generic, so we must find the type and decode the full message next.
 		var runtimeMessage DecodedRuntimeMessage
+	readloop:
 		for {
 			if err := cborReader.Decode(&runtimeMessage); err != nil {
 				c.logger.Errorf("Step %s failed to read or decode runtime message: %v", stepID, err)
@@ -143,11 +143,11 @@ func (c *client) Execute(stepID string, input any) (outputID string, outputData 
 					return "", nil,
 						fmt.Errorf("failed to read work done message (%w)", err)
 				}
-				break
+				break readloop
 			case MessageTypeSignal:
 				var signalMessage signalMessage
 				if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-					c.logger.Errorf("Step %s failed to decode work done message: %v", stepID, err)
+					c.logger.Errorf("Step %s failed to decode signal message: %v", stepID, err)
 				}
 				c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
 					signalMessage.SignalID)
