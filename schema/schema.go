@@ -130,6 +130,30 @@ func (s CallablePluginSchema) CallStep(
 	return outputID, serializedData, nil
 }
 
+func (s CallablePluginSchema) CallSignal(
+	ctx context.Context,
+	signalID string,
+	serializedInputData any,
+) (
+	err error,
+) {
+	signal, ok := s.SignalHandlers[signalID]
+	if !ok {
+		return BadArgumentError{
+			Message: fmt.Sprintf("Invalid signal called: %s", signalID),
+		}
+	}
+	unserializedInputData, err := signal.DataSchema().Unserialize(serializedInputData)
+	if err != nil {
+		return InvalidInputError{err}
+	}
+	err = signal.Call(ctx, unserializedInputData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s CallablePluginSchema) SelfSerialize() (any, error) {
 	steps := make(map[string]*StepSchema, len(s.StepsValue))
 	receivedSignals := make(map[string]*SignalSchema, len(s.SignalHandlers))

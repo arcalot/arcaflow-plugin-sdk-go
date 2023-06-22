@@ -37,6 +37,6 @@ type workDoneMessage struct {
 }
 
 type signalMessage struct {
-	SignalID uint32 `cbor:"id"`
+	SignalID string `cbor:"id"`
 	Data     any    `cbor:"data"`
 }
