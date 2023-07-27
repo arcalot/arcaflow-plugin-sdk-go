@@ -18,9 +18,9 @@ func TestSchemaCall(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	outputID, outputData, err := schemaTestSchema.Call(ctx, "hello", data)
-	assertNoError(t, err)
-	assertEqual(t, outputID, "success")
+	outputID, outputData, err := schemaTestSchema.CallStep(ctx, "hello", data)
+	assert.NoError(t, err)
+	assert.Equals(t, outputID, "success")
 	typedData := outputData.(map[string]any)
-	assertEqual(t, typedData["message"].(string), "Hello, Arca Lot!")
+	assert.Equals(t, typedData["message"].(string), "Hello, Arca Lot!")
 }

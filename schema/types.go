@@ -56,8 +56,10 @@ type Serializable interface {
 	ReflectedType() reflect.Type
 	// Unserialize unserializes the provided data.
 	Unserialize(data any) (any, error)
-	// Validate validates the specified data in accordance with the schema.
+	// Validate validates the specified unserialized data in accordance with the schema.
 	Validate(data any) error
+	// ValidateCompatibility validates the specified serialized data or schema is compatible with the schema.
+	ValidateCompatibility(typeOrData any) error
 	// Serialize serializes the provided data.
 	Serialize(data any) (any, error)
 	// ApplyScope notifies the current schema being added to a scope.

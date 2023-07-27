@@ -6,10 +6,8 @@ import (
 )
 
 // Schema is a collection of steps supported by a plugin.
-type Schema[S Step, I Signal] interface {
+type Schema[S Step] interface {
 	Steps() map[string]S
-	ListeningSignals() map[string]I
-	EmittingSignals() map[string]I
 
 	SelfSerialize() (any, error)
 }
@@ -29,15 +27,11 @@ type Schema[S Step, I Signal] interface {
 //}
 
 type SchemaSchema struct {
-	StepsValue            map[string]*StepSchema   `json:"steps"`
-	ListeningSignalsValue map[string]*SignalSchema `json:"listening_signals"`
-	EmittingSignalsValue  map[string]*SignalSchema `json:"emitting_signals"`
+	StepsValue map[string]*StepSchema `json:"steps"`
 }
 
 func (s SchemaSchema) SelfSerialize() (any, error) {
 	steps := make(map[string]*StepSchema, len(s.StepsValue))
-	listeningSignals := make(map[string]*SignalSchema, len(s.ListeningSignalsValue))
-	emittingSignals := make(map[string]*SignalSchema, len(s.EmittingSignalsValue))
 
 	for id, step := range s.StepsValue {
 		steps[id] = step
@@ -45,8 +39,6 @@ func (s SchemaSchema) SelfSerialize() (any, error) {
 
 	return schemaSchema.Serialize(&SchemaSchema{
 		steps,
-		listeningSignals,
-		emittingSignals,
 	})
 }
 
@@ -68,38 +60,24 @@ func (s SchemaSchema) applyScope() {
 	}
 }
 
-func NewPluginCallableSchema(
-	steps []CallableStep,
-	listening_signals []CallableSignal,
-	emitting_signals []SignalSchema,
-) *CallablePluginSchema {
+func NewCallableSchema(
+	steps ...CallableStep,
+) *CallableSchema {
 	stepMap := make(map[string]CallableStep, len(steps))
 	for _, s := range steps {
 		stepMap[s.ID()] = s
 	}
-	listeningSignalMap := make(map[string]CallableSignal, len(listening_signals))
-	for _, s := range listening_signals {
-		listeningSignalMap[s.ID()] = s
-	}
-	emittingSignalMap := make(map[string]SignalSchema, len(emitting_signals))
-	for _, s := range emitting_signals {
-		emittingSignalMap[s.ID()] = s
-	}
 
-	return &CallablePluginSchema{
+	return &CallableSchema{
 		stepMap,
-		listeningSignalMap,
-		emittingSignalMap,
 	}
 }
 
-type CallablePluginSchema struct {
-	StepsValue     map[string]CallableStep   `json:"steps"`
-	SignalHandlers map[string]CallableSignal `json:"signal_handlers"`
-	SignalEmitters map[string]SignalSchema   `json:"signal_emitters"`
+type CallableSchema struct {
+	StepsValue map[string]CallableStep `json:"steps"`
 }
 
-func (s CallablePluginSchema) CallStep(
+func (s CallableSchema) CallStep(
 	ctx context.Context,
 	stepID string,
 	serializedInputData any,
@@ -130,49 +108,41 @@ func (s CallablePluginSchema) CallStep(
 	return outputID, serializedData, nil
 }
 
-func (s CallablePluginSchema) CallSignal(
+func (s CallableSchema) CallSignal(
 	ctx context.Context,
+	stepID string,
 	signalID string,
 	serializedInputData any,
 ) (
 	err error,
 ) {
-	signal, ok := s.SignalHandlers[signalID]
+	step, ok := s.StepsValue[stepID]
+
 	if !ok {
 		return BadArgumentError{
-			Message: fmt.Sprintf("Invalid signal called: %s", signalID),
+			Message: fmt.Sprintf("Invalid step called: %s", stepID),
 		}
 	}
-	unserializedInputData, err := signal.DataSchema().Unserialize(serializedInputData)
+	unserializedInputData, err := step.SignalHandlers()[signalID].DataSchema().Unserialize(serializedInputData)
 	if err != nil {
 		return InvalidInputError{err}
 	}
-	err = signal.Call(ctx, unserializedInputData)
+
+	err = step.CallSignal(ctx, signalID, unserializedInputData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s CallablePluginSchema) SelfSerialize() (any, error) {
+func (s CallableSchema) SelfSerialize() (any, error) {
 	steps := make(map[string]*StepSchema, len(s.StepsValue))
-	receivedSignals := make(map[string]*SignalSchema, len(s.SignalHandlers))
-	emittedSignals := make(map[string]*SignalSchema, len(s.SignalEmitters))
 
 	for id, step := range s.StepsValue {
 		steps[id] = step.ToStepSchema()
 	}
 
-	for id, signal := range s.SignalEmitters {
-		emittedSignals[id] = &signal
-	}
-	for id, signal := range s.SignalHandlers {
-		receivedSignals[id] = signal.ToSignalSchema()
-	}
-
 	return schemaSchema.Serialize(&SchemaSchema{
 		steps,
-		receivedSignals,
-		emittedSignals,
 	})
 }

@@ -17,6 +17,7 @@ type Object interface {
 }
 
 // NewObjectSchema creates a new object definition.
+// If you need it tied to a struct, use NewStructMappedObjectSchema instead.
 func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
 	var anyValue any
 	return &ObjectSchema{
@@ -276,6 +277,32 @@ func (o *ObjectSchema) validateMap(data map[string]any) error {
 	}
 	return nil
 }
+func (o *ObjectSchema) validateMapTypes(data map[string]any) error {
+	// TODO: The interdependencies
+	//if err := o.validateFieldInterdependencies(data); err != nil {
+	//	return err
+	//}
+
+	// Verify that all present fields match the self schema
+	for k, v := range data {
+		property, ok := o.PropertiesValue[k]
+		if !ok {
+			return o.invalidKeyError(k)
+		}
+		if err := property.ValidateCompatibility(v); err != nil {
+			return ConstraintErrorAddPathSegment(err, k)
+		}
+	}
+	// Verify that all required fields are present
+	for k, property := range o.PropertiesValue {
+		if property.Required() && data[k] == nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf("error while validating fields of objects %s, could not find required field %s", o.ReflectedType().String(), k),
+			}
+		}
+	}
+	return nil
+}
 
 func (o *ObjectSchema) validateStruct(data any) error {
 	if reflect.TypeOf(data) != o.ReflectedType() {
@@ -314,6 +341,44 @@ func (o *ObjectSchema) validateStruct(data any) error {
 	return o.validateFieldInterdependencies(rawData)
 }
 
+func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(*ObjectSchema)
+	fieldData := map[string]any{}
+	if ok {
+		// Validate IDs. This is important because the IDs should match.
+		if schemaType.ID() != o.ID() {
+			return &ConstraintError{
+				Message: fmt.Sprintf("validation failed for object schema ID %s. ID %s does not match.",
+					o.ID(), schemaType.ID()),
+			}
+		}
+		// Copy all properties to the variable for validating later.
+		for key, value := range schemaType.Properties() {
+			fieldData[key] = value
+		}
+	} else {
+		// Check if it's just a string->interface. If so, pass it into validateMapTypes
+		// Can't validate IDs, but that's acceptable. The only thing that matters in those cases is that the properties match.
+		// The reason for that is because we're checking if fields conform to the requirements of the object in this else section.
+		if fieldData, ok = typeOrData.(map[string]any); !ok {
+			// Try validating as data
+			_, err := o.Unserialize(typeOrData)
+			if err != nil {
+				return &ConstraintError{
+					Message: fmt.Sprintf("%T is not a valid data type or schema for an object schema (%s)", typeOrData, err),
+				}
+			} else {
+				return nil
+			}
+		}
+	}
+
+	// Get map of fields either the schema or the values for keys.
+	// Validate object fields
+	return o.validateMapTypes(fieldData)
+}
+
 func (o *ObjectSchema) Validate(data any) error {
 	if o.fieldCache != nil {
 		return o.validateStruct(data)
@@ -321,7 +386,7 @@ func (o *ObjectSchema) Validate(data any) error {
 	d, ok := data.(map[string]any)
 	if !ok {
 		return &ConstraintError{
-			Message: fmt.Sprintf("%T is not a valid data type for an object schema.", d),
+			Message: fmt.Sprintf("%T is not a valid data type for an object schema", d),
 		}
 	}
 	return o.validateMap(d)

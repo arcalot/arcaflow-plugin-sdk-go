@@ -116,3 +116,39 @@ func TestStringEnumJSONMarshal(t *testing.T) {
 func TestStringEnumType(t *testing.T) {
 	assert.Equals(t, schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}).TypeID(), schema.TypeIDStringEnum)
 }
+
+func TestStringEnumCompatibilityValidation(t *testing.T) {
+	portionSize := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"small": {NameValue: schema.PointerTo("Small")},
+		"large": {NameValue: schema.PointerTo("Large")},
+	})
+	assert.NoError(t, portionSize.ValidateCompatibility("small"))
+	assert.Error(t, portionSize.ValidateCompatibility("wrong"))
+}
+
+func TestStringEnumSchemaCompatibilityValidation(t *testing.T) {
+	s1 := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"a": {NameValue: schema.PointerTo("a")},
+		"b": {NameValue: schema.PointerTo("b")},
+		"c": {NameValue: schema.PointerTo("c")},
+	})
+	s2 := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"d": {NameValue: schema.PointerTo("a")},
+		"e": {NameValue: schema.PointerTo("b")},
+		"f": {NameValue: schema.PointerTo("c")},
+	})
+	S1 := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
+		"a": {NameValue: schema.PointerTo("A")},
+		"b": {NameValue: schema.PointerTo("B")},
+		"c": {NameValue: schema.PointerTo("C")},
+	})
+
+	assert.NoError(t, s1.ValidateCompatibility(s1))
+	assert.NoError(t, s2.ValidateCompatibility(s2))
+	// Mismatched keys
+	assert.Error(t, s1.ValidateCompatibility(s2))
+	assert.Error(t, s2.ValidateCompatibility(s1))
+	// Mismatched names
+	assert.Error(t, s1.ValidateCompatibility(S1))
+	assert.Error(t, S1.ValidateCompatibility(s1))
+}

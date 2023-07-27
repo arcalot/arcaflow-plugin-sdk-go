@@ -18,6 +18,9 @@ func (o oneOfTestObjectB) String() string {
 type oneOfTestObjectC struct {
 	M string `json:"m"`
 }
+type oneOfTestObjectD struct {
+	K int `json:"k"`
+}
 
 type oneOfTestObjectA struct {
 	S any `json:"s"`
@@ -61,3 +64,67 @@ func TestOneOfTypeID(t *testing.T) {
 		schema.TypeIDOneOfInt,
 	)
 }
+
+var oneOfTestObjectBProperties = map[string]*schema.PropertySchema{
+	"message": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var oneOfTestObjectCProperties = map[string]*schema.PropertySchema{
+	"m": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var oneOfTestObjectDProperties = map[string]*schema.PropertySchema{
+	"K": schema.NewPropertySchema(
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var oneOfTestBSchema = schema.NewObjectSchema(
+	"B",
+	oneOfTestObjectBProperties,
+)
+
+var oneOfTestCSchema = schema.NewObjectSchema(
+	"C",
+	oneOfTestObjectCProperties,
+)
+
+var oneOfTestDSchema = schema.NewObjectSchema(
+	"D",
+	oneOfTestObjectDProperties,
+)
+
+var oneOfTestBMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectB](
+	"B",
+	oneOfTestObjectBProperties,
+)
+
+var oneOfTestCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectC](
+	"C",
+	oneOfTestObjectCProperties,
+)

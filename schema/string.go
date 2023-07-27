@@ -17,10 +17,10 @@ type String interface {
 }
 
 // NewStringSchema creates a new string schema.
-func NewStringSchema(min *int64, max *int64, pattern *regexp.Regexp) *StringSchema {
+func NewStringSchema(minLen *int64, maxLen *int64, pattern *regexp.Regexp) *StringSchema {
 	return &StringSchema{
-		min,
-		max,
+		minLen,
+		maxLen,
 		pattern,
 	}
 }
@@ -39,10 +39,12 @@ func (s StringSchema) ReflectedType() reflect.Type {
 	return reflect.TypeOf("")
 }
 
+// Min returns the min length of the string.
 func (s StringSchema) Min() *int64 {
 	return s.MinValue
 }
 
+// Max returns the max length of the string.
 func (s StringSchema) Max() *int64 {
 	return s.MaxValue
 }
@@ -64,6 +66,37 @@ func (s StringSchema) UnserializeType(data any) (string, error) {
 		return "", err
 	}
 	return unserialized, s.ValidateType(unserialized)
+}
+
+func (s StringSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		return s.Validate(typeOrData)
+	}
+
+	if schemaType.TypeID() != TypeIDString {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'string' type: %T", schemaType),
+		}
+	}
+	// Verify string-specific schema values
+	stringSchemaType, ok := typeOrData.(*StringSchema)
+	if ok {
+		// We are just verifying compatibility. So anything is accepted except for when they are mutually exclusive
+		// So that's just when the min of the tested type is greater than the max of the self type,
+		// or the max of the tested type is less than the min of the self type
+		// For more control over this, the ValidateCompatibility API would need to change to allow subset,
+		// superset, and exact verification levels.
+		if (s.MinValue != nil && stringSchemaType.MaxValue != nil && (*stringSchemaType.MinValue) > (*s.MaxValue)) ||
+			(s.MaxValue != nil && stringSchemaType.MinValue != nil && (*stringSchemaType.MaxValue) < (*s.MinValue)) {
+			return &ConstraintError{
+				Message: fmt.Sprintf("mutually exclusive string lengths between string schemas"),
+			}
+		}
+		// Is it possible to validate the patterns in some way that makes sense?
+	}
+	return nil
 }
 
 func (s StringSchema) Validate(d any) error {

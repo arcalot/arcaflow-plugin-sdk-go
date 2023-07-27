@@ -71,6 +71,22 @@ func (b BoolSchema) UnserializeType(data any) (bool, error) {
 	return unserialized.(bool), nil
 }
 
+func (b BoolSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		_, err := b.Unserialize(typeOrData)
+		return err
+	}
+
+	if schemaType.TypeID() != TypeIDBool {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'bool' type: %T", schemaType),
+		}
+	}
+	return nil
+}
+
 func (b BoolSchema) Validate(data any) error {
 	_, err := b.Serialize(data)
 	return err

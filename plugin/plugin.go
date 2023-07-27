@@ -24,7 +24,7 @@ func printUsage() {
 // This is not required, but is recommended for standardization
 // of the interface between plugins.
 // Allows running ATP or exporting schema.
-func Run(s *schema.CallablePluginSchema) {
+func Run(s *schema.CallableSchema) {
 	if len(os.Args) != 2 {
 		printUsage()
 		os.Exit(1)

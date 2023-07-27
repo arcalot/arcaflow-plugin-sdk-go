@@ -154,6 +154,120 @@ func (o OneOfSchema[KeyType]) Unserialize(data any) (any, error) {
 	return o.UnserializeType(data)
 }
 
+func (o OneOfSchema[KeyType]) ValidateCompatibility(typeOrData any) error {
+	// If a schema is given, validate that it's a oneof schema. If it isn't, fail.
+	// If a schema is not given, validate as data.
+
+	// Check if it's a map. If it is, verify it. If not, check if it's a schema, if it is, verify it.
+	// If not, verify it as data.
+	inputAsMap, ok := typeOrData.(map[string]any)
+	if ok {
+		return o.validateMap(inputAsMap)
+	}
+	value := reflect.ValueOf(typeOrData)
+	if reflect.Indirect(value).Kind() != reflect.Struct {
+		// Validate as data
+		return o.Validate(typeOrData)
+	}
+
+	inputAsIndirectInterface := reflect.Indirect(value).Interface()
+
+	// Validate the oneof and key types
+	schemaType, ok := inputAsIndirectInterface.(OneOfSchema[KeyType])
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Found type (%T) does not match expected type (%T)",
+				inputAsIndirectInterface, o),
+		}
+	}
+
+	return o.validateSchema(schemaType)
+}
+
+func (o OneOfSchema[KeyType]) validateSchema(otherSchema OneOfSchema[KeyType]) error {
+	// Validate that the discriminator fields match, and all other values match.
+
+	// Validate the discriminator field name
+	if otherSchema.DiscriminatorFieldName() != o.DiscriminatorFieldName() {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field name (%s) does not match expected field name (%s)",
+				otherSchema.DiscriminatorFieldName(), o.DiscriminatorFieldName()),
+		}
+	}
+	// Validate the key values and matching types
+	for key, typeValue := range o.Types() {
+		matchingTypeValue := otherSchema.Types()[key]
+		if matchingTypeValue == nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf(
+					"validation failed for OneOfSchema. OneOf key '%v' is not present in given type", key),
+			}
+		}
+		err := typeValue.ValidateCompatibility(matchingTypeValue)
+		if err != nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf(
+					"validation failed for OneOfSchema. OneOf key '%v' does not have a compatible object schema (%s) ",
+					key, err),
+			}
+		}
+	}
+	return nil
+}
+
+func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
+	// Validate that it has the discriminator field.
+	// If it doesn't, fail
+	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
+	selectedTypeID := data[o.DiscriminatorFieldNameValue]
+	if selectedTypeID == nil {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%s' missing", o.DiscriminatorFieldNameValue),
+		}
+	}
+	// Ensure it's the correct type
+	selectedTypeIDAsserted, ok := selectedTypeID.(KeyType)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%v' has invalid type '%T'. Expected %T",
+				o.DiscriminatorFieldNameValue, selectedTypeID, selectedTypeIDAsserted),
+		}
+	}
+	// Find the object that's associated with the selected type
+	selectedSchema := o.TypesValue[selectedTypeIDAsserted]
+	if selectedSchema == nil {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
+				selectedTypeIDAsserted, o.getTypeValues()),
+		}
+	}
+	delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	err := selectedSchema.ValidateCompatibility(data)
+	if err != nil {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
+				selectedSchema, selectedTypeIDAsserted, err),
+		}
+	}
+	return nil
+}
+
+func (o OneOfSchema[KeyType]) getTypeValues() []KeyType {
+	output := make([]KeyType, len(o.TypesValue))
+	i := 0
+	for key, _ := range o.TypesValue {
+		output[i] = key
+		i += 1
+	}
+	return output
+}
+
 func (o OneOfSchema[KeyType]) Validate(data any) error {
 	if o.interfaceType == nil {
 		return o.ValidateType(data)

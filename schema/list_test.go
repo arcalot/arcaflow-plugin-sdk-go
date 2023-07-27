@@ -127,3 +127,29 @@ func TestListTypeHandling(t *testing.T) {
 	assert.ErrorR(t)(listType.Unserialize(struct{}{}))
 	assert.ErrorR(t)(listType.Unserialize([]any{struct{}{}}))
 }
+
+func TestListVerifyCompatibility(t *testing.T) {
+	typedStrListSchema := schema.NewTypedListSchema[string](
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	standardStrListSchema := schema.NewListSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	intListSchema := schema.NewListSchema(
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	// Verify list schemas with themselves
+	assert.NoError(t, typedStrListSchema.ValidateCompatibility(typedStrListSchema))
+	assert.NoError(t, standardStrListSchema.ValidateCompatibility(standardStrListSchema))
+	assert.NoError(t, standardStrListSchema.ValidateCompatibility(typedStrListSchema))
+	// Incompatible string instead of int
+	assert.Error(t, standardStrListSchema.ValidateCompatibility(intListSchema))
+	assert.Error(t, intListSchema.ValidateCompatibility(standardStrListSchema))
+	assert.Error(t, typedStrListSchema.ValidateCompatibility(intListSchema))
+}

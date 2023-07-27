@@ -47,6 +47,10 @@ func (s StepOutputSchema) Validate(data any) error {
 	return s.SchemaValue.Validate(data)
 }
 
+func (s StepOutputSchema) ValidateCompatibility(data any) error {
+	return s.SchemaValue.ValidateCompatibility(data)
+}
+
 func (s StepOutputSchema) Serialize(data any) (any, error) {
 	return s.SchemaValue.Serialize(data)
 }

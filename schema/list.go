@@ -121,6 +121,58 @@ func (l AbstractListSchema[ItemType]) Unserialize(data any) (any, error) {
 	}
 }
 
+func (l AbstractListSchema[ItemType]) ValidateCompatibility(typeOrData any) error {
+	// Check if it's just a list, if so, validate the individual items.
+	assertedAnyList, ok := typeOrData.([]any)
+	if ok {
+		for i, item := range assertedAnyList {
+			err := l.ItemsValue.ValidateCompatibility(item)
+			if err != nil {
+				return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%d]", i))
+			}
+		}
+		return nil // Successfully validated all items
+	}
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	value := reflect.ValueOf(typeOrData)
+	if reflect.Indirect(value).Kind() != reflect.Struct {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'list' type: %T. Is not list or list schema",
+				typeOrData),
+		}
+	}
+
+	listSchemaField := reflect.Indirect(value).FieldByName("AbstractListSchema")
+
+	if !listSchemaField.IsValid() {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'list' type: %T. Missing AbstractListSchema field",
+				typeOrData),
+		}
+	}
+
+	// Validate the type of EnumSchema
+	itemsValueField := listSchemaField.FieldByName("ItemsValue")
+	if !itemsValueField.IsValid() {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'list' type: %T. Missing ItemsValue field",
+				typeOrData),
+		}
+	}
+
+	itemType, ok := itemsValueField.Interface().(Type)
+	if !ok {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for enum. Found type (%T) does not match a type",
+				itemsValueField.Interface()),
+		}
+	}
+	// Note: Not currently bothering with validating min and max fields
+	// Validate the list sub-type
+	return l.ItemsValue.ValidateCompatibility(itemType)
+}
+
 func (l AbstractListSchema[ItemType]) Validate(data any) error {
 	v := reflect.ValueOf(data)
 	if v.Kind() != reflect.Slice {

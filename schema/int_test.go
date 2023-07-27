@@ -242,3 +242,25 @@ func TestIntParameters(t *testing.T) {
 func TestIntType(t *testing.T) {
 	assert.Equals(t, schema.NewIntSchema(nil, nil, nil).TypeID(), schema.TypeIDInt)
 }
+
+func TestIntCompatibilityValidation(t *testing.T) {
+	highIntRangeSchema := schema.NewIntSchema(schema.IntPointer(3), schema.IntPointer(5), nil)
+	lowIntRangeSchema := schema.NewIntSchema(schema.IntPointer(1), schema.IntPointer(2), nil)
+	overlappingIntRangeSchema := schema.NewIntSchema(schema.IntPointer(1), schema.IntPointer(4), nil)
+	noIntRangeSchema := schema.NewIntSchema(nil, nil, nil)
+
+	err := highIntRangeSchema.ValidateCompatibility(noIntRangeSchema)
+	assert.NoError(t, err)
+	err = lowIntRangeSchema.ValidateCompatibility(noIntRangeSchema)
+	assert.NoError(t, err)
+	err = noIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
+	assert.NoError(t, err)
+	err = overlappingIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
+	assert.NoError(t, err)
+	err = overlappingIntRangeSchema.ValidateCompatibility(highIntRangeSchema)
+	assert.NoError(t, err)
+	err = highIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
+	assert.Error(t, err)
+	err = lowIntRangeSchema.ValidateCompatibility(highIntRangeSchema)
+	assert.Error(t, err)
+}

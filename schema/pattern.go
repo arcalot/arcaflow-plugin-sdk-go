@@ -47,6 +47,22 @@ func (p PatternSchema) Unserialize(data any) (any, error) {
 	return pattern, nil
 }
 
+func (p PatternSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		return p.Validate(typeOrData)
+	}
+
+	// Note: This currently does not validate the pattern itself.
+	if schemaType.TypeID() != TypeIDPattern {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'pattern' type: %T", schemaType),
+		}
+	}
+	return nil
+}
+
 func (p PatternSchema) Validate(d any) error {
 	if d == nil {
 		return &ConstraintError{

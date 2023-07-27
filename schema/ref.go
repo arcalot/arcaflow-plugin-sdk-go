@@ -110,6 +110,19 @@ func (r *RefSchema) Validate(data any) error {
 	return r.referencedObjectCache.Validate(data)
 }
 
+func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+		})
+	}
+	schemaType, ok := typeOrData.(*RefSchema)
+	if ok {
+		return r.referencedObjectCache.ValidateCompatibility(schemaType.referencedObjectCache)
+	}
+	return r.referencedObjectCache.ValidateCompatibility(typeOrData)
+}
+
 func (r *RefSchema) Serialize(data any) (any, error) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{

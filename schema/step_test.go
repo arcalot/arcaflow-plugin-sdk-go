@@ -86,6 +86,7 @@ var testStepSchema = schema.NewCallableStep(
 	},
 	nil,
 	stepTestHandler,
+
 )
 
 func stepTestHandler(_ context.Context, input stepTestInputData) (string, any) {

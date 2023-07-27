@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -41,6 +42,8 @@ func NewPropertySchema(
 		defaultValue,
 		examples,
 		false,
+		false,
+		nil,
 	}
 }
 
@@ -55,6 +58,11 @@ type PropertySchema struct {
 	ExamplesValue      []string `json:"examples"`
 
 	emptyIsDefault bool
+
+	// Disabled sets whether the field can be used. Set the DisabledReason if set to true.
+	Disabled bool `json:"disabled"`
+	// DisabledReason explains why the property is disabled. Default nil
+	DisabledReason *string `json:"disabled_reason"`
 }
 
 // TreatEmptyAsDefaultValue triggers the property to treat an empty value (e.g. "", or 0) as the default value for
@@ -64,6 +72,13 @@ type PropertySchema struct {
 // However, to avoid ambiguity and better performance, this option should be used only when needed.
 func (p *PropertySchema) TreatEmptyAsDefaultValue() *PropertySchema {
 	p.emptyIsDefault = true
+	return p
+}
+
+// Disable is a builder-pattern way of disabling the property.
+func (p *PropertySchema) Disable(reason string) *PropertySchema {
+	p.Disabled = true
+	p.DisabledReason = &reason
 	return p
 }
 
@@ -112,7 +127,56 @@ func (p *PropertySchema) ApplyScope(scope Scope) {
 }
 
 func (p *PropertySchema) Unserialize(data any) (any, error) {
-	return p.TypeValue.Unserialize(data)
+	if !p.Disabled {
+		return p.TypeValue.Unserialize(data)
+	} else {
+		// Note, this is last, so that actual validation errors are returned before the disabled err
+		if p.DisabledReason == nil {
+			return nil, &ConstraintError{
+				Message: fmt.Sprintf("error due to attempting to use disabled property"),
+			}
+		} else {
+			return nil, &ConstraintError{
+				Message: fmt.Sprintf("error due to attempting to use disabled property: %s", *p.DisabledReason),
+			}
+		}
+	}
+}
+
+func (p *PropertySchema) ValidateCompatibility(typeOrData any) error {
+	schemaType, ok := typeOrData.(*PropertySchema)
+	if ok {
+		return p.TypeValue.ValidateCompatibility(schemaType.TypeValue)
+	}
+	err := p.TypeValue.ValidateCompatibility(typeOrData)
+	if err != nil {
+		if p.DisplayValue != nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf("error while validating sub-type of property %s with type %T (%s)",
+					*p.Display().Name(), p.TypeValue, err),
+			}
+		} else {
+			return &ConstraintError{
+				Message: fmt.Sprintf("error while validating sub-type of property type %T (%s)",
+					p.TypeValue, err),
+			}
+		}
+	}
+	// Now just check to see if it's enabled.
+	if !p.Disabled {
+		return nil
+	} else {
+		// Note, this is last, so that actual validation errors are returned before the disabled err
+		if p.DisabledReason == nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf("error due to attempting to use disabled property"),
+			}
+		} else {
+			return &ConstraintError{
+				Message: fmt.Sprintf("error due to attempting to use disabled property: %s", *p.DisabledReason),
+			}
+		}
+	}
 }
 
 func (p *PropertySchema) Validate(data any) error {
