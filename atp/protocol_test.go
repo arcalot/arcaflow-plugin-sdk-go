@@ -22,33 +22,46 @@ type helloWorldOutput struct {
 	Message string `json:"message"`
 }
 
-func helloWorldHandler(_ context.Context, input helloWorldInput) (string, any) {
+var helloWorldInputSchema = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[helloWorldInput](
+		"Input",
+		map[string]*schema.PropertySchema{
+			"name": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+	),
+)
+
+func helloWorldStepHandler(_ context.Context, _ any, input helloWorldInput) (string, any) {
 	return "success", helloWorldOutput{
 		Message: fmt.Sprintf("Hello, %s!", input.Name),
 	}
 }
 
+func helloWorldSignalHandler(_ context.Context, test any, input helloWorldInput) {
+	// Does nothing at the moment
+}
+
+var helloWorldCallableSignal = schema.NewCallableSignal(
+	"hello-world-signal",
+	helloWorldInputSchema,
+	nil,
+	helloWorldSignalHandler,
+)
+
 var helloWorldSchema = schema.NewCallableSchema(
-	schema.NewCallableStep[helloWorldInput](
-		"hello-world",
-		schema.NewScopeSchema(
-			schema.NewStructMappedObjectSchema[helloWorldInput](
-				"Input",
-				map[string]*schema.PropertySchema{
-					"name": schema.NewPropertySchema(
-						schema.NewStringSchema(nil, nil, nil),
-						nil,
-						true,
-						nil,
-						nil,
-						nil,
-						nil,
-						nil,
-					),
-				},
-			),
-		),
-		map[string]*schema.StepOutputSchema{
+	schema.NewCallableStepWithSignals[any, helloWorldInput](
+		/* id */ "hello-world",
+		/* input */ helloWorldInputSchema,
+		/* outputs */ map[string]*schema.StepOutputSchema{
 			"success": schema.NewStepOutputSchema(
 				schema.NewScopeSchema(
 					schema.NewStructMappedObjectSchema[helloWorldOutput](
@@ -71,8 +84,15 @@ var helloWorldSchema = schema.NewCallableSchema(
 				false,
 			),
 		},
-		nil,
-		helloWorldHandler,
+		/* signal handlers */ map[string]schema.CallableSignal{
+			"hello-world-signal": helloWorldCallableSignal,
+		},
+		/* signal emitters */ map[string]*schema.SignalSchema{
+			"hello-world-signal": helloWorldCallableSignal.ToSignalSchema(),
+		},
+		/* Display */ nil,
+		/* Initializer */ nil,
+		/* step handler */ helloWorldStepHandler,
 	),
 )
 
@@ -118,7 +138,11 @@ func TestProtocol_Client_Execute(t *testing.T) {
 		_, err := cli.ReadSchema()
 		assert.NoError(t, err)
 
-		outputID, outputData, err := cli.Execute("hello-world", map[string]any{"name": "Arca Lot"})
+		outputID, outputData, err := cli.Execute(
+			schema.Input{
+				ID:        "hello-world",
+				InputData: map[string]any{"name": "Arca Lot"},
+			}, nil, nil)
 		assert.NoError(t, err)
 		assert.Equals(t, outputID, "success")
 		assert.Equals(t, outputData.(map[any]any)["message"].(string), "Hello, Arca Lot!")
@@ -393,7 +417,11 @@ func TestProtocol_Error_Client_WorkStart(t *testing.T) {
 		// close client's cbor encoder's io pipe
 		assert.NoError(t, stdinWriter.Close())
 
-		_, _, err = cli.Execute("hello-world", map[string]any{"name": "Arca Lot"})
+		_, _, err = cli.Execute(
+			schema.Input{
+				ID:        "hello-world",
+				InputData: map[string]any{"name": "Arca Lot"},
+			}, nil, nil)
 		if err != nil {
 			cli_error = err
 		}
@@ -449,7 +477,11 @@ func TestProtocol_Error_Client_WorkDone(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		_, _, err := cli.Execute("hello-world", map[string]any{"name": "Arca Lot"})
+		_, _, err := cli.Execute(
+			schema.Input{
+				ID:        "hello-world",
+				InputData: map[string]any{"name": "Arca Lot"},
+			}, nil, nil)
 		if err != nil {
 			cli_error = err
 		}

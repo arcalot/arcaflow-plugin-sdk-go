@@ -70,6 +70,37 @@ func (f FloatSchema) UnserializeType(data any) (float64, error) {
 	return unserialized.(float64), nil
 }
 
+func (f FloatSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		_, err := f.Unserialize(typeOrData)
+		return err
+	}
+
+	if schemaType.TypeID() != TypeIDFloat {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'float' type: %T", schemaType),
+		}
+	}
+	// Verify float-specific schema values
+	floatSchemaType, ok := typeOrData.(*FloatSchema)
+	if ok {
+		// We are just verifying compatibility. So anything is accepted except for when they are mutually exclusive
+		// So that's just when the min of the tested type is greater than the max of the self type,
+		// or the max of the tested type is less than the min of the self type
+		// For more control over this, the ValidateCompatibility API would need to change to allow subset,
+		// superset, and exact verification levels.
+		if (f.MinValue != nil && floatSchemaType.MaxValue != nil && (*floatSchemaType.MinValue) > (*f.MaxValue)) ||
+			(f.MaxValue != nil && floatSchemaType.MinValue != nil && (*floatSchemaType.MaxValue) < (*f.MinValue)) {
+			return &ConstraintError{
+				Message: fmt.Sprintf("mutually exclusive min/max values between int schemas"),
+			}
+		}
+	}
+	return nil
+}
+
 func (f FloatSchema) Validate(d any) error {
 	_, err := f.Serialize(d)
 	return err

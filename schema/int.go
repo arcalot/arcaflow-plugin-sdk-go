@@ -96,6 +96,38 @@ func asInt(d any) (int64, error) {
 	return data, nil
 }
 
+func (i IntSchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		_, err := i.Unserialize(typeOrData)
+		return err
+	}
+
+	if schemaType.TypeID() != TypeIDInt {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'int' type: %T", schemaType),
+		}
+	}
+	// Verify int-specific schema values
+	intSchemaType, ok := typeOrData.(*IntSchema)
+	if ok {
+		// We are just verifying compatibility. So anything is accepted except for when they are mutually exclusive
+		// So that's just when the min of the tested type is greater than the max of the self type,
+		// or the max of the tested type is less than the min of the self type
+		// For more control over this, the ValidateCompatibility API would need to change to allow subset,
+		// superset, and exact verification levels.
+		if (i.MinValue != nil && intSchemaType.MaxValue != nil && (*intSchemaType.MinValue) > (*i.MaxValue)) ||
+			(i.MaxValue != nil && intSchemaType.MinValue != nil && (*intSchemaType.MaxValue) < (*i.MinValue)) {
+			return &ConstraintError{
+				Message: fmt.Sprintf("mutually exclusive min/max values between int schemas"),
+			}
+		}
+		// Should units be validated?
+	}
+	return nil
+}
+
 func (i IntSchema) Validate(d any) error {
 	_, err := i.Serialize(d)
 	return err

@@ -129,3 +129,18 @@ func (i InvalidOutputError) Error() string {
 func (i InvalidOutputError) Unwrap() error {
 	return i.Cause
 }
+
+// IllegalStateError is for when something is called when it shouldn't have.
+type IllegalStateError struct {
+	Cause error
+}
+
+// Error returns the error message.
+func (i IllegalStateError) Error() string {
+	return fmt.Sprintf("IllegalStateError %v", i.Cause.Error())
+}
+
+// Unwrap returns the underlying error that explains the output problem.
+func (i IllegalStateError) Unwrap() error {
+	return i.Cause
+}

@@ -23,6 +23,54 @@ func (a *AnySchema) Unserialize(data any) (any, error) {
 	return a.checkAndConvert(data)
 }
 
+func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if !ok {
+		_, err := a.Unserialize(typeOrData)
+		return err
+	}
+
+	switch schemaType.ReflectedType().Kind() {
+	case reflect.Int:
+		fallthrough
+	case reflect.Uint:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Uint8:
+		fallthrough
+	case reflect.Int16:
+		fallthrough
+	case reflect.Uint16:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Uint32:
+		fallthrough
+	case reflect.Uint64:
+		fallthrough
+	case reflect.Int64:
+		fallthrough
+	case reflect.Float32:
+		fallthrough
+	case reflect.Float64:
+		fallthrough
+	case reflect.String:
+		fallthrough
+	case reflect.Bool:
+		fallthrough
+	case reflect.Slice:
+		fallthrough
+	case reflect.Map:
+		return nil
+	default:
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'any' type: %T", schemaType),
+		}
+	}
+}
+
 func (a *AnySchema) Validate(data any) error {
 	_, err := a.checkAndConvert(data)
 	return err

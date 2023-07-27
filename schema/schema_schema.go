@@ -81,8 +81,7 @@ var valueType = NewOneOfStringSchema[any](
 				nil,
 			),
 		),
-		"bool": NewRefSchema(
-			"BoolSchema",
+		"bool": NewRefSchema("BoolSchema",
 			NewDisplayValue(
 				PointerTo("Bool"),
 				nil,
@@ -754,6 +753,34 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 			),
+			"disabled": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Disabled"),
+					PointerTo("Whether the field is disabled, resulting in an error on use."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+			"disabled_reason": NewPropertySchema(
+				NewStringSchema(nil, nil, nil),
+				NewDisplayValue(
+					PointerTo("Disabled Reason"),
+					PointerTo("Explains why the property is disabled, if disabled."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
 		},
 	),
 	NewStructMappedObjectSchema[*RefSchema](
@@ -1051,6 +1078,43 @@ var stepOutputSchemaObject = NewStructMappedObjectSchema[*StepOutputSchema](
 		),
 	},
 )
+var signalSchemaObject = NewStructMappedObjectSchema[*SignalSchema](
+	"Signal",
+	map[string]*PropertySchema{
+		"display": displayProperty,
+		"id": NewPropertySchema(
+			idType,
+			NewDisplayValue(
+				PointerTo("ID"),
+				PointerTo("Machine identifier for this signal."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+		"input": NewPropertySchema(
+			NewRefSchema(
+				"Scope",
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Input"),
+				PointerTo("Input data schema."),
+				nil,
+			),
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	},
+)
 var stepSchemaObject = NewStructMappedObjectSchema[*StepSchema](
 	"Step",
 	map[string]*PropertySchema{
@@ -1108,6 +1172,50 @@ var stepSchemaObject = NewStructMappedObjectSchema[*StepSchema](
 			nil,
 			nil,
 		),
+		"signal_handlers": NewPropertySchema(
+			NewMapSchema(
+				idType,
+				NewRefSchema(
+					"Signal",
+					nil,
+				),
+				nil,
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Signal Handlers"),
+				PointerTo("The map of signals that the plugin can receive and handle."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+		"signal_emitters": NewPropertySchema(
+			NewMapSchema(
+				idType,
+				NewRefSchema(
+					"Signal",
+					nil,
+				),
+				nil,
+				nil,
+			),
+			NewDisplayValue(
+				PointerTo("Signal Emitters"),
+				PointerTo("The map of signals that the plugin can emit."),
+				nil,
+			),
+			false,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
 	},
 )
 var stepOutputSchema = NewScopeSchema(
@@ -1124,6 +1232,7 @@ var schemaSchema = NewScopeSchema(
 		scopeObject,
 		stepOutputSchemaObject,
 		stepSchemaObject,
+		signalSchemaObject,
 	)...,
 )
 

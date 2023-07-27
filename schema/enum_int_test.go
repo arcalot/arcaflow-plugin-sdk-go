@@ -229,3 +229,39 @@ func TestIntEnumTypedSerialization(t *testing.T) {
 func TestIntEnumSchema(t *testing.T) {
 	assert.Equals(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
 }
+
+func TestIntEnumCompatibilityValidation(t *testing.T) {
+	payloadSize := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		1024:    {NameValue: schema.PointerTo("Small")},
+		1048576: {NameValue: schema.PointerTo("Large")},
+	}, schema.UnitBytes)
+	assert.NoError(t, payloadSize.ValidateCompatibility(1024))
+	assert.Error(t, payloadSize.ValidateCompatibility(1025))
+}
+
+func TestIntEnumSchemaCompatibilityValidation(t *testing.T) {
+	s1 := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		1: {NameValue: schema.PointerTo("a")},
+		2: {NameValue: schema.PointerTo("b")},
+		3: {NameValue: schema.PointerTo("c")},
+	}, nil)
+	s2 := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		4: {NameValue: schema.PointerTo("a")},
+		5: {NameValue: schema.PointerTo("b")},
+		6: {NameValue: schema.PointerTo("c")},
+	}, nil)
+	S1 := schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{
+		1: {NameValue: schema.PointerTo("A")},
+		2: {NameValue: schema.PointerTo("B")},
+		3: {NameValue: schema.PointerTo("C")},
+	}, nil)
+
+	assert.NoError(t, s1.ValidateCompatibility(s1))
+	assert.NoError(t, s2.ValidateCompatibility(s2))
+	// Mismatched keys
+	assert.Error(t, s1.ValidateCompatibility(s2))
+	assert.Error(t, s2.ValidateCompatibility(s1))
+	// Mismatched names
+	assert.Error(t, s1.ValidateCompatibility(S1))
+	assert.Error(t, S1.ValidateCompatibility(s1))
+}

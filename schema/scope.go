@@ -38,6 +38,14 @@ func NewScopeSchema(rootObject *ObjectSchema, objects ...*ObjectSchema) *ScopeSc
 	return schema
 }
 
+// NewScopeSchemaFromScope returns a new scope.
+func NewScopeSchemaFromScope(scope Scope) *ScopeSchema {
+	return &ScopeSchema{
+		scope.Objects(),
+		scope.Root(),
+	}
+}
+
 type ScopeSchema struct {
 	ObjectsValue map[string]*ObjectSchema `json:"objects"`
 	RootValue    string                   `json:"root"`
@@ -65,6 +73,15 @@ func (s *ScopeSchema) ReflectedType() reflect.Type {
 
 func (s *ScopeSchema) Unserialize(data any) (any, error) {
 	return s.ObjectsValue[s.RootValue].Unserialize(data)
+}
+
+func (s *ScopeSchema) ValidateCompatibility(typeOrData any) error {
+	schemaType, ok := typeOrData.(*ScopeSchema)
+	if ok {
+		return s.ObjectsValue[s.RootValue].ValidateCompatibility(schemaType.ObjectsValue[schemaType.RootValue])
+	}
+
+	return s.ObjectsValue[s.RootValue].ValidateCompatibility(typeOrData)
 }
 
 func (s *ScopeSchema) Validate(data any) error {

@@ -280,3 +280,25 @@ func TestFloatParameters(t *testing.T) {
 func TestFloatType(t *testing.T) {
 	assert.Equals(t, schema.NewFloatSchema(nil, nil, nil).TypeID(), schema.TypeIDFloat)
 }
+
+func TestFloatCompatibilityValidation(t *testing.T) {
+	highFloatRangeSchema := schema.NewFloatSchema(schema.PointerTo(float64(3)), schema.PointerTo(float64(5)), nil)
+	lowFloatRangeSchema := schema.NewFloatSchema(schema.PointerTo(float64(1)), schema.PointerTo(float64(2)), nil)
+	overlappingFloatRangeSchema := schema.NewFloatSchema(schema.PointerTo(float64(1)), schema.PointerTo(float64(4)), nil)
+	noFloatRangeSchema := schema.NewFloatSchema(nil, nil, nil)
+
+	err := highFloatRangeSchema.ValidateCompatibility(noFloatRangeSchema)
+	assert.NoError(t, err)
+	err = lowFloatRangeSchema.ValidateCompatibility(noFloatRangeSchema)
+	assert.NoError(t, err)
+	err = noFloatRangeSchema.ValidateCompatibility(lowFloatRangeSchema)
+	assert.NoError(t, err)
+	err = overlappingFloatRangeSchema.ValidateCompatibility(lowFloatRangeSchema)
+	assert.NoError(t, err)
+	err = overlappingFloatRangeSchema.ValidateCompatibility(highFloatRangeSchema)
+	assert.NoError(t, err)
+	err = highFloatRangeSchema.ValidateCompatibility(lowFloatRangeSchema)
+	assert.Error(t, err)
+	err = lowFloatRangeSchema.ValidateCompatibility(highFloatRangeSchema)
+	assert.Error(t, err)
+}

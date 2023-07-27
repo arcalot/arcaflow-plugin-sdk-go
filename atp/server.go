@@ -18,7 +18,7 @@ func RunATPServer( //nolint:funlen
 	ctx context.Context,
 	stdin io.ReadCloser,
 	stdout io.WriteCloser,
-	s *schema.CallablePluginSchema,
+	s *schema.CallableSchema,
 ) error {
 	subCtx, cancel := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
@@ -94,13 +94,25 @@ func RunATPServer( //nolint:funlen
 			return
 		}
 
+		done := false
+		// Replace the mutex with atomic calls if the project is upgraded to Go 1.19+
+		var doneMutex sync.Mutex
+		defer func() {
+			doneMutex.Lock()
+			done = true
+			doneMutex.Unlock()
+		}()
 		// Now, loop through stdin inputs until the step ends.
 		go func() { // Listen for signals in another thread
 			// The message is generic, so we must find the type and decode the full message next.
 			var runtimeMessage DecodedRuntimeMessage
 			for {
 				if err := cborStdin.Decode(&runtimeMessage); err != nil {
-					workDone <- fmt.Errorf("failed to read or decode runtime message: %v", err)
+					doneMutex.Lock()
+					if !done {
+						workDone <- fmt.Errorf("failed to read or decode runtime message: %v", err)
+					}
+					doneMutex.Unlock()
 					return
 				}
 				switch runtimeMessage.MessageID {
@@ -109,12 +121,16 @@ func RunATPServer( //nolint:funlen
 					if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 						workDone <- fmt.Errorf("failed to decode signal message: %v", err)
 					}
-					if err := s.CallSignal(ctx, signalMessage.SignalID, signalMessage.Data); err != nil {
+					if req.StepID != signalMessage.StepID {
+						workDone <- fmt.Errorf("signal sent with mismatched step ID")
+					}
+					if err := s.CallSignal(ctx, signalMessage.StepID, signalMessage.SignalID, signalMessage.Data); err != nil {
 						workDone <- fmt.Errorf("failed while running signal ID %s: %v",
 							signalMessage.SignalID, err)
 					}
+				default:
+					workDone <- fmt.Errorf("unknown message ID received: %d", runtimeMessage.MessageID)
 				}
-				// TODO: Do something better than running until erroring out when stdin closes.
 			}
 		}()
 
