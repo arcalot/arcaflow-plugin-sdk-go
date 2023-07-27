@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -23,7 +24,7 @@ type oneOfTestObjectA struct {
 }
 
 func TestOneOfTypeID(t *testing.T) {
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfStringTestObjectASchema.
 			Objects()["A"].
@@ -32,7 +33,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfString,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfStringTestObjectAType.
 			Objects()["A"].
@@ -41,7 +42,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfString,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfIntTestObjectASchema.
 			Objects()["A"].
@@ -50,7 +51,7 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfInt,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		oneOfIntTestObjectAType.
 			Objects()["A"].

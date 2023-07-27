@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"fmt"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -221,10 +222,10 @@ func TestIntEnumTypedSerialization(t *testing.T) {
 		1048576: {NameValue: schema.PointerTo("Large")},
 	}, schema.UnitBytes)
 	serializedData, err := s.Serialize(Bytes(64))
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(int64), 64)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(int64), 64)
 }
 
 func TestIntEnumSchema(t *testing.T) {
-	assertEqual(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
+	assert.Equals(t, schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil).TypeID(), schema.TypeIDIntEnum)
 }

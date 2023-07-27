@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -112,13 +113,13 @@ func TestAny(t *testing.T) {
 	for name, val := range validValues {
 		t.Run(name, func(t *testing.T) {
 			unserialized, err := anyType.Unserialize(val.input)
-			assertNoError(t, err)
-			assertEqual(t, unserialized, val.unserialized)
+			assert.NoError(t, err)
+			assert.Equals(t, unserialized, val.unserialized)
 			err = anyType.Validate(val.unserialized)
-			assertNoError(t, err)
+			assert.NoError(t, err)
 			serialized, err := anyType.Serialize(val.unserialized)
-			assertNoError(t, err)
-			assertEqual(t, serialized, val.serialized)
+			assert.NoError(t, err)
+			assert.Equals(t, serialized, val.serialized)
 		})
 	}
 
@@ -131,16 +132,16 @@ func TestAny(t *testing.T) {
 	for name, val := range invalidValues {
 		t.Run(name, func(t *testing.T) {
 			_, err := anyType.Unserialize(val)
-			assertError(t, err)
+			assert.Error(t, err)
 			err = anyType.Validate(val)
-			assertError(t, err)
+			assert.Error(t, err)
 			_, err = anyType.Serialize(val)
-			assertError(t, err)
+			assert.Error(t, err)
 		})
 	}
 }
 
 func TestAnyTypeReflectedType(t *testing.T) {
 	a := schema.NewAnySchema()
-	assertNotNil(t, a.ReflectedType())
+	assert.NotNil(t, a.ReflectedType())
 }

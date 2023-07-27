@@ -3,6 +3,7 @@ package schema_test
 import (
 	"context"
 	"fmt"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -96,7 +97,7 @@ func stepTestHandler(_ context.Context, input stepTestInputData) (string, any) {
 func TestStepExecution(t *testing.T) {
 	ctx := context.Background()
 	outputID, outputData, err := testStepSchema.Call(ctx, stepTestInputData{Name: "Arca Lot"})
-	assertNoError(t, err)
-	assertEqual(t, outputID, "success")
-	assertEqual(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
+	assert.NoError(t, err)
+	assert.Equals(t, outputID, "success")
+	assert.Equals(t, outputData.(stepTestSuccessOutput).Message, "Hello, Arca Lot!")
 }

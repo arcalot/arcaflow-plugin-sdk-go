@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -14,29 +15,29 @@ func TestMapMin(t *testing.T) {
 		nil,
 	)
 
-	assertEqual(t, *mapType.Min(), int64(2))
-	assertEqual(t, mapType.Max(), nil)
+	assert.Equals(t, *mapType.Min(), int64(2))
+	assert.Equals(t, mapType.Max(), nil)
 
-	assertError2(t)(mapType.Unserialize(map[any]any{}))
-	assertError2(t)(mapType.Unserialize(map[any]any{"foo": "foo"}))
+	assert.ErrorR(t)(mapType.Unserialize(map[any]any{}))
+	assert.ErrorR(t)(mapType.Unserialize(map[any]any{"foo": "foo"}))
 	unserialized, err := mapType.UnserializeType(map[any]any{"foo": "foo", "bar": "bar"})
-	assertNoError(t, err)
-	assertEqual(t, 2, len(unserialized))
-	assertEqual(t, "foo", unserialized["foo"])
-	assertEqual(t, "bar", unserialized["bar"])
+	assert.NoError(t, err)
+	assert.Equals(t, 2, len(unserialized))
+	assert.Equals(t, "foo", unserialized["foo"])
+	assert.Equals(t, "bar", unserialized["bar"])
 
-	assertError(t, mapType.Validate(map[string]string{}))
-	assertError(t, mapType.Validate(map[string]string{"foo": "foo"}))
-	assertNoError(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar"}))
+	assert.Error(t, mapType.Validate(map[string]string{}))
+	assert.Error(t, mapType.Validate(map[string]string{"foo": "foo"}))
+	assert.NoError(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar"}))
 
-	assertError2(t)(mapType.Serialize(map[string]string{}))
-	assertError2(t)(mapType.Serialize(map[string]string{"foo": "foo"}))
+	assert.ErrorR(t)(mapType.Serialize(map[string]string{}))
+	assert.ErrorR(t)(mapType.Serialize(map[string]string{"foo": "foo"}))
 	serialized, err := mapType.Serialize(map[string]string{"foo": "foo", "bar": "bar"})
-	assertNoError(t, err)
+	assert.NoError(t, err)
 	serializedMap := serialized.(map[any]any)
-	assertEqual(t, 2, len(serializedMap))
-	assertEqual(t, "foo", serializedMap["foo"].(string))
-	assertEqual(t, "bar", serializedMap["bar"].(string))
+	assert.Equals(t, 2, len(serializedMap))
+	assert.Equals(t, "foo", serializedMap["foo"].(string))
+	assert.Equals(t, "bar", serializedMap["bar"].(string))
 }
 
 func TestMapMax(t *testing.T) {
@@ -47,30 +48,30 @@ func TestMapMax(t *testing.T) {
 		schema.IntPointer(2),
 	)
 
-	assertEqual(t, mapType.Min(), nil)
-	assertEqual(t, *mapType.Max(), int64(2))
+	assert.Equals(t, mapType.Min(), nil)
+	assert.Equals(t, *mapType.Max(), int64(2))
 
-	assertError2(t)(mapType.Unserialize(map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}))
+	assert.ErrorR(t)(mapType.Unserialize(map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}))
 	unserialized, err := mapType.UnserializeType(map[any]any{"foo": "foo", "bar": "bar"})
-	assertNoError(t, err)
-	assertEqual(t, 2, len(unserialized))
-	assertEqual(t, "foo", unserialized["foo"])
-	assertEqual(t, "bar", unserialized["bar"])
+	assert.NoError(t, err)
+	assert.Equals(t, 2, len(unserialized))
+	assert.Equals(t, "foo", unserialized["foo"])
+	assert.Equals(t, "bar", unserialized["bar"])
 
-	assertError(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}))
-	assertNoError(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar"}))
+	assert.Error(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}))
+	assert.NoError(t, mapType.Validate(map[string]string{"foo": "foo", "bar": "bar"}))
 
-	assertError2(t)(mapType.Serialize(map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}))
+	assert.ErrorR(t)(mapType.Serialize(map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}))
 	serialized, err := mapType.Serialize(map[string]string{"foo": "foo", "bar": "bar"})
-	assertNoError(t, err)
+	assert.NoError(t, err)
 	serializedMap := serialized.(map[any]any)
-	assertEqual(t, 2, len(serializedMap))
-	assertEqual(t, "foo", serializedMap["foo"].(string))
-	assertEqual(t, "bar", serializedMap["bar"].(string))
+	assert.Equals(t, 2, len(serializedMap))
+	assert.Equals(t, "foo", serializedMap["foo"].(string))
+	assert.Equals(t, "bar", serializedMap["bar"].(string))
 }
 
 func TestMapSchemaID(t *testing.T) {
-	assertEqual(
+	assert.Equals(
 		t,
 		(schema.NewMapSchema(
 			schema.NewStringSchema(nil, nil, nil),
@@ -80,7 +81,7 @@ func TestMapSchemaID(t *testing.T) {
 		)).TypeID(),
 		schema.TypeIDMap,
 	)
-	assertEqual(
+	assert.Equals(
 		t,
 		(schema.NewMapSchema(
 			schema.NewStringSchema(nil, nil, nil),
@@ -108,20 +109,20 @@ func TestMapItemValidation(t *testing.T) {
 		nil,
 	)
 
-	assertError2(t)(mapType.Unserialize(map[string]string{"a": "b"}))
-	assertError2(t)(mapType.Unserialize(map[string]string{"ab": ""}))
-	assertNoError2(t)(mapType.Unserialize(map[string]string{"ab": "b"}))
+	assert.ErrorR(t)(mapType.Unserialize(map[string]string{"a": "b"}))
+	assert.ErrorR(t)(mapType.Unserialize(map[string]string{"ab": ""}))
+	assert.NoErrorR[any](t)(mapType.Unserialize(map[string]string{"ab": "b"}))
 
-	assertError(t, mapType.Validate(map[string]string{"a": "b"}))
-	assertError(t, mapType.Validate(map[string]string{"ab": ""}))
-	assertNoError(t, mapType.Validate(map[string]string{"ab": "b"}))
+	assert.Error(t, mapType.Validate(map[string]string{"a": "b"}))
+	assert.Error(t, mapType.Validate(map[string]string{"ab": ""}))
+	assert.NoError(t, mapType.Validate(map[string]string{"ab": "b"}))
 
-	assertError2(t)(mapType.Serialize(map[string]string{"a": "b"}))
-	assertError2(t)(mapType.Serialize(map[string]string{"ab": ""}))
-	assertNoError2(t)(mapType.Serialize(map[string]string{"ab": "b"}))
+	assert.ErrorR(t)(mapType.Serialize(map[string]string{"a": "b"}))
+	assert.ErrorR(t)(mapType.Serialize(map[string]string{"ab": ""}))
+	assert.NoErrorR[any](t)(mapType.Serialize(map[string]string{"ab": "b"}))
 
-	assertEqual(t, mapType.Keys().TypeID(), schema.TypeIDString)
-	assertEqual(t, mapType.Values().TypeID(), schema.TypeIDString)
+	assert.Equals(t, mapType.Keys().TypeID(), schema.TypeIDString)
+	assert.Equals(t, mapType.Values().TypeID(), schema.TypeIDString)
 }
 
 func TestMapSchemaHandling(t *testing.T) {
@@ -140,9 +141,9 @@ func TestMapSchemaHandling(t *testing.T) {
 		nil,
 	)
 
-	assertError2(t)(mapType.Unserialize(struct{}{}))
-	assertError2(t)(mapType.Unserialize(map[any]any{"a": struct{}{}}))
-	assertError2(t)(mapType.Unserialize(map[any]any{struct{}{}: "a"}))
+	assert.ErrorR(t)(mapType.Unserialize(struct{}{}))
+	assert.ErrorR(t)(mapType.Unserialize(map[any]any{"a": struct{}{}}))
+	assert.ErrorR(t)(mapType.Unserialize(map[any]any{struct{}{}: "a"}))
 }
 
 func TestMapSchemaTypesValidation(t *testing.T) {
@@ -153,8 +154,8 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		nil,
 	)
 
-	assertEqual(t, s.Keys().TypeID(), schema.TypeIDString)
-	assertEqual(t, s.Values().TypeID(), schema.TypeIDInt)
+	assert.Equals(t, s.Keys().TypeID(), schema.TypeIDString)
+	assert.Equals(t, s.Values().TypeID(), schema.TypeIDInt)
 
 	s2 := schema.NewMapSchema(
 		schema.NewIntSchema(nil, nil, nil),
@@ -163,8 +164,8 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		nil,
 	)
 
-	assertEqual(t, s2.Keys().TypeID(), schema.TypeIDInt)
-	assertEqual(t, s2.Values().TypeID(), schema.TypeIDString)
+	assert.Equals(t, s2.Keys().TypeID(), schema.TypeIDInt)
+	assert.Equals(t, s2.Values().TypeID(), schema.TypeIDString)
 
 	s3 := schema.NewMapSchema(
 		schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{1024: {NameValue: schema.PointerTo("Small")}}, nil),
@@ -173,8 +174,8 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		nil,
 	)
 
-	assertEqual(t, s3.Keys().TypeID(), schema.TypeIDIntEnum)
-	assertEqual(t, s3.Values().TypeID(), schema.TypeIDString)
+	assert.Equals(t, s3.Keys().TypeID(), schema.TypeIDIntEnum)
+	assert.Equals(t, s3.Values().TypeID(), schema.TypeIDString)
 
 	s4 := schema.NewMapSchema(
 		schema.NewStringEnumSchema(map[string]*schema.DisplayValue{"s": {NameValue: schema.PointerTo("Small")}}),
@@ -183,12 +184,12 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		nil,
 	)
 
-	assertEqual(t, s4.Keys().TypeID(), schema.TypeIDStringEnum)
-	assertEqual(t, s4.Values().TypeID(), schema.TypeIDInt)
+	assert.Equals(t, s4.Keys().TypeID(), schema.TypeIDStringEnum)
+	assert.Equals(t, s4.Values().TypeID(), schema.TypeIDInt)
 
 	func() {
 		defer func() {
-			assertError(t, recover().(error))
+			assert.Error(t, recover().(error))
 		}()
 		schema.NewMapSchema(
 			schema.NewBoolSchema(),

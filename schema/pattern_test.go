@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"fmt"
+	"go.arcalot.io/assert"
 	"regexp"
 	"testing"
 
@@ -74,5 +75,5 @@ func TestPatternSerializeInvalid(t *testing.T) {
 }
 
 func TestPatternID(t *testing.T) {
-	assertEqual(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
+	assert.Equals(t, schema.NewPatternSchema().TypeID(), schema.TypeIDPattern)
 }

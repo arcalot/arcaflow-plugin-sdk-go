@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"math"
 	"testing"
 	"time"
@@ -184,8 +185,8 @@ func TestIntSerialization(t *testing.T) {
 func TestDurationSerialization(t *testing.T) {
 	s := schema.NewIntSchema(nil, nil, schema.UnitDurationNanoseconds)
 	serializedTime, err := s.Serialize(time.Second)
-	assertNoError(t, err)
-	assertEqual(t, serializedTime.(int64), int64(time.Second))
+	assert.NoError(t, err)
+	assert.Equals(t, serializedTime.(int64), int64(time.Second))
 }
 
 func TestIntSerializationNoValidation(t *testing.T) {
@@ -233,11 +234,11 @@ func TestIntSerializationNoValidation(t *testing.T) {
 
 func TestIntParameters(t *testing.T) {
 	intType := schema.NewIntSchema(schema.IntPointer(1), schema.IntPointer(2), schema.UnitBytes)
-	assertEqual(t, 1, *intType.Min())
-	assertEqual(t, 2, *intType.Max())
-	assertEqual(t, schema.UnitBytes.BaseUnit().NameShortSingular(), (*intType.Units()).BaseUnit().NameShortSingular())
+	assert.Equals(t, 1, *intType.Min())
+	assert.Equals(t, 2, *intType.Max())
+	assert.Equals(t, schema.UnitBytes.BaseUnit().NameShortSingular(), (*intType.Units()).BaseUnit().NameShortSingular())
 }
 
 func TestIntType(t *testing.T) {
-	assertEqual(t, schema.NewIntSchema(nil, nil, nil).TypeID(), schema.TypeIDInt)
+	assert.Equals(t, schema.NewIntSchema(nil, nil, nil).TypeID(), schema.TypeIDInt)
 }
