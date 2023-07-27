@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -70,20 +71,20 @@ func TestObjectUnserialization(t *testing.T) {
 
 	t.Run("noptr", func(t *testing.T) {
 		unserializedData, err := testStructSchema.UnserializeType(data)
-		assertNoError(t, err)
-		assertInstanceOf[testStruct](t, unserializedData)
-		assertEqual(t, unserializedData.Field1, int64(42))
-		assertEqual(t, unserializedData.Field2, "Hello world!")
+		assert.NoError(t, err)
+		assert.InstanceOf[testStruct](t, unserializedData)
+		assert.Equals(t, unserializedData.Field1, int64(42))
+		assert.Equals(t, unserializedData.Field2, "Hello world!")
 	})
 
 	t.Run("ptr", func(t *testing.T) {
 		unserializedDataPtr, err := testStructSchemaPtr.UnserializeType(data)
-		assertNoError(t, err)
-		assertInstanceOf[*testStructPtr](t, unserializedDataPtr)
-		assertNotNil(t, unserializedDataPtr.Field1)
-		assertNotNil(t, unserializedDataPtr.Field2)
-		assertEqual(t, *unserializedDataPtr.Field1, int64(42))
-		assertEqual(t, *unserializedDataPtr.Field2, "Hello world!")
+		assert.NoError(t, err)
+		assert.InstanceOf[*testStructPtr](t, unserializedDataPtr)
+		assert.NotNil(t, unserializedDataPtr.Field1)
+		assert.NotNil(t, unserializedDataPtr.Field2)
+		assert.Equals(t, *unserializedDataPtr.Field1, int64(42))
+		assert.Equals(t, *unserializedDataPtr.Field2, "Hello world!")
 	})
 }
 
@@ -124,9 +125,9 @@ func TestObjectUnserializationEmbeddedStruct(t *testing.T) {
 		"Field1": 42,
 		"field3": "Hello world!",
 	})
-	assertNoError(t, err)
-	assertEqual(t, unserializedData.Field1, int64(42))
-	assertEqual(t, unserializedData.Field2, "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, unserializedData.Field1, int64(42))
+	assert.Equals(t, unserializedData.Field2, "Hello world!")
 }
 
 func TestObjectSerialization(t *testing.T) {
@@ -136,13 +137,13 @@ func TestObjectSerialization(t *testing.T) {
 	}
 
 	serializedData, err := testStructSchema.Serialize(testData)
-	assertNoError(t, err)
+	assert.NoError(t, err)
 
 	typedData := serializedData.(map[string]any)
 
-	assertEqual(t, len(typedData), 2)
-	assertEqual(t, typedData["Field1"].(int64), int64(42))
-	assertEqual(t, typedData["field3"].(string), "Hello world!")
+	assert.Equals(t, len(typedData), 2)
+	assert.Equals(t, typedData["Field1"].(int64), int64(42))
+	assert.Equals(t, typedData["field3"].(string), "Hello world!")
 }
 
 func TestObjectSerializationEmbedded(t *testing.T) {
@@ -154,13 +155,13 @@ func TestObjectSerializationEmbedded(t *testing.T) {
 	}
 
 	serializedData, err := testStructWithEmbedSchema.Serialize(testData)
-	assertNoError(t, err)
+	assert.NoError(t, err)
 
 	typedData := serializedData.(map[string]any)
 
-	assertEqual(t, len(typedData), 2)
-	assertEqual(t, typedData["Field1"].(int64), int64(42))
-	assertEqual(t, typedData["field3"].(string), "Hello world!")
+	assert.Equals(t, len(typedData), 2)
+	assert.Equals(t, typedData["Field1"].(int64), int64(42))
+	assert.Equals(t, typedData["field3"].(string), "Hello world!")
 }
 
 func TestObjectValidation(t *testing.T) {
@@ -169,7 +170,7 @@ func TestObjectValidation(t *testing.T) {
 		Field2: "Hello world!",
 	}
 
-	assertNoError(t, testStructSchema.Validate(testData))
+	assert.NoError(t, testStructSchema.Validate(testData))
 }
 
 func TestObjectValidationEmbedded(t *testing.T) {
@@ -180,7 +181,7 @@ func TestObjectValidationEmbedded(t *testing.T) {
 		"Hello world!",
 	}
 
-	assertNoError(t, testStructWithEmbedSchema.Validate(testData))
+	assert.NoError(t, testStructWithEmbedSchema.Validate(testData))
 }
 
 type testOptionalFieldStruct struct {
@@ -205,7 +206,7 @@ var testOptionalFieldSchema = schema.NewTypedObject[testOptionalFieldStruct](
 
 func TestOptionalField(t *testing.T) {
 	data, err := testOptionalFieldSchema.UnserializeType(map[string]any{})
-	assertNoError(t, err)
+	assert.NoError(t, err)
 	if data.A != nil {
 		t.Fatalf("Unexpected value: %s", *data.A)
 	}
@@ -251,8 +252,8 @@ func TestObjectNestedDefaults(t *testing.T) {
 			),
 		)
 		unserialized1, err := scope1.UnserializeType(map[string]any{})
-		assertNoError(t, err)
-		assertEqual(t, unserialized1.Nested.A, "Hello world!")
+		assert.NoError(t, err)
+		assert.Equals(t, unserialized1.Nested.A, "Hello world!")
 	})
 
 	t.Run("nested-pointer", func(t *testing.T) {
@@ -280,8 +281,8 @@ func TestObjectNestedDefaults(t *testing.T) {
 			),
 		)
 		unserialized2, err := scope2.UnserializeType(map[string]any{})
-		assertNoError(t, err)
-		assertNil(t, unserialized2.Nested)
+		assert.NoError(t, err)
+		assert.Nil(t, unserialized2.Nested)
 	})
 
 	t.Run("nested-nopointer-double", func(t *testing.T) {
@@ -327,8 +328,8 @@ func TestObjectNestedDefaults(t *testing.T) {
 			),
 		)
 		unserialized3, err := scope3.UnserializeType(map[string]any{})
-		assertNoError(t, err)
-		assertEqual(t, unserialized3.Nested.Nested.A, "Hello world!")
+		assert.NoError(t, err)
+		assert.Equals(t, unserialized3.Nested.Nested.A, "Hello world!")
 	})
 }
 
@@ -364,11 +365,11 @@ func TestTypedString(t *testing.T) {
 		},
 	)
 	result, err := o.Unserialize(map[string]any{"t1": "Hello world!"})
-	assertNoError(t, err)
-	assertEqual(t, result.(testStruct).T1, "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, result.(testStruct).T1, "Hello world!")
 	result, err = o.Unserialize(map[string]any{"t2": "Hello world!"})
-	assertNoError(t, err)
-	assertEqual(t, *result.(testStruct).T2, "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, *result.(testStruct).T2, "Hello world!")
 }
 
 func TestNonDefaultSerialization(t *testing.T) {
@@ -392,8 +393,8 @@ func TestNonDefaultSerialization(t *testing.T) {
 	)
 	text := "Hello Arca Lot!"
 	serializedData, err := s.Serialize(TestData{&text})
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(map[string]any)["foo"].(string), text)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(map[string]any)["foo"].(string), text)
 }
 
 func TestTypedObjectSchema_Any(t *testing.T) {
@@ -418,9 +419,9 @@ func TestTypedObjectSchema_Any(t *testing.T) {
 	anyObject := s.Any()
 	text := "Hello Arca Lot!"
 	serializedData, err := anyObject.SerializeType(TestData{&text})
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(map[string]any)["foo"].(string), text)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(map[string]any)["foo"].(string), text)
 
 	_, err = anyObject.SerializeType(text)
-	assertError(t, err)
+	assert.Error(t, err)
 }

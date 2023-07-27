@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"regexp"
 	"testing"
 
@@ -158,5 +159,5 @@ func getWorkflowSchema() *schema.TypedScopeSchema[*Workflow] {
 func TestSelfSerializationEndToEnd(t *testing.T) {
 	s := getWorkflowSchema()
 	_, err := s.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 }

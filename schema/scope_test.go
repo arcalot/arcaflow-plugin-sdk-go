@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -154,13 +155,13 @@ func TestSerialization(t *testing.T) {
 			"Hello world!",
 		},
 	})
-	assertNoError(t, err)
-	assertEqual(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
 }
 
 func TestSelfSerialization(t *testing.T) {
 	serializedScope, err := scopeTestObjectAType.SelfSerialize()
-	assertNoError(t, err)
+	assert.NoError(t, err)
 	serializedScopeMap := serializedScope.(map[string]any)
 	if serializedScopeMap["root"] != "scopeTestObjectA" {
 		t.Fatalf("Unexpected root object: %s", serializedScopeMap["root"])

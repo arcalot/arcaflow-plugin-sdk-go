@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -257,8 +258,8 @@ func TestFloatAliasSerialization(t *testing.T) {
 
 	s := schema.NewFloatSchema(nil, nil, nil)
 	serializedData, err := s.Serialize(T(1))
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(float64), float64(1))
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(float64), float64(1))
 }
 
 func TestFloatParameters(t *testing.T) {
@@ -267,9 +268,9 @@ func TestFloatParameters(t *testing.T) {
 		schema.PointerTo(float64(2)),
 		schema.UnitPercentage,
 	)
-	assertEqual(t, 1, *floatType.Min())
-	assertEqual(t, 2, *floatType.Max())
-	assertEqual(
+	assert.Equals(t, 1, *floatType.Min())
+	assert.Equals(t, 2, *floatType.Max())
+	assert.Equals(
 		t,
 		schema.UnitPercentage.BaseUnit().NameShortSingular(),
 		(*floatType.Units()).BaseUnit().NameShortSingular(),
@@ -277,5 +278,5 @@ func TestFloatParameters(t *testing.T) {
 }
 
 func TestFloatType(t *testing.T) {
-	assertEqual(t, schema.NewFloatSchema(nil, nil, nil).TypeID(), schema.TypeIDFloat)
+	assert.Equals(t, schema.NewFloatSchema(nil, nil, nil).TypeID(), schema.TypeIDFloat)
 }

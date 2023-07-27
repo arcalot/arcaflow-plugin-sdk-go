@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"context"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"

@@ -3,6 +3,7 @@ package schema_test
 import (
 	"encoding/json"
 	"fmt"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -104,8 +105,8 @@ func TestBoolAliasSerialization(t *testing.T) {
 
 	s := schema.NewBoolSchema()
 	serializedData, err := s.Serialize(T(true))
-	assertNoError(t, err)
-	assertEqual(t, serializedData.(bool), true)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(bool), true)
 }
 
 var boolTestSerializationCases = map[string]struct {
@@ -194,5 +195,5 @@ func TestBoolJSONMarshal(t *testing.T) {
 }
 
 func TestBoolSchema(t *testing.T) {
-	assertEqual(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
+	assert.Equals(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
 }

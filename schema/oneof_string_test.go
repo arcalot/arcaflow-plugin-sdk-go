@@ -5,6 +5,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -126,8 +127,8 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	}
 }`
 	var input any
-	assertNoError(t, json.Unmarshal([]byte(data), &input))
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
-	assertNoError(t, err)
-	assertEqual(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+	assert.NoError(t, err)
+	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
 }
