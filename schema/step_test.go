@@ -17,6 +17,7 @@ type stepTestSuccessOutput struct {
 	Message string `json:"message"`
 }
 
+//nolint:unused
 type stepTestErrorOutput struct {
 	Error string `json:"message"`
 }
@@ -86,7 +87,6 @@ var testStepSchema = schema.NewCallableStep(
 	},
 	nil,
 	stepTestHandler,
-
 )
 
 func stepTestHandler(_ context.Context, input stepTestInputData) (string, any) {

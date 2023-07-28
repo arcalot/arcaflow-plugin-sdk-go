@@ -125,7 +125,7 @@ func NewCallableStepWithSignals[StepData any, StepInputType any](
 		SignalEmittersValue: signalEmitters,
 		DisplayValue:        display,
 		initializer:         initializer,
-		initializerWG:       wg,
+		initializerWG:       &wg,
 		handler:             handler,
 	}
 }
@@ -139,7 +139,7 @@ type CallableStepSchema[StepData any, InputType any] struct {
 	OutputsValue        map[string]*StepOutputSchema `json:"outputs"`
 	DisplayValue        Display                      `json:"display"`
 	initializer         func() StepData
-	initializerWG       sync.WaitGroup
+	initializerWG       *sync.WaitGroup
 	initializerMutex    sync.Mutex
 	initializedData     *StepData
 	handler             func(context.Context, StepData, InputType) (string, any)

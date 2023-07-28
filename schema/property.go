@@ -133,7 +133,7 @@ func (p *PropertySchema) Unserialize(data any) (any, error) {
 		// Note, this is last, so that actual validation errors are returned before the disabled err
 		if p.DisabledReason == nil {
 			return nil, &ConstraintError{
-				Message: fmt.Sprintf("error due to attempting to use disabled property"),
+				Message: "error due to attempting to use disabled property",
 			}
 		} else {
 			return nil, &ConstraintError{
@@ -169,7 +169,7 @@ func (p *PropertySchema) ValidateCompatibility(typeOrData any) error {
 		// Note, this is last, so that actual validation errors are returned before the disabled err
 		if p.DisabledReason == nil {
 			return &ConstraintError{
-				Message: fmt.Sprintf("error due to attempting to use disabled property"),
+				Message: "error due to attempting to use disabled property",
 			}
 		} else {
 			return &ConstraintError{
