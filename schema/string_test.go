@@ -172,3 +172,29 @@ func TestStringParameters(t *testing.T) {
 func TestStringID(t *testing.T) {
 	assert.Equals(t, schema.NewStringSchema(nil, nil, nil).TypeID(), schema.TypeIDString)
 }
+
+func TestVerifyCompatibility(t *testing.T) {
+	s1 := schema.NewStringSchema(nil, nil, nil)
+	s2 := schema.NewStringSchema(schema.IntPointer(1), schema.IntPointer(3), nil)
+	s3 := schema.NewStringSchema(schema.IntPointer(10), schema.IntPointer(15), nil)
+	s4 := schema.NewIntSchema(nil, nil, nil)
+
+	assert.NoError(t, s1.ValidateCompatibility(s1))
+	assert.NoError(t, s1.ValidateCompatibility(s2))
+	assert.NoError(t, s2.ValidateCompatibility(s1))
+	assert.NoError(t, s2.ValidateCompatibility(s2))
+	assert.NoError(t, s3.ValidateCompatibility(s3))
+	assert.Error(t, s2.ValidateCompatibility(s3)) // Mutually exclusive sizes
+	assert.Error(t, s3.ValidateCompatibility(s2)) // Mutually exclusive sizes
+	assert.Error(t, s1.ValidateCompatibility(s4)) // Wrong type
+	assert.NoError(t, s1.ValidateCompatibility("test"))
+	assert.Error(t, s1.ValidateCompatibility(1))
+	assert.Error(t, s1.ValidateCompatibility([]string{}))
+	assert.Error(t, s1.ValidateCompatibility(map[string]string{}))
+	assert.Error(t, s2.ValidateCompatibility("This string is too long"))
+	assert.Error(t, s2.ValidateCompatibility("short"))
+	// A string enum should be valid
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	// Int enum invalid
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+}

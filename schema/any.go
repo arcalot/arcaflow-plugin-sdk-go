@@ -65,9 +65,15 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 	case reflect.Map:
 		return nil
 	default:
-		return &ConstraintError{
-			Message: fmt.Sprintf("unsupported data type for 'any' type: %T", schemaType),
+		// Check if it's an actual 'any' schema.
+		schemaType, ok := typeOrData.(*AnySchema)
+		if !ok {
+			// It's not an any schema, so error
+			return &ConstraintError{
+				Message: fmt.Sprintf("unsupported schema type for 'any' type: %T", schemaType),
+			}
 		}
+		return nil
 	}
 }
 

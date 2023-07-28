@@ -425,3 +425,48 @@ func TestTypedObjectSchema_Any(t *testing.T) {
 	_, err = anyObject.SerializeType(text)
 	assert.Error(t, err)
 }
+
+func TestObjectSchema_ValidateCompatibility(t *testing.T) {
+	// Schema validation
+	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchema))
+	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same
+	// map verification
+	validData := map[string]any{
+		"Field1": 42,
+		"field3": "Hello world!",
+	}
+	invalidData := map[string]any{
+		"Field1": "notanint",
+		"field3": "Hello world!",
+	}
+	validDataAndSchema := map[string]any{
+		"Field1": schema.NewIntSchema(nil, nil, nil),
+		"field3": schema.NewStringSchema(nil, nil, nil),
+	}
+	invalidDataAndSchema := map[string]any{
+		"Field1": schema.NewStringSchema(nil, nil, nil),
+		"field3": schema.NewStringSchema(nil, nil, nil),
+	}
+	assert.NoError(t, testStructSchema.ValidateCompatibility(validData))
+	assert.NoError(t, testStructSchema.ValidateCompatibility(validDataAndSchema))
+	assert.Error(t, testStructSchema.ValidateCompatibility(invalidData))
+	assert.Error(t, testStructSchema.ValidateCompatibility(invalidDataAndSchema))
+
+	// Test non-object types
+	s1 := testStructSchema
+	assert.Error(t, s1.ValidateCompatibility(schema.NewAnySchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility("test"))
+	assert.Error(t, s1.ValidateCompatibility(1))
+	assert.Error(t, s1.ValidateCompatibility(1.5))
+	assert.Error(t, s1.ValidateCompatibility(true))
+	assert.Error(t, s1.ValidateCompatibility([]string{}))
+	assert.Error(t, s1.ValidateCompatibility(map[string]any{}))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+}

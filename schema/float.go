@@ -94,7 +94,7 @@ func (f FloatSchema) ValidateCompatibility(typeOrData any) error {
 		if (f.MinValue != nil && floatSchemaType.MaxValue != nil && (*floatSchemaType.MinValue) > (*f.MaxValue)) ||
 			(f.MaxValue != nil && floatSchemaType.MinValue != nil && (*floatSchemaType.MaxValue) < (*f.MinValue)) {
 			return &ConstraintError{
-				Message: fmt.Sprintf("mutually exclusive min/max values between int schemas"),
+				Message: fmt.Sprintf("mutually exclusive min/max values between float schemas"),
 			}
 		}
 	}

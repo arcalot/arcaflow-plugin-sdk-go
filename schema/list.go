@@ -122,20 +122,22 @@ func (l AbstractListSchema[ItemType]) Unserialize(data any) (any, error) {
 }
 
 func (l AbstractListSchema[ItemType]) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	value := reflect.ValueOf(typeOrData)
+	valueKind := reflect.Indirect(value).Kind()
 	// Check if it's just a list, if so, validate the individual items.
-	assertedAnyList, ok := typeOrData.([]any)
-	if ok {
-		for i, item := range assertedAnyList {
-			err := l.ItemsValue.ValidateCompatibility(item)
+	if valueKind == reflect.Slice {
+		// We don't know the type of the list, so just use reflection to get any values.
+		lengthOfSlice := value.Len()
+		for i := 0; i < lengthOfSlice; i++ {
+			itemInList := value.Index(i).Interface()
+			err := l.ItemsValue.ValidateCompatibility(itemInList)
 			if err != nil {
 				return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%d]", i))
 			}
 		}
 		return nil // Successfully validated all items
-	}
-	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
-	value := reflect.ValueOf(typeOrData)
-	if reflect.Indirect(value).Kind() != reflect.Struct {
+	} else if valueKind != reflect.Struct {
 		return &ConstraintError{
 			Message: fmt.Sprintf("unsupported data type for 'list' type: %T. Is not list or list schema",
 				typeOrData),
