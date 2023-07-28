@@ -103,7 +103,7 @@ func (s StringSchema) ValidateCompatibility(typeOrData any) error {
 		if (s.MinValue != nil && stringSchemaType.MaxValue != nil && (*stringSchemaType.MinValue) > (*s.MaxValue)) ||
 			(s.MaxValue != nil && stringSchemaType.MinValue != nil && (*stringSchemaType.MaxValue) < (*s.MinValue)) {
 			return &ConstraintError{
-				Message: fmt.Sprintf("mutually exclusive string lengths between string schemas"),
+				Message: "mutually exclusive string lengths between string schemas",
 			}
 		}
 		// Is it possible to validate the patterns in some way that makes sense?

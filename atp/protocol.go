@@ -17,7 +17,7 @@ type StartWorkMessage struct {
 // All messages that can be contained in a RuntimeMessage struct.
 const (
 	MessageTypeWorkDone uint32 = 1
-	MessageTypeSignal          = 2
+	MessageTypeSignal   uint32 = 2
 )
 
 type RuntimeMessage struct {

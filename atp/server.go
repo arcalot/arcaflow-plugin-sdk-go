@@ -110,7 +110,7 @@ func RunATPServer( //nolint:funlen
 				if err := cborStdin.Decode(&runtimeMessage); err != nil {
 					doneMutex.Lock()
 					if !done {
-						workDone <- fmt.Errorf("failed to read or decode runtime message: %v", err)
+						workDone <- fmt.Errorf("failed to read or decode runtime message: %w", err)
 					}
 					doneMutex.Unlock()
 					return
@@ -119,13 +119,14 @@ func RunATPServer( //nolint:funlen
 				case MessageTypeSignal:
 					var signalMessage signalMessage
 					if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-						workDone <- fmt.Errorf("failed to decode signal message: %v", err)
+						workDone <- fmt.Errorf("failed to decode signal message: %w", err)
 					}
 					if req.StepID != signalMessage.StepID {
-						workDone <- fmt.Errorf("signal sent with mismatched step ID")
+						workDone <- fmt.Errorf("signal sent with mismatched step ID, got %s, expected %s",
+							signalMessage.StepID, req.StepID)
 					}
 					if err := s.CallSignal(ctx, signalMessage.StepID, signalMessage.SignalID, signalMessage.Data); err != nil {
-						workDone <- fmt.Errorf("failed while running signal ID %s: %v",
+						workDone <- fmt.Errorf("failed while running signal ID %s: %w",
 							signalMessage.SignalID, err)
 					}
 				default:

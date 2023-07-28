@@ -201,7 +201,7 @@ func (m MapSchema[K, V]) ValidateCompatibility(typeOrData any) error {
 	if (m.MinValue != nil && maxValue != nil && (*minValue) > (*m.MaxValue)) ||
 		(m.MaxValue != nil && minValue != nil && (*maxValue) < (*m.MinValue)) {
 		return &ConstraintError{
-			Message: fmt.Sprintf("mutually exclusive lengths between map schemas"),
+			Message: "mutually exclusive lengths between map schemas",
 		}
 	}
 	return nil

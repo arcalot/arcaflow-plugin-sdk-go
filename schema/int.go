@@ -124,7 +124,7 @@ func (i IntSchema) ValidateCompatibility(typeOrData any) error {
 		if (i.MinValue != nil && intSchemaType.MaxValue != nil && (*intSchemaType.MinValue) > (*i.MaxValue)) ||
 			(i.MaxValue != nil && intSchemaType.MinValue != nil && (*intSchemaType.MaxValue) < (*i.MinValue)) {
 			return &ConstraintError{
-				Message: fmt.Sprintf("mutually exclusive min/max values between int schemas"),
+				Message: "mutually exclusive min/max values between int schemas",
 			}
 		}
 		// Should units be validated?

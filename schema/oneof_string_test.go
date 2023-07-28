@@ -30,7 +30,7 @@ var oneOfStringTestObjectAProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-// Differs in that the discriminator field is different
+// Differs in that the discriminator field is different.
 var oneOfStringTestObjectAbProperties = map[string]*schema.PropertySchema{
 	"s": schema.NewPropertySchema(
 		schema.NewOneOfStringSchema[any](
@@ -50,7 +50,7 @@ var oneOfStringTestObjectAbProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-// Differs in that a key doesn't match
+// Differs in that a key doesn't match.
 var oneOfStringTestObjectAcProperties = map[string]*schema.PropertySchema{
 	"s": schema.NewPropertySchema(
 		schema.NewOneOfStringSchema[any](
@@ -70,7 +70,7 @@ var oneOfStringTestObjectAcProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-// Differs in that a oneof schema doesn't match
+// Differs in that a oneof schema doesn't match.
 var oneOfStringTestObjectAdProperties = map[string]*schema.PropertySchema{
 	"s": schema.NewPropertySchema(
 		schema.NewOneOfStringSchema[any](
