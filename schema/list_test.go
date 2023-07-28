@@ -152,4 +152,32 @@ func TestListVerifyCompatibility(t *testing.T) {
 	assert.Error(t, standardStrListSchema.ValidateCompatibility(intListSchema))
 	assert.Error(t, intListSchema.ValidateCompatibility(standardStrListSchema))
 	assert.Error(t, typedStrListSchema.ValidateCompatibility(intListSchema))
+	// Test a lot of non-list types and schemas
+	s1 := standardStrListSchema
+	assert.Error(t, s1.ValidateCompatibility(schema.NewAnySchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility("test"))
+	assert.Error(t, s1.ValidateCompatibility(1))
+	assert.Error(t, s1.ValidateCompatibility(1.5))
+	assert.Error(t, s1.ValidateCompatibility(true))
+	assert.Error(t, s1.ValidateCompatibility(map[string]any{}))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+	// Test list literals
+	// Note: It doesn't check the actual list type. Just value types.
+	assert.NoError(t, standardStrListSchema.ValidateCompatibility([]string{"a"}))
+	assert.NoError(t, standardStrListSchema.ValidateCompatibility([]any{"a"}))
+	assert.Error(t, intListSchema.ValidateCompatibility([]any{"a"}))
+	assert.NoError(t, intListSchema.ValidateCompatibility([]int{1}))
+	assert.Error(t, standardStrListSchema.ValidateCompatibility([]int{1}))
+	// Test list of schemas
+	assert.NoError(t, standardStrListSchema.ValidateCompatibility([]any{schema.NewStringSchema(nil, nil, nil)}))
+	assert.Error(t, standardStrListSchema.ValidateCompatibility([]any{schema.NewIntSchema(nil, nil, nil)}))
+	assert.NoError(t, intListSchema.ValidateCompatibility([]any{schema.NewIntSchema(nil, nil, nil)}))
+	assert.Error(t, intListSchema.ValidateCompatibility([]any{schema.NewStringSchema(nil, nil, nil)}))
 }

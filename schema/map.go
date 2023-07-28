@@ -160,7 +160,50 @@ func (m MapSchema[K, V]) ValidateCompatibility(typeOrData any) error {
 			Message: fmt.Sprintf("unsupported data type for 'map' type: %T", schemaType),
 		}
 	}
-	// TODO: Verify map schema types
+	// Now check the map schema fields and types.
+	value := reflect.ValueOf(typeOrData)
+	if reflect.Indirect(value).Kind() != reflect.Struct {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for 'map' type: %T. Is not map or map schema",
+				typeOrData),
+		}
+	}
+	keysField := reflect.Indirect(value).MethodByName("Keys")
+	valuesField := reflect.Indirect(value).MethodByName("Values")
+	minField := reflect.Indirect(value).MethodByName("Min")
+	maxField := reflect.Indirect(value).MethodByName("Max")
+	if !keysField.IsValid() || !valuesField.IsValid() || !minField.IsValid() ||
+		!maxField.IsValid() {
+		return &ConstraintError{
+			Message: fmt.Sprintf(
+				"unsupported data type for 'map' type: '%T'. Missing keys, values, min, or max methods",
+				schemaType),
+		}
+	}
+	keysType := keysField.Call([]reflect.Value{})[0].Interface()
+	err := m.Keys().ValidateCompatibility(keysType)
+	if err != nil {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for map key: %T, expected %T (%s)", keysType, m.Keys(), err),
+		}
+	}
+	valuesType := valuesField.Call([]reflect.Value{})[0].Interface()
+	err = m.Values().ValidateCompatibility(valuesType)
+	if err != nil {
+		return &ConstraintError{
+			Message: fmt.Sprintf("unsupported data type for map values: %T, expected %T (%s)",
+				valuesType, m.Values(), err),
+		}
+	}
+	// Must have size overlap.
+	minValue := minField.Call([]reflect.Value{})[0].Interface().(*int64)
+	maxValue := maxField.Call([]reflect.Value{})[0].Interface().(*int64)
+	if (m.MinValue != nil && maxValue != nil && (*minValue) > (*m.MaxValue)) ||
+		(m.MaxValue != nil && minValue != nil && (*maxValue) < (*m.MinValue)) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("mutually exclusive lengths between map schemas"),
+		}
+	}
 	return nil
 }
 

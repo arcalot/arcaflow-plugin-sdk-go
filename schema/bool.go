@@ -84,6 +84,7 @@ func (b BoolSchema) ValidateCompatibility(typeOrData any) error {
 			Message: fmt.Sprintf("unsupported data type for 'bool' type: %T", schemaType),
 		}
 	}
+	// No need to do further verification because booleans don't have any other fields.
 	return nil
 }
 

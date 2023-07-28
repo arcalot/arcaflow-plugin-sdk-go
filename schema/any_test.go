@@ -145,3 +145,24 @@ func TestAnyTypeReflectedType(t *testing.T) {
 	a := schema.NewAnySchema()
 	assert.NotNil(t, a.ReflectedType())
 }
+
+func TestAnyValidateCompatibility(t *testing.T) {
+	s1 := schema.NewAnySchema()
+
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewAnySchema()))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility("test"))
+	assert.NoError(t, s1.ValidateCompatibility(1))
+	assert.NoError(t, s1.ValidateCompatibility(1.5))
+	assert.NoError(t, s1.ValidateCompatibility(true))
+	assert.NoError(t, s1.ValidateCompatibility([]string{}))
+	assert.NoError(t, s1.ValidateCompatibility(map[string]any{}))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+
+}

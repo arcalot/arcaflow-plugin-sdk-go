@@ -200,3 +200,145 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 		t.Fatalf("Bool keys did not result in an error")
 	}()
 }
+
+func TestMapSchemaCompatibilityValidation(t *testing.T) {
+	s1 := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	// These next two have the same types, but size restrictions.
+	s1small := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		schema.IntPointer(0),
+		schema.IntPointer(3),
+	)
+	s1large := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		schema.IntPointer(4),
+		schema.IntPointer(6),
+	)
+
+	// Differs in incompatible key with s1.
+	s2 := schema.NewMapSchema(
+		schema.NewIntSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	// Differs in incompatible value with s1.
+	s3 := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	s4 := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewAnySchema(),
+		nil,
+		nil,
+	)
+
+	assert.NoError(t, s1.ValidateCompatibility(s1))           // Same
+	assert.NoError(t, s2.ValidateCompatibility(s2))           // Same
+	assert.NoError(t, s3.ValidateCompatibility(s3))           // Same
+	assert.NoError(t, s4.ValidateCompatibility(s4))           // Same
+	assert.NoError(t, s4.ValidateCompatibility(s1))           // s4-any is more general, so it will allow the more specific s1
+	assert.NoError(t, s1small.ValidateCompatibility(s1small)) // Same
+	assert.NoError(t, s1large.ValidateCompatibility(s1large)) // Same
+	assert.NoError(t, s1.ValidateCompatibility(s1large))      // Same types. Size overlap
+	assert.NoError(t, s1large.ValidateCompatibility(s1))      // Same types. Size overlap
+	assert.NoError(t, s1.ValidateCompatibility(s1small))      // Same types. Size overlap
+	assert.NoError(t, s1small.ValidateCompatibility(s1))      // Same types. Size overlap
+	assert.Error(t, s1.ValidateCompatibility(s2))             // Incompatible keys
+	assert.Error(t, s2.ValidateCompatibility(s1))             // incompatible keys
+	assert.Error(t, s1.ValidateCompatibility(s3))             // Incompatible values
+	assert.Error(t, s1.ValidateCompatibility(s4))             // right too general
+	assert.Error(t, s1small.ValidateCompatibility(s1large))   // mutually exclusive sizes
+	assert.Error(t, s1large.ValidateCompatibility(s1small))   // mutually exclusive sizes
+
+	assert.Error(t, s1.ValidateCompatibility(schema.NewAnySchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+}
+
+func TestMapCompatibilityValidation(t *testing.T) {
+	s1 := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	s1size2 := schema.NewMapSchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewIntSchema(nil, nil, nil),
+		schema.IntPointer(2),
+		schema.IntPointer(2),
+	)
+	v1 := map[string]int{
+		"a": 1,
+	}
+	v1Size2 := map[string]int{
+		"a": 1,
+		"b": 2,
+	}
+	v1Size3 := map[string]int{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+	}
+	v2 := map[any]any{
+		"a": 1,
+	}
+	v2bad1 := map[any]any{
+		"a": 1.1,
+	}
+	v2bad2 := map[any]any{
+		1: 1,
+	}
+	v3 := map[any]any{
+		schema.NewStringSchema(nil, nil, nil): 1,
+	}
+	v3bad := map[any]any{
+		schema.NewIntSchema(nil, nil, nil): 1,
+	}
+	v4 := map[any]any{
+		schema.NewStringSchema(nil, nil, nil): schema.NewIntSchema(nil, nil, nil),
+	}
+	v5 := map[any]any{
+		"a": schema.NewIntSchema(nil, nil, nil),
+	}
+	v5bad := map[any]any{
+		"a": schema.NewStringSchema(nil, nil, nil),
+	}
+
+	assert.NoError(t, s1.ValidateCompatibility(v1))           // Valid map
+	assert.NoError(t, s1.ValidateCompatibility(v2))           // Valid map with any type annotation
+	assert.NoError(t, s1.ValidateCompatibility(v3))           // Valid value, vaid schema key
+	assert.NoError(t, s1.ValidateCompatibility(v4))           // Valid schema key and value
+	assert.NoError(t, s1.ValidateCompatibility(v5))           // Valid key, valid schema value
+	assert.Error(t, s1.ValidateCompatibility(v2bad1))         // Invalid value
+	assert.Error(t, s1.ValidateCompatibility(v2bad2))         // Invalid key
+	assert.Error(t, s1.ValidateCompatibility(v3bad))          // Invalid schema key, valid value.
+	assert.Error(t, s1.ValidateCompatibility(v5bad))          // Valid key, invalid schema value.
+	assert.Error(t, s1size2.ValidateCompatibility(v1))        // Too small
+	assert.NoError(t, s1size2.ValidateCompatibility(v1Size2)) // Matching size
+	assert.Error(t, s1size2.ValidateCompatibility(v1Size3))   // Too large
+
+	// Non-map types
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility("test"))
+	assert.Error(t, s1.ValidateCompatibility(1))
+	assert.Error(t, s1.ValidateCompatibility(1.5))
+	assert.Error(t, s1.ValidateCompatibility(true))
+	assert.Error(t, s1.ValidateCompatibility([]string{}))
+}

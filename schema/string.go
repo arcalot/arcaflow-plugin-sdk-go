@@ -72,10 +72,22 @@ func (s StringSchema) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
 	schemaType, ok := typeOrData.(Type)
 	if !ok {
-		return s.Validate(typeOrData)
+		// Just verify strings, since everything is string from raw values.
+		stringType, ok := typeOrData.(string)
+		if !ok {
+			return &ConstraintError{
+				Message: fmt.Sprintf("unsupported data type for 'string' type: %T", typeOrData),
+			}
+		} else {
+			_, err := s.Unserialize(stringType)
+			return err
+		}
 	}
 
-	if schemaType.TypeID() != TypeIDString {
+	if schemaType.TypeID() == TypeIDStringEnum {
+		// Just accept the enums. It's possible to do more
+		return nil
+	} else if schemaType.TypeID() != TypeIDString {
 		return &ConstraintError{
 			Message: fmt.Sprintf("unsupported data type for 'string' type: %T", schemaType),
 		}

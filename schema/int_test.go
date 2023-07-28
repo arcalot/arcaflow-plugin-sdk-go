@@ -244,23 +244,36 @@ func TestIntType(t *testing.T) {
 }
 
 func TestIntCompatibilityValidation(t *testing.T) {
+	s1 := schema.NewIntSchema(nil, nil, nil)
 	highIntRangeSchema := schema.NewIntSchema(schema.IntPointer(3), schema.IntPointer(5), nil)
 	lowIntRangeSchema := schema.NewIntSchema(schema.IntPointer(1), schema.IntPointer(2), nil)
 	overlappingIntRangeSchema := schema.NewIntSchema(schema.IntPointer(1), schema.IntPointer(4), nil)
 	noIntRangeSchema := schema.NewIntSchema(nil, nil, nil)
 
-	err := highIntRangeSchema.ValidateCompatibility(noIntRangeSchema)
-	assert.NoError(t, err)
-	err = lowIntRangeSchema.ValidateCompatibility(noIntRangeSchema)
-	assert.NoError(t, err)
-	err = noIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
-	assert.NoError(t, err)
-	err = overlappingIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
-	assert.NoError(t, err)
-	err = overlappingIntRangeSchema.ValidateCompatibility(highIntRangeSchema)
-	assert.NoError(t, err)
-	err = highIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)
-	assert.Error(t, err)
-	err = lowIntRangeSchema.ValidateCompatibility(highIntRangeSchema)
-	assert.Error(t, err)
+	assert.NoError(t, highIntRangeSchema.ValidateCompatibility(noIntRangeSchema))
+	assert.NoError(t, lowIntRangeSchema.ValidateCompatibility(noIntRangeSchema))
+	assert.NoError(t, noIntRangeSchema.ValidateCompatibility(lowIntRangeSchema))
+	assert.NoError(t, overlappingIntRangeSchema.ValidateCompatibility(lowIntRangeSchema))
+	assert.NoError(t, overlappingIntRangeSchema.ValidateCompatibility(highIntRangeSchema))
+	assert.Error(t, highIntRangeSchema.ValidateCompatibility(lowIntRangeSchema)) // Mutually exclusive ranges
+	assert.Error(t, lowIntRangeSchema.ValidateCompatibility(highIntRangeSchema)) // Mutually exclusive ranges
+	// A string enum should be invalid
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
+	// Int enum invalid
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+	// Incompatible schemas
+	assert.Error(t, s1.ValidateCompatibility(schema.NewAnySchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	// Values
+	assert.Error(t, s1.ValidateCompatibility("test"))
+	assert.NoError(t, s1.ValidateCompatibility(1))
+	assert.NoError(t, s1.ValidateCompatibility(1.0))
+	assert.Error(t, s1.ValidateCompatibility(1.5))
+	assert.NoError(t, s1.ValidateCompatibility(true)) // booleans are interpreted as 0 and 1
+	assert.Error(t, s1.ValidateCompatibility([]string{}))
+	assert.Error(t, s1.ValidateCompatibility(map[string]any{}))
 }

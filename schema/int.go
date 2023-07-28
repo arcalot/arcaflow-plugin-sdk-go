@@ -104,6 +104,10 @@ func (i IntSchema) ValidateCompatibility(typeOrData any) error {
 		return err
 	}
 
+	if schemaType.TypeID() == TypeIDIntEnum {
+		// Just accept the enums. It's possible to do more
+		return nil
+	}
 	if schemaType.TypeID() != TypeIDInt {
 		return &ConstraintError{
 			Message: fmt.Sprintf("unsupported data type for 'int' type: %T", schemaType),

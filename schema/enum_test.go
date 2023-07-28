@@ -24,4 +24,19 @@ func TestIncompatibleEnumTypeValidation(t *testing.T) {
 	// Mismatched names
 	assert.Error(t, intEnumSchema.ValidateCompatibility(stringEnumSchema))
 	assert.Error(t, stringEnumSchema.ValidateCompatibility(intEnumSchema))
+
+	// Not enums
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewAnySchema()))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewBoolSchema()))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility("test"))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(1))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(1.5))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(true))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility([]string{}))
+	assert.Error(t, stringEnumSchema.ValidateCompatibility(map[string]any{}))
 }

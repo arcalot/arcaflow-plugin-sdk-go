@@ -344,6 +344,21 @@ func (o *ObjectSchema) validateStruct(data any) error {
 func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema. If it is, verify it. If not, verify it as data.
 	schemaType, ok := typeOrData.(*ObjectSchema)
+	if !ok {
+		// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
+		value := reflect.ValueOf(typeOrData)
+		if reflect.Indirect(value).Kind() == reflect.Struct {
+			field := reflect.Indirect(value).FieldByName("ObjectSchema")
+			if field.IsValid() {
+				fieldAsInterface := field.Interface()
+				objectType, ok2 := fieldAsInterface.(ObjectSchema)
+				if ok2 {
+					schemaType = &objectType
+					ok = true
+				}
+			}
+		}
+	}
 	fieldData := map[string]any{}
 	if ok {
 		// Validate IDs. This is important because the IDs should match.
@@ -358,7 +373,7 @@ func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
 			fieldData[key] = value
 		}
 	} else {
-		// Check if it's just a string->interface. If so, pass it into validateMapTypes
+		// Check if it's just a string->interface map. If so, pass it into validateMapTypes
 		// Can't validate IDs, but that's acceptable. The only thing that matters in those cases is that the properties match.
 		// The reason for that is because we're checking if fields conform to the requirements of the object in this else section.
 		if fieldData, ok = typeOrData.(map[string]any); !ok {
@@ -374,7 +389,7 @@ func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
 		}
 	}
 
-	// Get map of fields either the schema or the values for keys.
+	// Get map of fields with either the schema or the values for keys.
 	// Validate object fields
 	return o.validateMapTypes(fieldData)
 }

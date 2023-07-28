@@ -197,3 +197,22 @@ func TestBoolJSONMarshal(t *testing.T) {
 func TestBoolSchema(t *testing.T) {
 	assert.Equals(t, schema.NewBoolSchema().TypeID(), schema.TypeIDBool)
 }
+
+func TestBoolSchema_ValidateCompatibility(t *testing.T) {
+	s1 := schema.NewBoolSchema()
+	assert.NoError(t, s1.ValidateCompatibility(s1))    // Itself
+	assert.NoError(t, s1.ValidateCompatibility(true))  // a literal
+	assert.NoError(t, s1.ValidateCompatibility(false)) // a literal
+	assert.Error(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
+	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility(0)) // 0 and 1 are interpreted as booleans
+	assert.NoError(t, s1.ValidateCompatibility(1)) // 0 and 1 are interpreted as booleans
+	assert.Error(t, s1.ValidateCompatibility(2))
+	assert.Error(t, s1.ValidateCompatibility(1.5))
+	assert.Error(t, s1.ValidateCompatibility("test"))
+	assert.Error(t, s1.ValidateCompatibility([]string{}))
+	assert.Error(t, s1.ValidateCompatibility(map[string]any{}))
+}
