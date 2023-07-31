@@ -2,13 +2,11 @@ package atp
 
 import (
 	"fmt"
-	"io"
-	"strings"
-	"sync"
-
 	"github.com/fxamacker/cbor/v2"
 	log "go.arcalot.io/log/v2"
 	"go.flow.arcalot.io/pluginsdk/schema"
+	"io"
+	"strings"
 )
 
 const MinSupportedATPVersion = 1
@@ -127,86 +125,129 @@ func (c *client) Execute(
 	}
 	c.logger.Debugf("Step %s started, waiting for response...", stepData.ID)
 
-	cborReader := c.decMode.NewDecoder(c.channel)
-
-	// Listen for received signals, and send them over ATP if available.
-	done := false
-	// Replace the mutex with atomic calls if the project is upgraded to Go 1.19+
-	var doneMutex sync.Mutex
-	defer func() {
-		doneMutex.Lock()
-		done = true
-		if receivedSignals != nil {
-			close(receivedSignals)
-		}
-		doneMutex.Unlock()
-	}()
+	doneChannel := make(chan bool, 1) // Needs a buffer to not hang.
+	defer handleClosure(receivedSignals, doneChannel)
 	go func() {
-		// Looped select that gets signals
-		// TODO: Don't hang when the step finishes.
-		for {
-			signal, ok := <-receivedSignals
-			if !ok {
-				doneMutex.Lock()
-				if done {
-					doneMutex.Unlock()
-					return
-				}
-				doneMutex.Unlock()
-				c.logger.Errorf("error in channel preparing to send signal over ATP")
-				break
-			}
-			if err := c.encoder.Encode(RuntimeMessage{
-				MessageTypeSignal,
-				signalMessage{
-					StepID:   stepData.ID,
-					SignalID: signal.ID,
-					Data:     signal.InputData,
-				}}); err != nil {
-				c.logger.Errorf("Step %s failed to write signal message: %v", stepData.ID, err)
-			}
-		}
+		c.executeWriteLoop(stepData, receivedSignals, doneChannel)
 	}()
+	return c.executeReadLoop(stepData, receivedSignals)
+}
 
-	var doneMessage workDoneMessage
-	if c.atpVersion > 1 {
-		// Loop and get all messages
-		// The message is generic, so we must find the type and decode the full message next.
-		var runtimeMessage DecodedRuntimeMessage
-	readLoop:
-		for {
-			if err := cborReader.Decode(&runtimeMessage); err != nil {
-				c.logger.Errorf("Step %s failed to read or decode runtime message: %v", stepData.ID, err)
-				return "", nil,
-					fmt.Errorf("failed to read or decode runtime message (%w)", err)
-			}
-			switch runtimeMessage.MessageID {
-			case MessageTypeWorkDone:
-				if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
-					c.logger.Errorf("Failed to decode work done message (%v) for step ID %s ", err, stepData.ID)
-					return "", nil,
-						fmt.Errorf("failed to read work done message (%w)", err)
-				}
-				break readLoop
-			case MessageTypeSignal:
-				var signalMessage signalMessage
-				if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-					c.logger.Errorf("Step %s failed to decode signal message: %v", stepData.ID, err)
-				}
-				c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
-					signalMessage.SignalID)
+// handleClosure is the deferred function that will handle closing of the received channel,
+// and notifying the code that it's closed.
+// Note: The doneChannel should have a buffer.
+func handleClosure(receivedSignals chan schema.Input, doneChannel chan bool) {
+	doneChannel <- true
+	if receivedSignals != nil {
+		close(receivedSignals)
+	}
+}
+
+// Listen for received signals, and send them over ATP if available.
+func (c *client) executeWriteLoop(
+	stepData schema.Input,
+	receivedSignals chan schema.Input,
+	doneChannel chan bool,
+) {
+	// Looped select that gets signals
+	for {
+		signal, ok := <-receivedSignals
+		if !ok {
+			isDone := false
+			select {
+			case isDone = <-doneChannel:
 			default:
-				c.logger.Warningf("Step %s sent unknown message type: %s", stepData.ID, runtimeMessage.MessageID)
+				// Non-blocking because of the default.
+			}
+			if isDone {
+				// It's done, so the not ok is expected.
+				return
+			} else {
+				// It's not supposed to be not ok yet.
+				c.logger.Errorf("error in channel preparing to send signal over ATP")
+				return
 			}
 		}
-	} else {
-		if err := cborReader.Decode(&doneMessage); err != nil {
-			c.logger.Errorf("Failed to read or decode work done message: %v", stepData.ID, err, stepData.ID)
-			return "", nil,
-				fmt.Errorf("failed to read or decode work done message (%w) for step %s", err, stepData.ID)
+		if err := c.encoder.Encode(RuntimeMessage{
+			MessageTypeSignal,
+			signalMessage{
+				StepID:   stepData.ID,
+				SignalID: signal.ID,
+				Data:     signal.InputData,
+			}}); err != nil {
+			c.logger.Errorf("Step %s failed to write signal message: %v", stepData.ID, err)
 		}
 	}
+}
+
+func (c *client) executeReadLoop(
+	stepData schema.Input, emittedSignals chan<- schema.Input,
+) (outputID string, outputData any, err error) {
+	cborReader := c.decMode.NewDecoder(c.channel)
+	if c.atpVersion >= 2 {
+		return c.executeReadLoopV2(cborReader, stepData, emittedSignals)
+	} else {
+		return c.executeReadLoopV1(cborReader, stepData)
+	}
+}
+
+func (c *client) executeReadLoopV1(
+	cborReader *cbor.Decoder,
+	stepData schema.Input,
+) (outputID string, outputData any, err error) {
+	var doneMessage workDoneMessage
+	if err := cborReader.Decode(&doneMessage); err != nil {
+		c.logger.Errorf("Failed to read or decode work done message: (%w) for step %s", err, stepData.ID)
+		return "", nil,
+			fmt.Errorf("failed to read or decode work done message (%w) for step %s", err, stepData.ID)
+	}
+	return c.handleWorkDone(stepData, doneMessage)
+}
+
+func (c *client) executeReadLoopV2(
+	cborReader *cbor.Decoder,
+	stepData schema.Input,
+	emittedSignals chan<- schema.Input,
+) (outputID string, outputData any, err error) {
+	// Loop and get all messages
+	// The message is generic, so we must find the type and decode the full message next.
+	var runtimeMessage DecodedRuntimeMessage
+	for {
+		if err := cborReader.Decode(&runtimeMessage); err != nil {
+			c.logger.Errorf("Step %s failed to read or decode runtime message: %v", stepData.ID, err)
+			return "", nil,
+				fmt.Errorf("failed to read or decode runtime message (%w)", err)
+		}
+		switch runtimeMessage.MessageID {
+		case MessageTypeWorkDone:
+			var doneMessage workDoneMessage
+			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
+				c.logger.Errorf("Failed to decode work done message (%v) for step ID %s ", err, stepData.ID)
+				return "", nil,
+					fmt.Errorf("failed to read work done message (%w)", err)
+			}
+			return c.handleWorkDone(stepData, doneMessage)
+		case MessageTypeSignal:
+			var signalMessage signalMessage
+			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
+				c.logger.Errorf("Step %s failed to decode signal message: %v", stepData.ID, err)
+			}
+			// Note: When implemented, use the emittedSignals variable.
+			c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
+				signalMessage.SignalID)
+		default:
+			c.logger.Warningf("Step %s sent unknown message type: %s", stepData.ID, runtimeMessage.MessageID)
+		}
+	}
+}
+
+func (c *client) handleWorkDone(
+	stepData schema.Input,
+	doneMessage workDoneMessage,
+) (outputID string, outputData any, err error) {
 	c.logger.Debugf("Step %s completed with output ID '%s'.", stepData.ID, doneMessage.OutputID)
+
+	// Print debug logs from the step as debug.
 	debugLogs := strings.Split(doneMessage.DebugLogs, "\n")
 	for _, line := range debugLogs {
 		if strings.TrimSpace(line) != "" {
