@@ -20,7 +20,7 @@ type ClientChannel interface {
 }
 
 // Client is the way to read information from the ATP server and then send a task to it in the form of a step.
-// A step can only be sent once, but signals can be sent until the step is over.
+// A step can only be sent once, but signals can be sent until the step is over. It is a single session.
 type Client interface {
 	// ReadSchema reads the schema from the ATP server.
 	ReadSchema() (*schema.SchemaSchema, error)
@@ -70,7 +70,7 @@ func (c *client) Encoder() *cbor.Encoder {
 }
 
 type client struct {
-	atpVersion int64 // TODO: Should this be persisted here or returned?
+	atpVersion int64
 	channel    ClientChannel
 	decMode    cbor.DecMode
 	logger     log.Logger
@@ -126,7 +126,7 @@ func (c *client) Execute(
 	c.logger.Debugf("Step %s started, waiting for response...", stepData.ID)
 
 	doneChannel := make(chan bool, 1) // Needs a buffer to not hang.
-	defer handleClosure(receivedSignals, doneChannel)
+	defer handleClientClosure(receivedSignals, doneChannel)
 	go func() {
 		c.executeWriteLoop(stepData, receivedSignals, doneChannel)
 	}()
@@ -136,7 +136,7 @@ func (c *client) Execute(
 // handleClosure is the deferred function that will handle closing of the received channel,
 // and notifying the code that it's closed.
 // Note: The doneChannel should have a buffer.
-func handleClosure(receivedSignals chan schema.Input, doneChannel chan bool) {
+func handleClientClosure(receivedSignals chan schema.Input, doneChannel chan bool) {
 	doneChannel <- true
 	if receivedSignals != nil {
 		close(receivedSignals)
@@ -180,6 +180,8 @@ func (c *client) executeWriteLoop(
 	}
 }
 
+// executeReadLoop handles the reading of work done, signals, or any other outputs from the plugins.
+// It branches off with different logic for ATP versions 1 and 2.
 func (c *client) executeReadLoop(
 	stepData schema.Input, emittedSignals chan<- schema.Input,
 ) (outputID string, outputData any, err error) {
@@ -191,6 +193,7 @@ func (c *client) executeReadLoop(
 	}
 }
 
+// executeReadLoopV1 is the legacy read loop function, that only waits for work done.
 func (c *client) executeReadLoopV1(
 	cborReader *cbor.Decoder,
 	stepData schema.Input,
@@ -204,6 +207,7 @@ func (c *client) executeReadLoopV1(
 	return c.handleWorkDone(stepData, doneMessage)
 }
 
+// executeReadLoopV2 is the new read loop function, that supports the RuntimeMessage loop.
 func (c *client) executeReadLoopV2(
 	cborReader *cbor.Decoder,
 	stepData schema.Input,
@@ -232,9 +236,18 @@ func (c *client) executeReadLoopV2(
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 				c.logger.Errorf("Step %s failed to decode signal message: %v", stepData.ID, err)
 			}
-			// Note: When implemented, use the emittedSignals variable.
-			c.logger.Infof("Step %s sent signal %s. Signal handling is not implemented.",
-				signalMessage.SignalID)
+			if stepData.ID != signalMessage.StepID {
+				c.logger.Warningf("Step %s sent signal %s, but the step ID '%s' sent by the plugin does not match. Ignoring signal.",
+					stepData.ID, signalMessage.SignalID, signalMessage.StepID)
+				continue // Don't process the signal
+			}
+			if emittedSignals == nil {
+				c.logger.Warningf("Step '%s' sent signal '%s'. Ignoring; signal handling is not implemented (emittedSignals is nil).",
+					stepData.ID, signalMessage.SignalID)
+			} else {
+				c.logger.Debugf("Got signal from step '%s' with ID '%s'", stepData.ID, signalMessage.SignalID)
+				emittedSignals <- signalMessage.ToInput()
+			}
 		default:
 			c.logger.Warningf("Step %s sent unknown message type: %s", stepData.ID, runtimeMessage.MessageID)
 		}

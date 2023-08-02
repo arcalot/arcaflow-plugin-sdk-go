@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
-	"sync"
-
 	"go.arcalot.io/assert"
 	"go.arcalot.io/log/v2"
 	"go.flow.arcalot.io/pluginsdk/atp"
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"io"
+	"sync"
 	"testing"
 )
 
@@ -173,8 +172,11 @@ func TestProtocol_Client_ReadSchema(t *testing.T) {
 	go func() {
 		// terminate the protocol execution
 		// because it will not be completed
-		defer cancel()
-		defer wg.Done()
+		defer func() {
+			cancel()
+			wg.Done()
+		}()
+
 		cli := atp.NewClientWithLogger(channel{
 			Reader:  stdoutReader,
 			Writer:  stdinWriter,
