@@ -1,6 +1,9 @@
 package atp
 
-import "github.com/fxamacker/cbor/v2"
+import (
+	"github.com/fxamacker/cbor/v2"
+	"go.flow.arcalot.io/pluginsdk/schema"
+)
 
 const ProtocolVersion int64 = 2
 
@@ -40,4 +43,8 @@ type signalMessage struct {
 	StepID   string `cbor:"step_id"`
 	SignalID string `cbor:"signal_id"`
 	Data     any    `cbor:"data"`
+}
+
+func (s signalMessage) ToInput() schema.Input {
+	return schema.Input{ID: s.SignalID, InputData: s.Data}
 }

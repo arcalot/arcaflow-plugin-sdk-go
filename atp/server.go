@@ -10,40 +10,56 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 )
 
 // RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
-func RunATPServer( //nolint:funlen
+func RunATPServer(
 	ctx context.Context,
 	stdin io.ReadCloser,
 	stdout io.WriteCloser,
-	s *schema.CallableSchema,
+	pluginSchema *schema.CallableSchema,
 ) error {
-	subCtx, cancel := context.WithCancel(ctx)
+	session := initializeATPServerSession(ctx, stdin, stdout, pluginSchema)
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	workDone := make(chan error, 1)
-	var workError error
+	wg.Add(1)
+
+	// Run needs to be run in its own goroutine to allow for the closure handling to happen simultaneously.
 	go func() {
-		defer wg.Done()
-		// Wait for work done or context complete.
-		select {
-		case workError = <-workDone:
-		case <-subCtx.Done():
-			// Wait up to 20 seconds for work to finish.
-			// This context is the same one that's passed into the step. So now we need to wait for it to finish,
-			// or exit early.
-			// Exiting too early will result in the client (usually the engine's plugin provider) erroring out
-			// due to the pipe being closed unexpectedly.
-			select {
-			case workError = <-workDone:
-			case <-time.After(time.Duration(20) * time.Second):
-			}
-		}
-		// Now close the pipe that it gets input from.
-		_ = stdin.Close()
+		session.run(wg)
 	}()
+
+	workError := session.handleClosure(stdin)
+
+	// Ensure that the session is done.
+	wg.Wait()
+	return workError
+}
+
+type atpServerSession struct {
+	ctx          context.Context
+	cancel       *context.CancelFunc
+	req          StartWorkMessage
+	cborStdin    *cbor.Decoder
+	cborStdout   *cbor.Encoder
+	workDone     chan error
+	doneChannel  chan bool
+	pluginSchema *schema.CallableSchema
+}
+
+func initializeATPServerSession(
+	ctx context.Context,
+	stdin io.ReadCloser,
+	stdout io.WriteCloser,
+	pluginSchema *schema.CallableSchema,
+) *atpServerSession {
+	subCtx, cancel := context.WithCancel(ctx)
+	workDone := make(chan error, 1)
+	// The ATP protocol uses CBOR.
+	cborStdin := cbor.NewDecoder(stdin)
+	cborStdout := cbor.NewEncoder(stdout)
+	doneChannel := make(chan bool, 1) // Buffer to prevent it from hanging if something unexpected happens.
+
+	// Cancel the sub context on sigint or sigterm.
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -56,112 +72,139 @@ func RunATPServer( //nolint:funlen
 		}
 	}()
 
-	go func() {
-		defer wg.Done()
-		defer close(workDone)
+	return &atpServerSession{
+		ctx:          subCtx,
+		cancel:       &cancel,
+		req:          StartWorkMessage{},
+		cborStdin:    cborStdin,
+		cborStdout:   cborStdout,
+		workDone:     workDone,
+		doneChannel:  doneChannel,
+		pluginSchema: pluginSchema,
+	}
+}
 
-		// Start by serializing the schema, since the protocol requires sending the schema on the hello message.
-		serializedSchema, err := s.SelfSerialize()
-		if err != nil {
-			workDone <- err
-			return
-		}
+func (s *atpServerSession) handleClosure(stdin io.ReadCloser) error {
+	// Wait for work done or context complete.
+	var workError error
+	select {
+	case workError = <-s.workDone:
+	case <-s.ctx.Done():
+		// Likely got sigterm. Just close. Ideally gracefully.
+	}
+	// Now close the pipe that it gets input from.
+	_ = stdin.Close()
+	return workError
+}
 
-		// The ATP protocol uses CBOR.
-		cborStdin := cbor.NewDecoder(stdin)
-		cborStdout := cbor.NewEncoder(stdout)
-
-		// First, the start message, which is just an empty message.
-		var empty any
-		err = cborStdin.Decode(&empty)
-		if err != nil {
-			workDone <- fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
-			return
-		}
-
-		// Next, send the hello message, which includes the version and schema.
-		err = cborStdout.Encode(HelloMessage{ProtocolVersion, serializedSchema})
-		if err != nil {
-			workDone <- fmt.Errorf("failed to CBOR-encode schema (%w)", err)
-			return
-		}
-
-		// Now, get the work message that dictates which step to run and the config info.
-		req := StartWorkMessage{}
-		err = cborStdin.Decode(&req)
-		if err != nil {
-			workDone <- fmt.Errorf("failed to CBOR-decode start work message (%w)", err)
-			return
-		}
-
-		done := false
-		// Replace the mutex with atomic calls if the project is upgraded to Go 1.19+
-		var doneMutex sync.Mutex
-		defer func() {
-			doneMutex.Lock()
-			done = true
-			doneMutex.Unlock()
-		}()
-		// Now, loop through stdin inputs until the step ends.
-		go func() { // Listen for signals in another thread
-			// The message is generic, so we must find the type and decode the full message next.
-			var runtimeMessage DecodedRuntimeMessage
-			for {
-				if err := cborStdin.Decode(&runtimeMessage); err != nil {
-					doneMutex.Lock()
-					if !done {
-						workDone <- fmt.Errorf("failed to read or decode runtime message: %w", err)
-					}
-					doneMutex.Unlock()
-					return
-				}
-				switch runtimeMessage.MessageID {
-				case MessageTypeSignal:
-					var signalMessage signalMessage
-					if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-						workDone <- fmt.Errorf("failed to decode signal message: %w", err)
-					}
-					if req.StepID != signalMessage.StepID {
-						workDone <- fmt.Errorf("signal sent with mismatched step ID, got %s, expected %s",
-							signalMessage.StepID, req.StepID)
-					}
-					if err := s.CallSignal(ctx, signalMessage.StepID, signalMessage.SignalID, signalMessage.Data); err != nil {
-						workDone <- fmt.Errorf("failed while running signal ID %s: %w",
-							signalMessage.SignalID, err)
-					}
-				default:
-					workDone <- fmt.Errorf("unknown message ID received: %d", runtimeMessage.MessageID)
-				}
+func (s *atpServerSession) runATPReadLoop() {
+	// The message is generic, so we must find the type and decode the full message next.
+	var runtimeMessage DecodedRuntimeMessage
+	for {
+		// First, decode the message
+		if err := s.cborStdin.Decode(&runtimeMessage); err != nil {
+			// Failed to decode. If it's done, that's okay. If not, there's a problem.
+			done := false
+			select {
+			case done = <-s.doneChannel:
+			default:
+				// Prevents it from blocking
 			}
-		}()
-
-		outputID, outputData, err := s.CallStep(subCtx, req.StepID, req.Config)
-		if err != nil {
-			workDone <- err
+			if !done {
+				s.workDone <- fmt.Errorf("failed to read or decode runtime message: %w", err)
+			}
 			return
 		}
-
-		// Lastly, send the work done message.
-		err = cborStdout.Encode(
-			RuntimeMessage{
-				MessageTypeWorkDone,
-				workDoneMessage{
-					outputID,
-					outputData,
-					"",
-				},
-			},
-		)
-		if err != nil {
-			workDone <- fmt.Errorf("failed to encode CBOR response (%w)", err)
-			return
+		switch runtimeMessage.MessageID {
+		case MessageTypeSignal:
+			var signalMessage signalMessage
+			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
+				s.workDone <- fmt.Errorf("failed to decode signal message: %w", err)
+			}
+			if s.req.StepID != signalMessage.StepID {
+				s.workDone <- fmt.Errorf("signal sent with mismatched step ID, got %s, expected %s",
+					signalMessage.StepID, s.req.StepID)
+			}
+			if err := s.pluginSchema.CallSignal(s.ctx, signalMessage.StepID, signalMessage.SignalID, signalMessage.Data); err != nil {
+				s.workDone <- fmt.Errorf("failed while running signal ID %s: %w",
+					signalMessage.SignalID, err)
+			}
+		default:
+			s.workDone <- fmt.Errorf("unknown message ID received: %d", runtimeMessage.MessageID)
 		}
+	}
+}
 
-		// finished with no error!
-		workDone <- nil
+func (s *atpServerSession) run(wg *sync.WaitGroup) {
+	defer func() {
+		s.doneChannel <- true
+		close(s.workDone)
+		wg.Done()
 	}()
 
-	// Keep running until both goroutines are done
-	wg.Wait()
-	return workError
+	err := s.sendInitialMessagesToClient()
+	if err != nil {
+		s.workDone <- err
+		return
+	}
+
+	// Now, get the work message that dictates which step to run and the config info.
+	err = s.cborStdin.Decode(&s.req)
+	if err != nil {
+		s.workDone <- fmt.Errorf("failed to CBOR-decode start work message (%w)", err)
+		return
+	}
+
+	// Now, loop through stdin inputs until the step ends.
+	go func() { // Listen for signals in another thread
+		s.runATPReadLoop()
+	}()
+
+	// Call the step in the provided callable schema.
+	outputID, outputData, err := s.pluginSchema.CallStep(s.ctx, s.req.StepID, s.req.Config)
+	if err != nil {
+		s.workDone <- err
+		return
+	}
+
+	// Lastly, send the work done message.
+	err = s.cborStdout.Encode(
+		RuntimeMessage{
+			MessageTypeWorkDone,
+			workDoneMessage{
+				outputID,
+				outputData,
+				"",
+			},
+		},
+	)
+	if err != nil {
+		s.workDone <- fmt.Errorf("failed to encode CBOR response (%w)", err)
+		return
+	}
+
+	// finished with no error!
+	s.workDone <- nil
+}
+
+func (s *atpServerSession) sendInitialMessagesToClient() error {
+	// Start by serializing the schema, since the protocol requires sending the schema on the hello message.
+	serializedSchema, err := s.pluginSchema.SelfSerialize()
+	if err != nil {
+		return err
+	}
+
+	// First, the start message, which is just an empty message.
+	var empty any
+	err = s.cborStdin.Decode(&empty)
+	if err != nil {
+		return fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
+	}
+
+	// Next, send the hello message, which includes the version and schema.
+	err = s.cborStdout.Encode(HelloMessage{ProtocolVersion, serializedSchema})
+	if err != nil {
+		return fmt.Errorf("failed to CBOR-encode schema (%w)", err)
+	}
+	return nil
 }
