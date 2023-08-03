@@ -261,7 +261,7 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 func (o OneOfSchema[KeyType]) getTypeValues() []KeyType {
 	output := make([]KeyType, len(o.TypesValue))
 	i := 0
-	for key, _ := range o.TypesValue {
+	for key := range o.TypesValue {
 		output[i] = key
 		i += 1
 	}

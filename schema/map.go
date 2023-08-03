@@ -122,50 +122,18 @@ func (m MapSchema[K, V]) Unserialize(data any) (any, error) {
 	return result.Interface(), nil
 }
 
-func (m MapSchema[K, V]) ValidateCompatibility(typeOrData any) error {
-	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
-	schemaType, ok := typeOrData.(Type)
-	if !ok {
-		// It's not a schema type, so now check if it's an actual map
-		v := reflect.ValueOf(typeOrData)
-		if v.Kind() != reflect.Map {
-			return &ConstraintError{
-				Message: fmt.Sprintf("Must be a map or map schema, %T given", typeOrData),
-			}
-		}
-		if m.MinValue != nil && *m.MinValue > int64(v.Len()) {
-			return &ConstraintError{
-				Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, v.Len()),
-			}
-		}
-		if m.MaxValue != nil && *m.MaxValue < int64(v.Len()) {
-			return &ConstraintError{
-				Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, v.Len()),
-			}
-		}
-
-		for _, k := range v.MapKeys() {
-			if err := m.KeysValue.ValidateCompatibility(k.Interface()); err != nil {
-				return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k))
-			}
-			if err := m.ValuesValue.ValidateCompatibility(v.MapIndex(k).Interface()); err != nil {
-				return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k))
-			}
-		}
-		return nil
-	}
-
+func (m MapSchema[K, V]) validateSchemaCompatibility(schemaType Type) error {
 	if schemaType.TypeID() != TypeIDMap {
 		return &ConstraintError{
 			Message: fmt.Sprintf("unsupported data type for 'map' type: %T", schemaType),
 		}
 	}
 	// Now check the map schema fields and types.
-	value := reflect.ValueOf(typeOrData)
+	value := reflect.ValueOf(schemaType)
 	if reflect.Indirect(value).Kind() != reflect.Struct {
 		return &ConstraintError{
 			Message: fmt.Sprintf("unsupported data type for 'map' type: %T. Is not map or map schema",
-				typeOrData),
+				schemaType),
 		}
 	}
 	keysField := reflect.Indirect(value).MethodByName("Keys")
@@ -202,6 +170,41 @@ func (m MapSchema[K, V]) ValidateCompatibility(typeOrData any) error {
 		(m.MaxValue != nil && minValue != nil && (*maxValue) < (*m.MinValue)) {
 		return &ConstraintError{
 			Message: "mutually exclusive lengths between map schemas",
+		}
+	}
+	return nil
+}
+
+func (m MapSchema[K, V]) ValidateCompatibility(typeOrData any) error {
+	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
+	schemaType, ok := typeOrData.(Type)
+	if ok {
+		return m.validateSchemaCompatibility(schemaType)
+	}
+	// It's not a schema type, so now check if it's an actual map
+	v := reflect.ValueOf(typeOrData)
+	if v.Kind() != reflect.Map {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must be a map or map schema, %T given", typeOrData),
+		}
+	}
+	if m.MinValue != nil && *m.MinValue > int64(v.Len()) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must have at least %d items, %d given", *m.MinValue, v.Len()),
+		}
+	}
+	if m.MaxValue != nil && *m.MaxValue < int64(v.Len()) {
+		return &ConstraintError{
+			Message: fmt.Sprintf("Must have at most %d items, %d given", *m.MaxValue, v.Len()),
+		}
+	}
+
+	for _, k := range v.MapKeys() {
+		if err := m.KeysValue.ValidateCompatibility(k.Interface()); err != nil {
+			return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{%v}", k))
+		}
+		if err := m.ValuesValue.ValidateCompatibility(v.MapIndex(k).Interface()); err != nil {
+			return ConstraintErrorAddPathSegment(err, fmt.Sprintf("[%v]", k))
 		}
 	}
 	return nil

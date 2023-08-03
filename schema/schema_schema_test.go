@@ -9,13 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed testdata/hello_world_plugin.yaml
-var helloWorldPluginSchema []byte
-
-func TestSchemaUnserializationHelloWorld(t *testing.T) {
-	data := map[string]any{}
-	assert.NoError(t, yaml.Unmarshal(helloWorldPluginSchema, &data))
-	unserializedData, err := schema.UnserializeSchema(data)
+func testUnserializeHelloWorldPluginSchema(t *testing.T, schemaData map[string]any, expectedType schema.TypeID) {
+	unserializedData, err := schema.UnserializeSchema(schemaData)
 	assert.NoError(t, err)
 	steps := assert.NotNilR(t, unserializedData.Steps())
 	helloWorldStep := assert.NotNilR(t, steps["hello-world"])
@@ -27,7 +22,16 @@ func TestSchemaUnserializationHelloWorld(t *testing.T) {
 	assert.NoError(t, err)
 
 	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDRef)
+	assert.Equals(t, nameType.Types()["fullname"].TypeID(), expectedType)
+}
+
+//go:embed testdata/hello_world_plugin.yaml
+var helloWorldPluginSchema []byte
+
+func TestSchemaUnserializationHelloWorldRef(t *testing.T) {
+	data := map[string]any{}
+	assert.NoError(t, yaml.Unmarshal(helloWorldPluginSchema, &data))
+	testUnserializeHelloWorldPluginSchema(t, data, schema.TypeIDRef)
 }
 
 //go:embed testdata/embedded_objects.yaml
@@ -36,19 +40,7 @@ var embeddedSchema []byte
 func TestSchemaUnserializationEmbeddedObjects(t *testing.T) {
 	data := map[string]any{}
 	assert.NoError(t, yaml.Unmarshal(embeddedSchema, &data))
-	unserializedData, err := schema.UnserializeSchema(data)
-	assert.NoError(t, err)
-	steps := assert.NotNilR(t, unserializedData.Steps())
-	helloWorldStep := assert.NotNilR(t, steps["hello-world"])
-	display := assert.NotNilR(t, helloWorldStep.Display())
-	name := assert.NotNilR(t, display.Name())
-	assert.Equals(t, *name, "Hello world!")
-
-	_, err = unserializedData.SelfSerialize()
-	assert.NoError(t, err)
-
-	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDObject)
+	testUnserializeHelloWorldPluginSchema(t, data, schema.TypeIDObject)
 }
 
 //go:embed testdata/super_scoped.yaml
@@ -57,19 +49,7 @@ var superScopedSchema []byte
 func TestSchemaUnserializationSuperScoped(t *testing.T) {
 	data := map[string]any{}
 	assert.NoError(t, yaml.Unmarshal(superScopedSchema, &data))
-	unserializedData, err := schema.UnserializeSchema(data)
-	assert.NoError(t, err)
-	steps := assert.NotNilR(t, unserializedData.Steps())
-	helloWorldStep := assert.NotNilR(t, steps["hello-world"])
-	display := assert.NotNilR(t, helloWorldStep.Display())
-	name := assert.NotNilR(t, display.Name())
-	assert.Equals(t, *name, "Hello world!")
-
-	_, err = unserializedData.SelfSerialize()
-	assert.NoError(t, err)
-
-	nameType := unserializedData.StepsValue["hello-world"].InputValue.Objects()["InputParams"].Properties()["name"].Type().(*schema.OneOfSchema[string])
-	assert.Equals(t, nameType.Types()["fullname"].TypeID(), schema.TypeIDScope)
+	testUnserializeHelloWorldPluginSchema(t, data, schema.TypeIDScope)
 }
 
 func TestStepOutputSchema(t *testing.T) {
