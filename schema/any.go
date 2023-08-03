@@ -23,6 +23,7 @@ func (a *AnySchema) Unserialize(data any) (any, error) {
 	return a.checkAndConvert(data)
 }
 
+//nolint:funlen
 func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
 	schemaType, ok := typeOrData.(Type)

@@ -12,19 +12,14 @@ type Schema[S Step] interface {
 	SelfSerialize() (any, error)
 }
 
-//
-//// NewSchema builds a new schema with the specified steps.
-//func NewSchema(
-//	steps map[string]*StepSchema,
-//	listeningSignals map[string]*SignalSchema,
-//	emittingSignals map[string]*SignalSchema,
-//) Schema[Step, Signal] {
-//	return &SchemaSchema{
-//		steps,
-//		listeningSignals,
-//		emittingSignals,
-//	}
-//}
+// NewSchema builds a new schema with the specified steps.
+func NewSchema(
+	steps map[string]*StepSchema,
+) Schema[Step] {
+	return &SchemaSchema{
+		steps,
+	}
+}
 
 type SchemaSchema struct {
 	StepsValue map[string]*StepSchema `json:"steps"`

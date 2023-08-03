@@ -201,6 +201,7 @@ func TestMapSchemaTypesValidation(t *testing.T) {
 	}()
 }
 
+//nolint:funlen
 func TestMapSchemaCompatibilityValidation(t *testing.T) {
 	s1 := schema.NewMapSchema(
 		schema.NewStringSchema(nil, nil, nil),
@@ -271,6 +272,7 @@ func TestMapSchemaCompatibilityValidation(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
 }
 
+//nolint:funlen
 func TestMapCompatibilityValidation(t *testing.T) {
 	s1 := schema.NewMapSchema(
 		schema.NewStringSchema(nil, nil, nil),
