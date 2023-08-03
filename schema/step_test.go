@@ -17,7 +17,6 @@ type stepTestSuccessOutput struct {
 	Message string `json:"message"`
 }
 
-//nolint:unused
 type stepTestErrorOutput struct {
 	Error string `json:"message"`
 }
