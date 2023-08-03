@@ -152,13 +152,13 @@ func (c *client) executeWriteLoop(
 	// Looped select that gets signals
 	for {
 		signal, ok := <-receivedSignals
+		isDone := false
+		select {
+		case isDone = <-doneChannel:
+		default:
+			// Non-blocking because of the default.
+		}
 		if !ok {
-			isDone := false
-			select {
-			case isDone = <-doneChannel:
-			default:
-				// Non-blocking because of the default.
-			}
 			if isDone {
 				// It's done, so the not ok is expected.
 				return
@@ -168,6 +168,10 @@ func (c *client) executeWriteLoop(
 				return
 			}
 		}
+		if isDone {
+			c.logger.Errorf("signal received after step '%s' completed. Ignoring signal '%s'", stepData.ID, signal.ID)
+			return
+		}
 		if err := c.encoder.Encode(RuntimeMessage{
 			MessageTypeSignal,
 			signalMessage{
@@ -175,7 +179,7 @@ func (c *client) executeWriteLoop(
 				SignalID: signal.ID,
 				Data:     signal.InputData,
 			}}); err != nil {
-			c.logger.Errorf("Step %s failed to write signal message: %v", stepData.ID, err)
+			c.logger.Errorf("Step %s failed to write signal (%s) with message: %w", stepData.ID, signal.ID, err)
 		}
 	}
 }
