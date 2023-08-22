@@ -150,7 +150,7 @@ func (p *PropertySchema) ValidateCompatibility(typeOrData any) error {
 	}
 	err := p.TypeValue.ValidateCompatibility(typeOrData)
 	if err != nil {
-		if p.DisplayValue != nil {
+		if p.DisplayValue != nil && p.Display().Name() != nil {
 			return &ConstraintError{
 				Message: fmt.Sprintf("error while validating sub-type of property %s with type %T (%s)",
 					*p.Display().Name(), p.TypeValue, err),
