@@ -164,7 +164,8 @@ func (c *client) executeWriteLoop(
 				return
 			} else {
 				// It's not supposed to be not ok yet.
-				c.logger.Errorf("error in channel preparing to send signal over ATP")
+				c.logger.Errorf("error in channel preparing to send signal (step %s, signal %s) over ATP",
+					stepData.ID, signal.ID)
 				return
 			}
 		}
@@ -172,6 +173,7 @@ func (c *client) executeWriteLoop(
 			c.logger.Errorf("signal received after step '%s' completed. Ignoring signal '%s'", stepData.ID, signal.ID)
 			return
 		}
+		c.logger.Debugf("Sending signal with ID '%s' to step with ID '%s'", signal.ID, stepData.ID)
 		if err := c.encoder.Encode(RuntimeMessage{
 			MessageTypeSignal,
 			signalMessage{
@@ -179,8 +181,10 @@ func (c *client) executeWriteLoop(
 				SignalID: signal.ID,
 				Data:     signal.InputData,
 			}}); err != nil {
-			c.logger.Errorf("Step %s failed to write signal (%s) with message: %w", stepData.ID, signal.ID, err)
+			c.logger.Errorf("Step %s failed to write signal (%s) with error: %w", stepData.ID, signal.ID, err)
+			return
 		}
+		c.logger.Debugf("Successfully sent signal with ID '%s' to step with ID '%s'", signal.ID, stepData.ID)
 	}
 }
 
