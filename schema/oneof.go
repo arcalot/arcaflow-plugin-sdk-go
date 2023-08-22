@@ -246,7 +246,9 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 				selectedTypeIDAsserted, o.getTypeValues()),
 		}
 	}
-	delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
+		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	}
 	err := selectedSchema.ValidateCompatibility(data)
 	if err != nil {
 		return &ConstraintError{
