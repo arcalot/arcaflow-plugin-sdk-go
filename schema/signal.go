@@ -35,7 +35,7 @@ func NewSignalSchema(
 // which is either input or output depending on whether it's receiving or emitting the signal.
 type SignalSchema struct {
 	IDValue         string  `json:"id"`
-	DataSchemaValue Scope   `json:"input"`
+	DataSchemaValue Scope   `json:"data_schema"`
 	DisplayValue    Display `json:"display"`
 }
 

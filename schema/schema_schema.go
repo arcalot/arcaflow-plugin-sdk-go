@@ -1096,14 +1096,14 @@ var signalSchemaObject = NewStructMappedObjectSchema[*SignalSchema](
 			nil,
 			nil,
 		),
-		"input": NewPropertySchema(
+		"data_schema": NewPropertySchema(
 			NewRefSchema(
 				"Scope",
 				nil,
 			),
 			NewDisplayValue(
-				PointerTo("Input"),
-				PointerTo("Input data schema."),
+				PointerTo("Data Schema"),
+				PointerTo("The data schema of the input or output of the signal."),
 				nil,
 			),
 			true,
