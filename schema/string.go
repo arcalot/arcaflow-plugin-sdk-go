@@ -129,7 +129,7 @@ func (s StringSchema) ValidateType(data string) error {
 	}
 	if s.PatternValue != nil && !(*s.PatternValue).MatchString(data) {
 		return &ConstraintError{
-			Message: fmt.Sprintf("String must match the pattern %s", (*s.PatternValue).String()),
+			Message: fmt.Sprintf("String '%s' must match the pattern '%s'", data, (*s.PatternValue).String()),
 		}
 	}
 	return nil
@@ -152,7 +152,7 @@ func (s StringSchema) Serialize(d any) (any, error) {
 	}
 	if s.PatternValue != nil && !(*s.PatternValue).MatchString(data) {
 		return data, &ConstraintError{
-			Message: fmt.Sprintf("String must match the pattern %s", (*s.PatternValue).String()),
+			Message: fmt.Sprintf("String '%s' must match the pattern '%s'", data, (*s.PatternValue).String()),
 		}
 	}
 	return data, nil
