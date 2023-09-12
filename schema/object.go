@@ -693,16 +693,17 @@ func extractObjectDefaultValues(properties map[string]*PropertySchema) map[strin
 			var defaultValueTypeString string
 			var err error
 			var err2 error
-			if err = json.Unmarshal([]byte(*property.Default()), &value); err != nil {
+			err = json.Unmarshal([]byte(*property.Default()), &value)
+			if err != nil && property.TypeID() == "string" {
 				// attempt to fix yaml string to valid JSON
-				if property.TypeID() == "string" {
-					defaultValue := *property.Default()
-					defaultValueTypeString = ("\"" + defaultValue + "\"")
-					if err2 = json.Unmarshal([]byte(defaultValueTypeString), &value); err2 != nil {
-						err = fmt.Errorf("%w, additional attempt to format string to valid JSON failed:: %w", err, err2)
-					} else {
-						err = nil
-					}
+				defaultValue := *property.Default()
+				defaultValueTypeString = ("\"" + defaultValue + "\"")
+				err2 = json.Unmarshal([]byte(defaultValueTypeString), &value)
+				if err2 != nil {
+					err = fmt.Errorf("{%s} additional attempt to format string to valid JSON failed:{%s}",
+						err.Error(), err2.Error())
+				} else {
+					err = nil
 				}
 			}
 			if err != nil {
