@@ -690,7 +690,10 @@ func extractObjectDefaultValues(properties map[string]*PropertySchema) map[strin
 	for propertyID, property := range properties {
 		if property.Default() != nil {
 			var value any
-			if err := json.Unmarshal([]byte(*property.Default()), &value); err != nil {
+			defaultValue := *property.Default()
+			propertyType := property.TypeID()
+			err := jsonUnmarshal(defaultValue, &value, propertyType)
+			if err != nil {
 				panic(BadArgumentError{
 					Message: fmt.Sprintf("Default value for property %s is not a valid JSON", propertyID),
 					Cause:   err,
@@ -700,6 +703,22 @@ func extractObjectDefaultValues(properties map[string]*PropertySchema) map[strin
 		}
 	}
 	return defaultValues
+}
+
+func jsonUnmarshal(defaultValue string, value any, propertryType TypeID) error {
+	err := json.Unmarshal([]byte(defaultValue), &value)
+	if err != nil && propertryType == "string" {
+		// attempt to fix yaml string to valid JSON
+		defaultValueTypeString := ("\"" + defaultValue + "\"")
+		err2 := json.Unmarshal([]byte(defaultValueTypeString), &value)
+		if err2 != nil {
+			return fmt.Errorf("{%s} additional attempt to format string with additional quotes failed:{%s}",
+				err.Error(), err2.Error())
+		} else {
+			return nil
+		}
+	}
+	return err
 }
 
 func buildObjectFieldCache[T any](properties map[string]*PropertySchema) map[string]reflect.StructField {
