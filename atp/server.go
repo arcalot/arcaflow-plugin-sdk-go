@@ -112,7 +112,7 @@ func (s *atpServerSession) runATPReadLoop() {
 			}
 			if !done {
 				s.workDone <- fmt.Errorf("failed to read or decode runtime message: %w", err)
-			}
+			} // If done, it didn't get the work done message, which is not ideal.
 			return
 		}
 		switch runtimeMessage.MessageID {
@@ -120,17 +120,23 @@ func (s *atpServerSession) runATPReadLoop() {
 			var signalMessage signalMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 				s.workDone <- fmt.Errorf("failed to decode signal message: %w", err)
+				return
 			}
 			if s.req.StepID != signalMessage.StepID {
 				s.workDone <- fmt.Errorf("signal sent with mismatched step ID, got %s, expected %s",
 					signalMessage.StepID, s.req.StepID)
+				return
 			}
 			if err := s.pluginSchema.CallSignal(s.ctx, signalMessage.StepID, signalMessage.SignalID, signalMessage.Data); err != nil {
 				s.workDone <- fmt.Errorf("failed while running signal ID %s: %w",
 					signalMessage.SignalID, err)
+				return
 			}
+		case MessageTypeClientDone:
+			return
 		default:
 			s.workDone <- fmt.Errorf("unknown message ID received: %d", runtimeMessage.MessageID)
+			return
 		}
 	}
 }

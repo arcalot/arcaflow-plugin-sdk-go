@@ -127,9 +127,11 @@ func (c *client) Execute(
 
 	doneChannel := make(chan bool, 1) // Needs a buffer to not hang.
 	defer handleClientClosure(receivedSignals, doneChannel)
-	go func() {
-		c.executeWriteLoop(stepData, receivedSignals, doneChannel)
-	}()
+	if c.atpVersion > 1 {
+		go func() {
+			c.executeWriteLoop(stepData, receivedSignals, doneChannel)
+		}()
+	}
 	return c.executeReadLoop(stepData, receivedSignals)
 }
 
@@ -151,27 +153,26 @@ func (c *client) executeWriteLoop(
 ) {
 	// Looped select that gets signals
 	for {
-		signal, ok := <-receivedSignals
-		isDone := false
+		var signal schema.Input
 		select {
-		case isDone = <-doneChannel:
-		default:
-			// Non-blocking because of the default.
-		}
-		if !ok {
-			if isDone {
-				// It's done, so the not ok is expected.
-				return
-			} else {
+		case <-doneChannel:
+			// Send the client done message
+			err := c.encoder.Encode(RuntimeMessage{
+				MessageTypeClientDone,
+				clientDoneMessage{},
+			})
+			if err != nil {
+				c.logger.Errorf("Step %s failed to write client done message with error: %w", stepData.ID, err)
+			}
+			return
+		case receivedSignal, ok := <-receivedSignals:
+			if !ok {
 				// It's not supposed to be not ok yet.
 				c.logger.Errorf("error in channel preparing to send signal (step %s, signal %s) over ATP",
 					stepData.ID, signal.ID)
 				return
 			}
-		}
-		if isDone {
-			c.logger.Errorf("signal received after step '%s' completed. Ignoring signal '%s'", stepData.ID, signal.ID)
-			return
+			signal = receivedSignal
 		}
 		c.logger.Debugf("Sending signal with ID '%s' to step with ID '%s'", signal.ID, stepData.ID)
 		if err := c.encoder.Encode(RuntimeMessage{

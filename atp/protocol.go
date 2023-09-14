@@ -19,8 +19,9 @@ type StartWorkMessage struct {
 
 // All messages that can be contained in a RuntimeMessage struct.
 const (
-	MessageTypeWorkDone uint32 = 1
-	MessageTypeSignal   uint32 = 2
+	MessageTypeWorkDone   uint32 = 1
+	MessageTypeSignal     uint32 = 2
+	MessageTypeClientDone uint32 = 3
 )
 
 type RuntimeMessage struct {
@@ -47,4 +48,8 @@ type signalMessage struct {
 
 func (s signalMessage) ToInput() schema.Input {
 	return schema.Input{ID: s.SignalID, InputData: s.Data}
+}
+
+type clientDoneMessage struct {
+	// Empty for now.
 }
