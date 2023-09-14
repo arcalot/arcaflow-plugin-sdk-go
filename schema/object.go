@@ -712,7 +712,7 @@ func jsonUnmarshal(defaultValue string, value any, propertryType TypeID) error {
 		defaultValueTypeString := ("\"" + defaultValue + "\"")
 		err2 := json.Unmarshal([]byte(defaultValueTypeString), &value)
 		if err2 != nil {
-			return fmt.Errorf("{%s} additional attempt to format string to valid JSON failed:{%s}",
+			return fmt.Errorf("{%s} additional attempt to format string with additional quotes failed:{%s}",
 				err.Error(), err2.Error())
 		} else {
 			return nil
