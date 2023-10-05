@@ -210,7 +210,6 @@ func (c *client) Close() error {
 	// First, close channels that could send signals to the clients
 	// This ends the loop
 	for runID, signalChannel := range c.runningSignalReceiveLoops {
-		// TODO: Test why commenting this out results in a deadlock instead of just the steps finishing when they're supposed to.
 		c.logger.Infof("Closing signal channel for run ID '%s'", runID)
 		close(signalChannel)
 	}
