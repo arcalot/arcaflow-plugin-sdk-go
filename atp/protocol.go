@@ -39,19 +39,19 @@ type DecodedRuntimeMessage struct {
 	RawMessageData cbor.RawMessage `cbor:"data"`
 }
 
-type workDoneMessage struct {
+type WorkDoneMessage struct {
 	StepID     string `cbor:"step_id"`
 	OutputID   string `cbor:"output_id"`
 	OutputData any    `cbor:"output_data"`
 	DebugLogs  string `cbor:"debug_logs"`
 }
 
-type signalMessage struct {
+type SignalMessage struct {
 	SignalID string `cbor:"signal_id"`
 	Data     any    `cbor:"data"`
 }
 
-func (s signalMessage) ToInput(runID string) schema.Input {
+func (s SignalMessage) ToInput(runID string) schema.Input {
 	return schema.Input{RunID: runID, ID: s.SignalID, InputData: s.Data}
 }
 
@@ -59,12 +59,12 @@ type clientDoneMessage struct {
 	// Empty for now.
 }
 
-type errorMessage struct {
+type ErrorMessage struct {
 	Error       string `cbor:"error"`
 	StepFatal   bool   `cbor:"step_fatal"`
 	ServerFatal bool   `cbor:"server_fatal"`
 }
 
-func (e errorMessage) ToString(runID string) string {
+func (e ErrorMessage) ToString(runID string) string {
 	return fmt.Sprintf("RunID: %s, err: %s, step fatal: %t, server fatal: %t", runID, e.Error, e.StepFatal, e.ServerFatal)
 }

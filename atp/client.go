@@ -187,7 +187,7 @@ func (c *client) Execute(
 	return c.getResult(stepData, cborReader)
 }
 
-// handleStepComplete is the deferred function that will handle closing of the received channel
+// handleStepComplete is the deferred function that will handle closing of the received channel.
 func (c *client) handleStepComplete(runID string, receivedSignals chan schema.Input) {
 	if receivedSignals != nil {
 		c.logger.Infof("Closing signal channel for finished step")
@@ -270,7 +270,7 @@ func (c *client) executeWriteLoop(
 		if err := c.sendCBOR(RuntimeMessage{
 			MessageTypeSignal,
 			signal.RunID,
-			signalMessage{
+			SignalMessage{
 				SignalID: signal.ID,
 				Data:     signal.InputData,
 			}}); err != nil {
@@ -315,11 +315,12 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 
 func (c *client) sendErrorToAll(err error) {
 	result := NewErrorExecutionResult(err)
-	for runID, _ := range c.runningStepResultChannels {
+	for runID := range c.runningStepResultChannels {
 		c.sendExecutionResult(runID, result)
 	}
 }
 
+//nolint:funlen
 func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 	defer func() {
 		c.mutex.Lock()
@@ -339,7 +340,7 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 		}
 		switch runtimeMessage.MessageID {
 		case MessageTypeWorkDone:
-			var doneMessage workDoneMessage
+			var doneMessage WorkDoneMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
 				c.logger.Errorf("Failed to decode work done message (%v) for run ID %s ", err, runtimeMessage.RunID)
 				c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
@@ -347,7 +348,7 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 			}
 			c.sendExecutionResult(runtimeMessage.RunID, c.processWorkDone(runtimeMessage.RunID, doneMessage))
 		case MessageTypeSignal:
-			var signalMessage signalMessage
+			var signalMessage SignalMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 				c.logger.Errorf("ATP client for run ID '%s' failed to decode signal message: %v",
 					runtimeMessage.RunID, err)
@@ -364,7 +365,7 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 				signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
 			}
 		case MessageTypeError:
-			var errMessage errorMessage
+			var errMessage ErrorMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &errMessage); err != nil {
 				c.logger.Errorf("Step with run ID '%s' failed to decode error message: %v",
 					runtimeMessage.RunID, err)
@@ -409,7 +410,7 @@ func (c *client) getResultV1(
 	cborReader *cbor.Decoder,
 	stepData schema.Input,
 ) ExecutionResult {
-	var doneMessage workDoneMessage
+	var doneMessage WorkDoneMessage
 	if err := cborReader.Decode(&doneMessage); err != nil {
 		c.logger.Errorf("Failed to read or decode work done message: (%w) for step %s", err, stepData.ID)
 		return NewErrorExecutionResult(
@@ -473,7 +474,7 @@ func (c *client) getResultV2(
 
 func (c *client) processWorkDone(
 	runID string,
-	doneMessage workDoneMessage,
+	doneMessage WorkDoneMessage,
 ) ExecutionResult {
 	c.logger.Debugf("Step with run ID '%s' completed with output ID '%s'.", runID, doneMessage.OutputID)
 

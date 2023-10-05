@@ -116,37 +116,36 @@ closeLoop:
 	for {
 		select {
 		case errorSent, wasError := <-s.workDone:
-			if wasError {
-				errors = append(errors, &errorSent)
-				err := s.sendRuntimeMessage(
-					MessageTypeError,
-					errorSent.RunID,
-					errorMessage{
-						Error:       errorSent.Err.Error(),
-						StepFatal:   errorSent.StepFatal,
-						ServerFatal: errorSent.ServerFatal,
-					},
-				)
-				// If that didn't send, just send to stderr now.
-				if err != nil {
-					_, _ = fmt.Fprintf(os.Stderr, "error while sending error message: %s\n", err)
-				}
-				// If either the error report sending failed, or the error was server fatal, stop here.
-				if err != nil || errorSent.ServerFatal {
-					err = s.stdinCloser.Close()
-					if err != nil {
-						return append(errors, &ServerError{
-							RunID:       errorSent.RunID,
-							Err:         fmt.Errorf("error closing stdin (%s) after workDone error (%v)", err, errorSent),
-							StepFatal:   true,
-							ServerFatal: true,
-						})
-					} else {
-						break closeLoop
-					}
-				}
-			} else {
+			if !wasError {
 				break closeLoop
+			}
+			errors = append(errors, &errorSent)
+			err := s.sendRuntimeMessage(
+				MessageTypeError,
+				errorSent.RunID,
+				ErrorMessage{
+					Error:       errorSent.Err.Error(),
+					StepFatal:   errorSent.StepFatal,
+					ServerFatal: errorSent.ServerFatal,
+				},
+			)
+			// If that didn't send, just send to stderr now.
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "error while sending error message: %s\n", err)
+			}
+			// If either the error report sending failed, or the error was server fatal, stop here.
+			if err != nil || errorSent.ServerFatal {
+				err = s.stdinCloser.Close()
+				if err != nil {
+					return append(errors, &ServerError{
+						RunID:       errorSent.RunID,
+						Err:         fmt.Errorf("error closing stdin (%w) after workDone error (%v)", err, errorSent),
+						StepFatal:   true,
+						ServerFatal: true,
+					})
+				} else {
+					break closeLoop
+				}
 			}
 		case <-s.ctx.Done():
 			// Likely got sigterm. Just close. Ideally gracefully.
@@ -181,107 +180,127 @@ func (s *atpServerSession) runATPReadLoop() {
 			} // If done, it didn't get the work done message, which is not ideal.
 			return
 		}
-		runID := runtimeMessage.RunID
-		switch runtimeMessage.MessageID {
-		case MessageTypeWorkStart:
-			var workStartMsg WorkStartMessage
-			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &workStartMsg); err != nil {
-				s.workDone <- ServerError{
-					RunID:       "",
-					Err:         fmt.Errorf("failed to decode work start message: %w", err),
-					StepFatal:   true,
-					ServerFatal: false,
-				}
-				continue
-			}
-			if runID == "" || workStartMsg.StepID == "" {
-				s.workDone <- ServerError{
-					RunID: "",
-					Err: fmt.Errorf("missing runID (%s) or stepID in work start message (%s)",
-						runID, workStartMsg.StepID),
-					StepFatal:   true,
-					ServerFatal: false,
-				}
-				continue
-			}
-			s.runningSteps[runID] = workStartMsg.StepID
-			s.wg.Add(1) // Wait until the step is done
-			go func() {
-				s.runStep(runID, workStartMsg)
-				s.wg.Done()
-			}()
-		case MessageTypeSignal:
-			var signalMessage signalMessage
-			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-				s.workDone <- ServerError{
-					RunID:       "",
-					Err:         fmt.Errorf("failed to decode signal message: %w", err),
-					StepFatal:   false,
-					ServerFatal: false,
-				}
-				continue
-			}
-			if runID == "" {
-				s.workDone <- ServerError{
-					RunID:       "",
-					Err:         fmt.Errorf("RunID missing for signal '%s' in signal message", signalMessage.SignalID),
-					StepFatal:   false,
-					ServerFatal: false,
-				}
-				continue
-			}
-			stepID, found := s.runningSteps[runID]
-			if !found {
-				s.workDone <- ServerError{
-					RunID:       runID,
-					Err:         fmt.Errorf("unknown step with run ID '%s' in signal mesage", runID),
-					StepFatal:   false,
-					ServerFatal: false,
-				}
-				continue
-			}
-			s.wg.Add(1) // Wait until the signal handler is done
-			go func() {
-				if err := s.pluginSchema.CallSignal(
-					s.ctx,
-					runID,
-					stepID,
-					signalMessage.SignalID,
-					signalMessage.Data,
-				); err != nil {
-					s.workDone <- ServerError{
-						RunID: runID,
-						Err: fmt.Errorf("failed while running signal ID %s: %w",
-							signalMessage.SignalID, err),
-						StepFatal:   false,
-						ServerFatal: false,
-					}
-				}
-				s.wg.Done()
-			}()
-		case MessageTypeClientDone:
-			// It's now safe to close the channel
-			err := s.stdinCloser.Close()
-			if err != nil {
-				s.workDone <- ServerError{
-					RunID:       "",
-					Err:         fmt.Errorf("error while closing stdin on client done: %s", err),
-					StepFatal:   true,
-					ServerFatal: true,
-				}
-			}
+		done := s.onRuntimeMessageReceived(&runtimeMessage)
+		if done {
 			return
-		default:
+		}
+	}
+}
+
+// onRuntimeMessageReceived handles the runtime message by determining what type it is, and executing the proper path.
+// Returns true if termination should be terminated, which should correspond to only client done or fatal server errors.
+func (s *atpServerSession) onRuntimeMessageReceived(message *DecodedRuntimeMessage) bool {
+	runID := message.RunID
+	switch message.MessageID {
+	case MessageTypeWorkStart:
+		var workStartMsg WorkStartMessage
+		if err := cbor.Unmarshal(message.RawMessageData, &workStartMsg); err != nil {
 			s.workDone <- ServerError{
-				RunID: "",
-				Err: fmt.Errorf("unknown message ID received: %d. This is a sign of incompatible server and client versions",
-					runtimeMessage.MessageID),
+				RunID:       "",
+				Err:         fmt.Errorf("failed to decode work start message: %w", err),
+				StepFatal:   true,
+				ServerFatal: false,
+			}
+			return false
+		}
+		s.handleWorkStartMessage(runID, workStartMsg)
+		return false
+	case MessageTypeSignal:
+		var signalMessage SignalMessage
+		if err := cbor.Unmarshal(message.RawMessageData, &signalMessage); err != nil {
+			s.workDone <- ServerError{
+				RunID:       "",
+				Err:         fmt.Errorf("failed to decode signal message: %w", err),
 				StepFatal:   false,
 				ServerFatal: false,
 			}
-			continue
+			return false
 		}
+		s.handleSignalMessage(runID, signalMessage)
+
+		return false
+	case MessageTypeClientDone:
+		// It's now safe to close the channel
+		err := s.stdinCloser.Close()
+		if err != nil {
+			s.workDone <- ServerError{
+				RunID:       "",
+				Err:         fmt.Errorf("error while closing stdin on client done: %w", err),
+				StepFatal:   true,
+				ServerFatal: true,
+			}
+		}
+		return true // Client done, so terminate loop
+	default:
+		s.workDone <- ServerError{
+			RunID: "",
+			Err: fmt.Errorf("unknown message ID received: %d. This is a sign of incompatible server and client versions",
+				message.MessageID),
+			StepFatal:   false,
+			ServerFatal: false,
+		}
+		return false
 	}
+}
+
+func (s *atpServerSession) handleWorkStartMessage(runID string, workStartMsg WorkStartMessage) {
+	if runID == "" || workStartMsg.StepID == "" {
+		s.workDone <- ServerError{
+			RunID: "",
+			Err: fmt.Errorf("missing runID (%s) or stepID in work start message (%s)",
+				runID, workStartMsg.StepID),
+			StepFatal:   true,
+			ServerFatal: false,
+		}
+		return
+	}
+	s.runningSteps[runID] = workStartMsg.StepID
+	s.wg.Add(1) // Wait until the step is done
+	go func() {
+		s.runStep(runID, workStartMsg)
+		s.wg.Done()
+	}()
+}
+
+func (s *atpServerSession) handleSignalMessage(runID string, signalMessage SignalMessage) {
+	if runID == "" {
+		s.workDone <- ServerError{
+			RunID:       "",
+			Err:         fmt.Errorf("RunID missing for signal '%s' in signal message", signalMessage.SignalID),
+			StepFatal:   false,
+			ServerFatal: false,
+		}
+		return
+	}
+	stepID, found := s.runningSteps[runID]
+	if !found {
+		s.workDone <- ServerError{
+			RunID:       runID,
+			Err:         fmt.Errorf("unknown step with run ID '%s' in signal mesage", runID),
+			StepFatal:   false,
+			ServerFatal: false,
+		}
+		return
+	}
+	s.wg.Add(1) // Wait until the signal handler is done
+	go func() {
+		if err := s.pluginSchema.CallSignal(
+			s.ctx,
+			runID,
+			stepID,
+			signalMessage.SignalID,
+			signalMessage.Data,
+		); err != nil {
+			s.workDone <- ServerError{
+				RunID: runID,
+				Err: fmt.Errorf("failed while running signal ID %s: %w",
+					signalMessage.SignalID, err),
+				StepFatal:   false,
+				ServerFatal: false,
+			}
+		}
+		s.wg.Done()
+	}()
 }
 
 func (s *atpServerSession) run() {
@@ -295,7 +314,7 @@ func (s *atpServerSession) run() {
 	if err != nil {
 		s.workDone <- ServerError{
 			RunID:       "",
-			Err:         fmt.Errorf("error while sending initial messages to client (%s)", err),
+			Err:         fmt.Errorf("error while sending initial messages to client (%w)", err),
 			StepFatal:   true,
 			ServerFatal: true,
 		}
@@ -323,7 +342,7 @@ func (s *atpServerSession) runStep(runID string, req WorkStartMessage) {
 	if err != nil {
 		s.workDone <- ServerError{
 			RunID:       "",
-			Err:         fmt.Errorf("error calling step (%s)", err),
+			Err:         fmt.Errorf("error calling step (%w)", err),
 			StepFatal:   true,
 			ServerFatal: false,
 		}
@@ -333,7 +352,7 @@ func (s *atpServerSession) runStep(runID string, req WorkStartMessage) {
 	err = s.sendRuntimeMessage(
 		MessageTypeWorkDone,
 		runID,
-		workDoneMessage{
+		WorkDoneMessage{
 			req.StepID,
 			outputID,
 			outputData,
@@ -341,8 +360,8 @@ func (s *atpServerSession) runStep(runID string, req WorkStartMessage) {
 		},
 	)
 	if err != nil {
-		// At this point, the work done message failed to send, so it's likely that sending an errorMessage would fail.
-		_, err = fmt.Fprintf(os.Stderr, "error while sending work done message: %s\n", err)
+		// At this point, the work done message failed to send, so it's likely that sending an ErrorMessage would fail.
+		_, _ = fmt.Fprintf(os.Stderr, "error while sending work done message: %s\n", err)
 	}
 }
 
