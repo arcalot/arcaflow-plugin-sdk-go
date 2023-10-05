@@ -11,6 +11,7 @@ import (
 	"io"
 	"sync"
 	"testing"
+	"time"
 )
 
 type helloWorldInput struct {
@@ -117,7 +118,7 @@ func TestProtocol_Client_Execute(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, atp.RunATPServer(
+		assert.Nil(t, atp.RunATPServer(
 			ctx,
 			stdinReader,
 			stdoutWriter,
@@ -137,14 +138,130 @@ func TestProtocol_Client_Execute(t *testing.T) {
 		_, err := cli.ReadSchema()
 		assert.NoError(t, err)
 
-		outputID, outputData, err := cli.Execute(
+		result := cli.Execute(
 			schema.Input{
+				RunID:     t.Name(),
 				ID:        "hello-world",
 				InputData: map[string]any{"name": "Arca Lot"},
 			}, nil, nil)
+		assert.NoError(t, cli.Close())
+		assert.NoError(t, result.Error)
+		assert.Equals(t, result.OutputID, "success")
+		assert.Equals(t, result.OutputData.(map[any]any)["message"].(string), "Hello, Arca Lot!")
+	}()
+
+	wg.Wait()
+}
+
+func TestProtocol_Client_Execute_Multi_Step_Parallel(t *testing.T) {
+	// Runs several steps on one client instance at the same time
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, atp.RunATPServer(
+			ctx,
+			stdinReader,
+			stdoutWriter,
+			helloWorldSchema,
+		))
+	}()
+
+	go func() {
+		defer wg.Done()
+		cli := atp.NewClientWithLogger(channel{
+			Reader:  stdoutReader,
+			Writer:  stdinWriter,
+			Context: nil,
+			cancel:  cancel,
+		}, log.NewTestLogger(t))
+
+		_, err := cli.ReadSchema()
 		assert.NoError(t, err)
-		assert.Equals(t, outputID, "success")
-		assert.Equals(t, outputData.(map[any]any)["message"].(string), "Hello, Arca Lot!")
+
+		names := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"}
+		stepWg := &sync.WaitGroup{}
+		for _, name := range names {
+			stepName := name
+			stepWg.Add(1)
+			go func() {
+				defer stepWg.Done()
+				result := cli.Execute(
+					schema.Input{
+						RunID:     t.Name() + "_" + stepName, // Must be unique
+						ID:        "hello-world",
+						InputData: map[string]any{"name": stepName},
+					}, nil, nil)
+				assert.NoError(t, result.Error)
+				assert.Equals(t, result.OutputID, "success")
+				assert.Equals(t, result.OutputData.(map[any]any)["message"].(string), "Hello, "+stepName+"!")
+			}()
+		}
+		stepWg.Wait()
+		assert.NoError(t, cli.Close())
+	}()
+
+	wg.Wait()
+}
+func TestProtocol_Client_Execute_Multi_Step_Serial(t *testing.T) {
+	// Runs several steps in one client, but with a long enough delay for each one to finish up
+	// before the next one runs
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, atp.RunATPServer(
+			ctx,
+			stdinReader,
+			stdoutWriter,
+			helloWorldSchema,
+		))
+	}()
+
+	go func() {
+		defer wg.Done()
+		cli := atp.NewClientWithLogger(channel{
+			Reader:  stdoutReader,
+			Writer:  stdinWriter,
+			Context: nil,
+			cancel:  cancel,
+		}, log.NewTestLogger(t))
+
+		_, err := cli.ReadSchema()
+		assert.NoError(t, err)
+
+		names := []string{"a", "b", "c"}
+		waitTime := 0
+		stepWg := &sync.WaitGroup{}
+		for _, name := range names {
+			stepName := name
+			stepWg.Add(1)
+			stepWaitTime := waitTime
+			waitTime += 5
+			go func() {
+				defer stepWg.Done()
+				time.Sleep(time.Duration(stepWaitTime) * time.Millisecond)
+				result := cli.Execute(
+					schema.Input{
+						RunID:     t.Name() + "_" + stepName, // Must be unique
+						ID:        "hello-world",
+						InputData: map[string]any{"name": stepName},
+					}, nil, nil)
+				assert.NoError(t, result.Error)
+				assert.Equals(t, result.OutputID, "success")
+				assert.Equals(t, result.OutputData.(map[any]any)["message"].(string), "Hello, "+stepName+"!")
+			}()
+		}
+		stepWg.Wait()
+		assert.NoError(t, cli.Close())
 	}()
 
 	wg.Wait()
@@ -161,12 +278,15 @@ func TestProtocol_Client_ReadSchema(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, atp.RunATPServer(
+		t.Logf("Starting ATP server")
+		assert.Nil(t, atp.RunATPServer(
 			ctx,
 			stdinReader,
 			stdoutWriter,
 			helloWorldSchema,
 		))
+		t.Logf("ATP server exited without error")
+
 	}()
 
 	go func() {
@@ -176,7 +296,7 @@ func TestProtocol_Client_ReadSchema(t *testing.T) {
 			cancel()
 			wg.Done()
 		}()
-
+		t.Logf("Starting client.")
 		cli := atp.NewClientWithLogger(channel{
 			Reader:  stdoutReader,
 			Writer:  stdinWriter,
@@ -184,7 +304,10 @@ func TestProtocol_Client_ReadSchema(t *testing.T) {
 			cancel:  cancel,
 		}, log.NewTestLogger(t))
 		_, err := cli.ReadSchema()
+		err2 := cli.Close()
 		assert.NoError(t, err)
+		assert.NoError(t, err2)
+		t.Logf("Client exited without error")
 	}()
 
 	wg.Wait()
@@ -217,6 +340,9 @@ func TestProtocol_Error_Client_StartOutput(t *testing.T) {
 	}()
 
 	wg.Wait()
+
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Server_StartOutput(t *testing.T) {
@@ -229,6 +355,7 @@ func TestProtocol_Error_Server_StartOutput(t *testing.T) {
 
 	// close the server's cbor decoder's io pipe
 	assert.NoError(t, stdinReader.Close())
+	assert.NoError(t, stdoutWriter.Close()) // Close this, because it's unbuffered, so it would deadlock.
 
 	err := atp.RunATPServer(
 		ctx,
@@ -237,7 +364,11 @@ func TestProtocol_Error_Server_StartOutput(t *testing.T) {
 		helloWorldSchema,
 	)
 
-	assert.Error(t, err)
+	assert.NotNil(t, err)
+	assert.Equals(t, err.ServerFatal, true)
+
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Client_Hello(t *testing.T) {
@@ -278,6 +409,9 @@ func TestProtocol_Error_Client_Hello(t *testing.T) {
 	assert.NoError(t, srvr.decoder.Decode(&empty))
 
 	wg.Wait()
+
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Server_Hello(t *testing.T) {
@@ -299,7 +433,7 @@ func TestProtocol_Error_Server_Hello(t *testing.T) {
 		cancel:  cancel,
 	}, log.NewTestLogger(t))
 
-	var test_error error
+	var test_error *atp.ServerError
 
 	go func() {
 		defer wg.Done()
@@ -325,7 +459,9 @@ func TestProtocol_Error_Server_Hello(t *testing.T) {
 	wgcli.Wait()
 
 	wg.Wait()
-	assert.Error(t, test_error)
+	assert.NotNil(t, test_error)
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Server_WorkStart(t *testing.T) {
@@ -346,7 +482,7 @@ func TestProtocol_Error_Server_WorkStart(t *testing.T) {
 		cancel:  cancel,
 	}, log.NewTestLogger(t))
 
-	var test_error error
+	var testError *atp.ServerError
 	go func() {
 		defer wg.Done()
 		err := atp.RunATPServer(
@@ -357,7 +493,7 @@ func TestProtocol_Error_Server_WorkStart(t *testing.T) {
 		)
 
 		if err != nil {
-			test_error = err
+			testError = err
 		}
 	}()
 
@@ -369,10 +505,17 @@ func TestProtocol_Error_Server_WorkStart(t *testing.T) {
 
 		// close the server's cbor decoder's io pipe
 		assert.NoError(t, stdinReader.Close())
+		// Now close the client's stdoutWriter, since it would otherwise deadlock.
+		assert.NoError(t, stdoutWriter.Close())
 	}()
 
 	wg.Wait()
-	assert.Error(t, test_error)
+	assert.NotNil(t, testError)
+	// This may make the test more fragile, but checking the error is the only way
+	// to know that the error is from where we're testing.
+	assert.Contains(t, testError.Err.Error(), "failed to read or decode runtime message")
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Client_WorkStart(t *testing.T) {
@@ -396,7 +539,7 @@ func TestProtocol_Error_Client_WorkStart(t *testing.T) {
 		cancel:  cancel,
 	}, log.NewTestLogger(t))
 
-	var srvr_error error
+	var srvr_error *atp.ServerError
 	var cli_error error
 	go func() {
 		defer wg.Done()
@@ -416,23 +559,29 @@ func TestProtocol_Error_Client_WorkStart(t *testing.T) {
 		_, err := cli.ReadSchema()
 		assert.NoError(t, err)
 
-		// close client's cbor encoder's io pipe
+		// close client's cbor encoder's io pipe. This is intentionally done incorrectly to cause an error.
 		assert.NoError(t, stdinWriter.Close())
 
-		_, _, err = cli.Execute(
+		result := cli.Execute(
 			schema.Input{
+				RunID:     t.Name(),
 				ID:        "hello-world",
 				InputData: map[string]any{"name": "Arca Lot"},
 			}, nil, nil)
-		if err != nil {
-			cli_error = err
+		assert.Error(t, cli.Close())
+		if result.Error != nil {
+			cli_error = result.Error
 		}
+		// Close the other pipe after to unblock the server
+		assert.NoError(t, stdoutWriter.Close())
 	}()
 	wgcli.Wait()
 
 	wg.Wait()
-	assert.Error(t, srvr_error)
+	assert.NotNil(t, srvr_error)
 	assert.Error(t, cli_error)
+	// We don't lock on error to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Client_WorkDone(t *testing.T) {
@@ -447,7 +596,7 @@ func TestProtocol_Error_Client_WorkDone(t *testing.T) {
 	stdoutReader, stdoutWriter := io.Pipe()
 	defer cancel()
 
-	srvr := newATPServer(channel{
+	atpServer := newATPServer(channel{
 		Reader:  stdinReader,
 		Writer:  stdoutWriter,
 		Context: ctx,
@@ -467,8 +616,8 @@ func TestProtocol_Error_Client_WorkDone(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		req := atp.StartWorkMessage{}
-		err := srvr.decoder.Decode(&req)
+		req := atp.WorkStartMessage{}
+		err := atpServer.decoder.Decode(&req)
 		if err != nil {
 			srvr_error = err
 		}
@@ -479,19 +628,22 @@ func TestProtocol_Error_Client_WorkDone(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		_, _, err := cli.Execute(
+		result := cli.Execute(
 			schema.Input{
+				RunID:     t.Name(),
 				ID:        "hello-world",
 				InputData: map[string]any{"name": "Arca Lot"},
 			}, nil, nil)
-		if err != nil {
-			cli_error = err
+		if result.Error != nil {
+			cli_error = result.Error
 		}
+		assert.NoError(t, cli.Close())
 	}()
-
 	wg.Wait()
 	assert.NoError(t, srvr_error)
 	assert.Error(t, cli_error)
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 func TestProtocol_Error_Server_WorkDone(t *testing.T) {
@@ -512,7 +664,7 @@ func TestProtocol_Error_Server_WorkDone(t *testing.T) {
 		cancel:  cancel,
 	}, log.NewTestLogger(t))
 
-	var srvr_error error
+	var srvr_error *atp.ServerError
 	var cli_error error
 
 	go func() {
@@ -536,7 +688,7 @@ func TestProtocol_Error_Server_WorkDone(t *testing.T) {
 		// close server's cbor encoder's io pipe
 		assert.NoError(t, stdoutWriter.Close())
 
-		err = cli.Encoder().Encode(atp.StartWorkMessage{
+		err = cli.Encoder().Encode(atp.WorkStartMessage{
 			StepID: "hello-world",
 			Config: map[string]any{"name": "Arca Lot"},
 		})
@@ -547,7 +699,10 @@ func TestProtocol_Error_Server_WorkDone(t *testing.T) {
 
 	wg.Wait()
 	assert.NoError(t, cli_error)
-	assert.Error(t, srvr_error)
+	assert.NotNil(t, srvr_error)
+
+	// We don't wait on error, to prevent deadlocks, so just sleep
+	time.Sleep(time.Millisecond * 2)
 }
 
 // serverChannel holds the methods to talking to an ATP server (plugin).

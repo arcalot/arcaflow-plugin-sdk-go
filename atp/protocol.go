@@ -1,6 +1,7 @@
 package atp
 
 import (
+	"fmt"
 	"github.com/fxamacker/cbor/v2"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
@@ -12,44 +13,58 @@ type HelloMessage struct {
 	Schema  any   `cbor:"schema"`
 }
 
-type StartWorkMessage struct {
-	StepID string `cbor:"id"`
+type WorkStartMessage struct {
+	StepID string `cbor:"step_id"`
 	Config any    `cbor:"config"`
 }
 
 // All messages that can be contained in a RuntimeMessage struct.
 const (
-	MessageTypeWorkDone   uint32 = 1
-	MessageTypeSignal     uint32 = 2
-	MessageTypeClientDone uint32 = 3
+	MessageTypeWorkStart  uint32 = 1
+	MessageTypeWorkDone   uint32 = 2
+	MessageTypeSignal     uint32 = 3
+	MessageTypeClientDone uint32 = 4
+	MessageTypeError      uint32 = 5
 )
 
 type RuntimeMessage struct {
 	MessageID   uint32 `cbor:"id"`
+	RunID       string `cbor:"run_id"`
 	MessageData any    `cbor:"data"`
 }
 
 type DecodedRuntimeMessage struct {
 	MessageID      uint32          `cbor:"id"`
+	RunID          string          `cbor:"run_id"`
 	RawMessageData cbor.RawMessage `cbor:"data"`
 }
 
 type workDoneMessage struct {
+	StepID     string `cbor:"step_id"`
 	OutputID   string `cbor:"output_id"`
 	OutputData any    `cbor:"output_data"`
 	DebugLogs  string `cbor:"debug_logs"`
 }
 
 type signalMessage struct {
-	StepID   string `cbor:"step_id"`
 	SignalID string `cbor:"signal_id"`
 	Data     any    `cbor:"data"`
 }
 
-func (s signalMessage) ToInput() schema.Input {
-	return schema.Input{ID: s.SignalID, InputData: s.Data}
+func (s signalMessage) ToInput(runID string) schema.Input {
+	return schema.Input{RunID: runID, ID: s.SignalID, InputData: s.Data}
 }
 
 type clientDoneMessage struct {
 	// Empty for now.
+}
+
+type errorMessage struct {
+	Error       string `cbor:"error"`
+	StepFatal   bool   `cbor:"step_fatal"`
+	ServerFatal bool   `cbor:"server_fatal"`
+}
+
+func (e errorMessage) ToString(runID string) string {
+	return fmt.Sprintf("RunID: %s, err: %s, step fatal: %t, server fatal: %t", runID, e.Error, e.StepFatal, e.ServerFatal)
 }
