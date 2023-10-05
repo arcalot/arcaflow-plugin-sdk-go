@@ -18,7 +18,7 @@ func TestSchemaCall(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	outputID, outputData, err := schemaTestSchema.CallStep(ctx, "hello", data)
+	outputID, outputData, err := schemaTestSchema.CallStep(ctx, t.Name(), "hello", data)
 	assert.NoError(t, err)
 	assert.Equals(t, outputID, "success")
 	typedData := outputData.(map[string]any)

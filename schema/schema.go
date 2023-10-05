@@ -74,6 +74,7 @@ type CallableSchema struct {
 
 func (s CallableSchema) CallStep(
 	ctx context.Context,
+	runID string,
 	stepID string,
 	serializedInputData any,
 ) (
@@ -91,7 +92,7 @@ func (s CallableSchema) CallStep(
 	if err != nil {
 		return "", nil, InvalidInputError{err}
 	}
-	outputID, unserializedOutput, err := step.Call(ctx, unserializedInputData)
+	outputID, unserializedOutput, err := step.Call(ctx, runID, unserializedInputData)
 	if err != nil {
 		return outputID, nil, err
 	}
@@ -105,6 +106,7 @@ func (s CallableSchema) CallStep(
 
 func (s CallableSchema) CallSignal(
 	ctx context.Context,
+	runID string,
 	stepID string,
 	signalID string,
 	serializedInputData any,
@@ -123,7 +125,7 @@ func (s CallableSchema) CallSignal(
 		return InvalidInputError{err}
 	}
 
-	err = step.CallSignal(ctx, signalID, unserializedInputData)
+	err = step.CallSignal(ctx, runID, signalID, unserializedInputData)
 	if err != nil {
 		return err
 	}
