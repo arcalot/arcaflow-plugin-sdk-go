@@ -18,7 +18,7 @@ func RunATPServer(
 	stdin io.ReadCloser,
 	stdout io.WriteCloser,
 	pluginSchema *schema.CallableSchema,
-) *ServerError {
+) []*ServerError {
 	session := initializeATPServerSession(ctx, stdin, stdout, pluginSchema)
 	session.wg.Add(1)
 
@@ -109,15 +109,15 @@ func (s *atpServerSession) sendRuntimeMessage(msgID uint32, runID string, messag
 	})
 }
 
-func (s *atpServerSession) handleClosure() *ServerError {
+func (s *atpServerSession) handleClosure() []*ServerError {
 	// Wait for work done or context complete.
-	var workError *ServerError
+	var errors []*ServerError
 closeLoop:
 	for {
 		select {
 		case errorSent, wasError := <-s.workDone:
 			if wasError {
-				workError = &errorSent
+				errors = append(errors, &errorSent)
 				err := s.sendRuntimeMessage(
 					MessageTypeError,
 					errorSent.RunID,
@@ -135,12 +135,12 @@ closeLoop:
 				if err != nil || errorSent.ServerFatal {
 					err = s.stdinCloser.Close()
 					if err != nil {
-						return &ServerError{
-							RunID:       workError.RunID,
-							Err:         fmt.Errorf("error closing stdin (%s) after workDone error (%v)", err, workError),
+						return append(errors, &ServerError{
+							RunID:       errorSent.RunID,
+							Err:         fmt.Errorf("error closing stdin (%s) after workDone error (%v)", err, errorSent),
 							StepFatal:   true,
 							ServerFatal: true,
-						}
+						})
 					} else {
 						break closeLoop
 					}
@@ -154,7 +154,7 @@ closeLoop:
 		}
 	}
 	// Now close the pipe that it gets input from.
-	return workError
+	return errors
 }
 
 func (s *atpServerSession) runATPReadLoop() {
@@ -308,6 +308,17 @@ func (s *atpServerSession) run() {
 
 func (s *atpServerSession) runStep(runID string, req WorkStartMessage) {
 	// Call the step in the provided callable schema.
+	defer func() {
+		// Handle and properly report panics
+		if r := recover(); r != nil {
+			s.workDone <- ServerError{
+				RunID:       runID,
+				Err:         fmt.Errorf("panic while running step with Run ID '%s': (%v)", runID, r),
+				StepFatal:   true,
+				ServerFatal: false,
+			}
+		}
+	}()
 	outputID, outputData, err := s.pluginSchema.CallStep(s.ctx, runID, req.StepID, req.Config)
 	if err != nil {
 		s.workDone <- ServerError{
