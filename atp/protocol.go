@@ -14,7 +14,7 @@ type HelloMessage struct {
 }
 
 type WorkStartMessage struct {
-	StepID string `cbor:"step_id"`
+	StepID string `cbor:"id"`
 	Config any    `cbor:"config"`
 }
 
