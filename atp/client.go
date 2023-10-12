@@ -10,8 +10,7 @@ import (
 	"sync"
 )
 
-const MinSupportedATPVersion = 1
-const MaxSupportedATPVersion = 2
+var supportedServerVersions = []int64{1, 3}
 
 // ClientChannel holds the methods to talking to an ATP server (plugin).
 type ClientChannel interface {
@@ -129,11 +128,11 @@ func (c *client) ReadSchema() (*schema.SchemaSchema, error) {
 	}
 	c.logger.Debugf("Hello message read, ATP version %d.", hello.Version)
 
-	if hello.Version < MinSupportedATPVersion || hello.Version > MaxSupportedATPVersion {
-		c.logger.Errorf("Incompatible plugin ATP version: %d; expected between %d and %d.", hello.Version,
-			MinSupportedATPVersion, MaxSupportedATPVersion)
-		return nil, fmt.Errorf("incompatible plugin ATP version: %d; expected between %d and %d", hello.Version,
-			MinSupportedATPVersion, MaxSupportedATPVersion)
+	err := c.validateVersion(hello.Version)
+
+	if err != nil {
+		c.logger.Errorf("Unsupported plugin version. %w", err)
+		return nil, fmt.Errorf("unsupported plugin version: %w", err)
 	}
 	c.atpVersion = hello.Version
 
@@ -145,6 +144,15 @@ func (c *client) ReadSchema() (*schema.SchemaSchema, error) {
 	c.logger.Debugf("Schema unserialization complete.")
 
 	return unserializedSchema, nil
+}
+
+func (c *client) validateVersion(serverVersion int64) error {
+	for _, v := range supportedServerVersions {
+		if serverVersion == v {
+			return nil
+		}
+	}
+	return fmt.Errorf("unsupported atp version '%d', supported versions: %v", serverVersion, supportedServerVersions)
 }
 
 func (c *client) Execute(

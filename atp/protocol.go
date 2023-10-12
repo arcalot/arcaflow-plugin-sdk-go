@@ -6,7 +6,7 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
-const ProtocolVersion int64 = 2
+const ProtocolVersion int64 = 3
 
 type HelloMessage struct {
 	Version int64 `cbor:"version"`
