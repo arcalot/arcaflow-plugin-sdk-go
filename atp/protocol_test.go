@@ -197,6 +197,74 @@ func TestProtocol_Client_Execute(t *testing.T) {
 	wg.Wait()
 }
 
+func TestProtocol_Client_ATP_v1(t *testing.T) {
+	// Client ReadSchema and Execute atp v1 happy path.
+	// This is not a fragile test because the ATP v1 is not changing. It is the legacy supported version.
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+	step := "hello-world"
+	stepInput := map[string]any{"name": "Arca Lot"}
+
+	go func() {
+		defer wg.Done()
+		fromClient := cbor.NewDecoder(stdinReader)
+		toClient := cbor.NewEncoder(stdoutWriter)
+		// 1: read start output message
+		var empty any
+		assert.NoError(t, fromClient.Decode(&empty))
+		// 2: Send hello message with version set to 1 and the hello-world schema.
+		helloMessage := atp.HelloMessage{
+			Version: 1,
+			Schema:  assert.NoErrorR[any](t)(helloWorldSchema.SelfSerialize()),
+		}
+		assert.NoError(t, toClient.Encode(&helloMessage))
+		// 3: Read work start message
+		var workStartMsg atp.WorkStartMessage
+		assert.NoError(t, fromClient.Decode(&workStartMsg))
+		assert.Equals(t, workStartMsg.StepID, step)
+		unserializedInput := assert.NoErrorR[any](t)(helloWorldInputSchema.Unserialize(workStartMsg.Config))
+		assert.Equals(t, unserializedInput.(helloWorldInput), helloWorldInput{Name: "Arca Lot"})
+
+		// 4: Send work done message
+		workDoneMessage := atp.WorkDoneMessage{
+			StepID:     step,
+			OutputID:   "success",
+			OutputData: map[string]string{"message": "Hello, Arca Lot!"},
+			DebugLogs:  "",
+		}
+		assert.NoError(t, toClient.Encode(&workDoneMessage))
+
+	}()
+
+	go func() {
+		defer wg.Done()
+		cli := atp.NewClientWithLogger(channel{
+			Reader:  stdoutReader,
+			Writer:  stdinWriter,
+			Context: nil,
+			cancel:  nil,
+		}, log.NewTestLogger(t))
+
+		_, err := cli.ReadSchema()
+		assert.NoError(t, err)
+
+		result := cli.Execute(
+			schema.Input{
+				RunID:     t.Name(),
+				ID:        step,
+				InputData: stepInput,
+			}, nil, nil)
+		assert.NoError(t, cli.Close())
+		assert.NoError(t, result.Error)
+		assert.Equals(t, result.OutputID, "success")
+		assert.Equals(t, result.OutputData.(map[any]any)["message"].(string), "Hello, Arca Lot!")
+	}()
+
+	wg.Wait()
+}
+
 func TestProtocol_Client_Execute_Panicking(t *testing.T) {
 	// Client ReadSchema and Execute happy path.
 	ctx, cancel := context.WithCancel(context.Background())
