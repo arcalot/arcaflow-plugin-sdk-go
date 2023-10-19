@@ -197,6 +197,7 @@ func TestProtocol_Client_Execute(t *testing.T) {
 	wg.Wait()
 }
 
+//nolint:funlen
 func TestProtocol_Client_ATP_v1(t *testing.T) {
 	// Client ReadSchema and Execute atp v1 happy path.
 	// This is not a fragile test because the ATP v1 is not changing. It is the legacy supported version.
