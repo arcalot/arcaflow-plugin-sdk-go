@@ -426,10 +426,18 @@ func TestTypedObjectSchema_Any(t *testing.T) {
 	assert.Error(t, err)
 }
 
+var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)
+
 func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	// Schema validation
 	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchema))
 	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same
+	// Schema validation with ref
+	objectTestRef := schema.NewRefSchema("testStruct", nil)
+	objectTestRef.ApplyScope(testStructScope)
+	assert.NoError(t, objectTestRef.ValidateCompatibility(testStructSchema))
+	assert.NoError(t, testStructSchema.ValidateCompatibility(objectTestRef))
+
 	// map verification
 	validData := map[string]any{
 		"Field1": 42,
