@@ -338,10 +338,16 @@ func (o *ObjectSchema) validateStruct(data any) error {
 	return o.validateFieldInterdependencies(rawData)
 }
 
-func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (*ObjectSchema, bool) {
-	schemaType, ok := typeOrData.(*ObjectSchema)
+func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
+	// Try plain object schema
+	objectSchemaType, ok := typeOrData.(*ObjectSchema)
 	if ok {
-		return schemaType, true
+		return objectSchemaType, true
+	}
+	// Next, try ref schema
+	refSchemaType, ok := typeOrData.(*RefSchema)
+	if ok {
+		return refSchemaType.referencedObjectCache, true
 	}
 	// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
 	value := reflect.ValueOf(typeOrData)
@@ -351,15 +357,15 @@ func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (*ObjectSchema, boo
 			fieldAsInterface := field.Interface()
 			objectType, ok2 := fieldAsInterface.(ObjectSchema)
 			if ok2 {
-				schemaType = &objectType
+				objectSchemaType = &objectType
 				ok = true
 			}
 		}
 	}
-	return schemaType, ok
+	return objectSchemaType, ok
 }
 
-func (o *ObjectSchema) validateSchemaCompatibility(schemaType *ObjectSchema) error {
+func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
 	// Validate IDs. This is important because the IDs should match.
 	if schemaType.ID() != o.ID() {
