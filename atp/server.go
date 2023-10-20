@@ -7,9 +7,7 @@ import (
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"io"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 )
 
 // RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
@@ -36,7 +34,6 @@ func RunATPServer(
 
 type atpServerSession struct {
 	ctx            context.Context
-	cancel         *context.CancelFunc
 	wg             *sync.WaitGroup
 	stdinCloser    io.ReadCloser
 	cborStdin      *cbor.Decoder
@@ -65,29 +62,14 @@ func initializeATPServerSession(
 	stdout io.WriteCloser,
 	pluginSchema *schema.CallableSchema,
 ) *atpServerSession {
-	subCtx, cancel := context.WithCancel(ctx)
 	workDone := make(chan ServerError, 3)
 	// The ATP protocol uses CBOR.
 	cborStdin := cbor.NewDecoder(stdin)
 	cborStdout := cbor.NewEncoder(stdout)
 	runDoneChannel := make(chan bool, 3) // Buffer to prevent it from hanging if something unexpected happens.
 
-	// Cancel the sub context on sigint or sigterm.
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		select {
-		case <-sigs:
-			// Got sigterm. So cancel context.
-			cancel()
-		case <-subCtx.Done():
-			// Done. No sigterm.
-		}
-	}()
-
 	return &atpServerSession{
-		ctx:            subCtx,
-		cancel:         &cancel,
+		ctx:            ctx,
 		cborStdin:      cborStdin,
 		stdinCloser:    stdin,
 		cborStdout:     cborStdout,
