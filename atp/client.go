@@ -201,9 +201,13 @@ func (c *client) handleStepComplete(runID string, receivedSignals chan schema.In
 		c.logger.Infof("Closing signal channel for finished step")
 		// Remove from the map to ensure that the client.Close() method doesn't double-close it
 		c.mutex.Lock()
-		delete(c.runningSignalReceiveLoops, runID)
+		// Validate that it exists, since Close() could have been called early.
+		_, exists := c.runningSignalReceiveLoops[runID]
+		if exists {
+			delete(c.runningSignalReceiveLoops, runID)
+			close(receivedSignals)
+		}
 		c.mutex.Unlock()
-		close(receivedSignals)
 	}
 }
 
@@ -214,13 +218,14 @@ func (c *client) Close() error {
 		return nil
 	}
 	c.done = true
-	c.mutex.Unlock()
 	// First, close channels that could send signals to the clients
 	// This ends the loop
 	for runID, signalChannel := range c.runningSignalReceiveLoops {
 		c.logger.Infof("Closing signal channel for run ID '%s'", runID)
+		delete(c.runningSignalReceiveLoops, runID)
 		close(signalChannel)
 	}
+	c.mutex.Unlock()
 	// Now tell the server we're done.
 	// Send the client done message
 	if c.atpVersion > 1 {
