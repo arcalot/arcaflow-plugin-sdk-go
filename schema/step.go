@@ -20,8 +20,8 @@ type Step interface {
 type CallableStep interface {
 	Step
 	ToStepSchema() *StepSchema
-	Call(ctx context.Context, data any) (outputID string, outputData any, err error)
-	CallSignal(ctx context.Context, signalID string, data any) (err error)
+	Call(ctx context.Context, runID string, data any) (outputID string, outputData any, err error)
+	CallSignal(ctx context.Context, runID string, signalID string, data any) (err error)
 }
 
 // NewStepSchema defines a new step.
@@ -97,6 +97,7 @@ func NewCallableStep[StepInputType any](
 		SignalEmittersValue: nil,
 		DisplayValue:        display,
 		initializer:         nil,
+		stepData:            make(map[string]*runningStepData[any]),
 		handler:             updatedHandler,
 	}
 }
@@ -125,9 +126,16 @@ func NewCallableStepWithSignals[StepData any, StepInputType any](
 		SignalEmittersValue: signalEmitters,
 		DisplayValue:        display,
 		initializer:         initializer,
-		initializerWG:       &wg,
 		handler:             handler,
+		stepData:            make(map[string]*runningStepData[StepData]),
 	}
+}
+
+type runningStepData[StepData any] struct {
+	runID           string
+	initializedData StepData
+	startedWG       *sync.WaitGroup // For waiting until the step is started.
+	done            bool
 }
 
 // CallableStepSchema is a step that can be directly called and is typed to a specific input type.
@@ -139,9 +147,8 @@ type CallableStepSchema[StepData any, InputType any] struct {
 	OutputsValue        map[string]*StepOutputSchema `json:"outputs"`
 	DisplayValue        Display                      `json:"display"`
 	initializer         func() StepData
-	initializerWG       *sync.WaitGroup
 	initializerMutex    sync.Mutex
-	initializedData     *StepData
+	stepData            map[string]*runningStepData[StepData] // Maps run ID to step data
 	handler             func(context.Context, StepData, InputType) (string, any)
 }
 
@@ -188,23 +195,40 @@ func (s *CallableStepSchema[StepData, InputType]) ToStepSchema() *StepSchema {
 	}
 }
 
-func (s *CallableStepSchema[StepData, InputType]) Call(ctx context.Context, input any) (string, any, error) {
+// Set up the runningStepData struct. This results in a waitgroup available for the signals to wait on, and
+// it setups the data shared between the step and signals.
+func (s *CallableStepSchema[StepData, InputType]) setupStepData(runID string) *runningStepData[StepData] {
+	s.initializerMutex.Lock()
+	defer s.initializerMutex.Unlock()
+
+	// This will be called by both the signal and step handlers, so it's important to check to ensure this
+	// isn't getting re-done on the second call.
+	existingRunningStepData, found := s.stepData[runID]
+	if found {
+		return existingRunningStepData // Already done
+	}
+	var stepData StepData
+	if s.initializer != nil {
+		newInitializedData := s.initializer()
+		stepData = newInitializedData
+	}
+	runningStepData := runningStepData[StepData]{
+		runID:           runID,
+		initializedData: stepData,
+		startedWG:       &sync.WaitGroup{},
+		done:            false,
+	}
+	s.stepData[runID] = &runningStepData
+	return &runningStepData
+}
+
+func (s *CallableStepSchema[StepData, InputType]) Call(ctx context.Context, runID string, input any) (string, any, error) {
 	if err := s.InputValue.Validate(input); err != nil {
 		return "", nil, InvalidInputError{err}
 	}
 
-	s.initializerMutex.Lock()
-	if s.initializedData == nil && s.initializer != nil {
-		newInitializedData := s.initializer()
-		s.initializedData = &newInitializedData
-		s.initializerWG.Done()
-	}
-	s.initializerMutex.Unlock()
-	var stepData StepData
-	if s.initializer != nil {
-		stepData = *s.initializedData
-	}
-	outputID, outputData := s.handler(ctx, stepData, input.(InputType))
+	runningStepData := s.setupStepData(runID)
+	outputID, outputData := s.handler(ctx, runningStepData.initializedData, input.(InputType))
 	output, ok := s.OutputsValue[outputID]
 	if !ok {
 		return "", nil, InvalidOutputError{
@@ -214,12 +238,13 @@ func (s *CallableStepSchema[StepData, InputType]) Call(ctx context.Context, inpu
 	return outputID, outputData, output.Validate(outputData)
 }
 
-func (s *CallableStepSchema[StepData, InputType]) CallSignal(ctx context.Context, signalID string, input any) error {
-	s.initializerWG.Wait()
-	if s.initializedData == nil {
-		return IllegalStateError{
-			fmt.Errorf("signal ID '%s' called before step initialization", signalID),
-		}
-	}
-	return s.SignalHandlersValue[signalID].Call(ctx, *s.initializedData, input)
+func (s *CallableStepSchema[StepData, InputType]) CallSignal(
+	ctx context.Context,
+	runID string,
+	signalID string,
+	input any,
+) error {
+	runningStepData := s.setupStepData(runID)
+	runningStepData.startedWG.Wait() // Wait for the step to start
+	return s.SignalHandlersValue[signalID].Call(ctx, runningStepData.initializedData, input)
 }
