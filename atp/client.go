@@ -186,10 +186,10 @@ func (c *client) Execute(
 		}
 	}
 	if err := c.sendCBOR(workStartMsg); err != nil {
-		c.logger.Errorf("Step %s failed to write start work message: %v", stepData.ID, err)
+		c.logger.Errorf("Step '%s' failed to write start work message: %v", stepData.ID, err)
 		return NewErrorExecutionResult(fmt.Errorf("failed to write work start message (%w)", err))
 	}
-	c.logger.Debugf("Step %s started, waiting for response...", stepData.ID)
+	c.logger.Debugf("Step '%s' started, waiting for response...", stepData.ID)
 
 	defer c.handleStepComplete(stepData.RunID, receivedSignals)
 	return c.getResult(stepData, cborReader)
@@ -346,7 +346,7 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 	var runtimeMessage DecodedRuntimeMessage
 	for {
 		if err := cborReader.Decode(&runtimeMessage); err != nil {
-			c.logger.Errorf("ATP client for steps %s failed to read or decode runtime message: %v", c.getRunningStepIDs(), err)
+			c.logger.Errorf("ATP client for steps '%s' failed to read or decode runtime message: %v", c.getRunningStepIDs(), err)
 			// This is fatal since the entire structure of the runtime message is invalid.
 			c.sendErrorToAll(fmt.Errorf("failed to read or decode runtime message (%w)", err))
 			return
@@ -355,7 +355,7 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 		case MessageTypeWorkDone:
 			var doneMessage WorkDoneMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
-				c.logger.Errorf("Failed to decode work done message (%v) for run ID %s ", err, runtimeMessage.RunID)
+				c.logger.Errorf("Failed to decode work done message (%v) for run ID '%s' ", err, runtimeMessage.RunID)
 				c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
 					fmt.Errorf("failed to decode work done message (%w)", err)))
 			}
@@ -383,17 +383,21 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 				c.logger.Errorf("Step with run ID '%s' failed to decode error message: %v",
 					runtimeMessage.RunID, err)
 			}
-			c.logger.Errorf("Step with run ID %s sent error message: %v", runtimeMessage.RunID, errMessage)
-			resultMsg := fmt.Errorf("step %s sent error message: %s", runtimeMessage.RunID,
+			c.logger.Errorf("Step with run ID '%s' sent error message: %v", runtimeMessage.RunID, errMessage)
+			resultMsg := fmt.Errorf("step '%s' sent error message: %s", runtimeMessage.RunID,
 				errMessage.ToString(runtimeMessage.RunID))
 			if errMessage.ServerFatal {
 				c.sendErrorToAll(resultMsg)
 				return // It's server fatal, so this is the last message from the server.
 			} else if errMessage.StepFatal {
-				c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(resultMsg))
+				if runtimeMessage.RunID == "" {
+					c.sendErrorToAll(fmt.Errorf("step fatal error missing run id (%w)", resultMsg))
+				} else {
+					c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(resultMsg))
+				}
 			}
 		default:
-			c.logger.Warningf("Step with run ID %s sent unknown message type: %s", runtimeMessage.RunID,
+			c.logger.Warningf("Step with run ID '%s' sent unknown message type: %s", runtimeMessage.RunID,
 				runtimeMessage.MessageID)
 		}
 		c.mutex.Lock()
@@ -495,7 +499,7 @@ func (c *client) processWorkDone(
 	debugLogs := strings.Split(doneMessage.DebugLogs, "\n")
 	for _, line := range debugLogs {
 		if strings.TrimSpace(line) != "" {
-			c.logger.Debugf("Step %s debug: %s", runID, line)
+			c.logger.Debugf("Step '%s' debug: %s", runID, line)
 		}
 	}
 

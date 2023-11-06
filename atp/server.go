@@ -53,7 +53,7 @@ type ServerError struct {
 }
 
 func (e ServerError) String() string {
-	return fmt.Sprintf("RunID: %s, err: %s, step fatal: %t, server fatal: %t", e.RunID, e.Err, e.StepFatal, e.ServerFatal)
+	return fmt.Sprintf("RunID: '%s', err: %s, step fatal: %t, server fatal: %t", e.RunID, e.Err, e.StepFatal, e.ServerFatal)
 }
 
 func initializeATPServerSession(
@@ -178,7 +178,7 @@ func (s *atpServerSession) onRuntimeMessageReceived(message *DecodedRuntimeMessa
 		var workStartMsg WorkStartMessage
 		if err := cbor.Unmarshal(message.RawMessageData, &workStartMsg); err != nil {
 			s.workDone <- ServerError{
-				RunID:       "",
+				RunID:       runID,
 				Err:         fmt.Errorf("failed to decode work start message: %w", err),
 				StepFatal:   true,
 				ServerFatal: false,
@@ -191,7 +191,7 @@ func (s *atpServerSession) onRuntimeMessageReceived(message *DecodedRuntimeMessa
 		var signalMessage SignalMessage
 		if err := cbor.Unmarshal(message.RawMessageData, &signalMessage); err != nil {
 			s.workDone <- ServerError{
-				RunID:       "",
+				RunID:       runID,
 				Err:         fmt.Errorf("failed to decode signal message: %w", err),
 				StepFatal:   false,
 				ServerFatal: false,
@@ -206,6 +206,7 @@ func (s *atpServerSession) onRuntimeMessageReceived(message *DecodedRuntimeMessa
 		err := s.stdinCloser.Close()
 		if err != nil {
 			s.workDone <- ServerError{
+				// this error does not apply to a specific run id
 				RunID:       "",
 				Err:         fmt.Errorf("error while closing stdin on client done: %w", err),
 				StepFatal:   true,
@@ -215,6 +216,7 @@ func (s *atpServerSession) onRuntimeMessageReceived(message *DecodedRuntimeMessa
 		return true // Client done, so terminate loop
 	default:
 		s.workDone <- ServerError{
+			// this error does not apply to a specific run id
 			RunID: "",
 			Err: fmt.Errorf("unknown message ID received: %d. This is a sign of incompatible server and client versions",
 				message.MessageID),
@@ -323,7 +325,7 @@ func (s *atpServerSession) runStep(runID string, req WorkStartMessage) {
 	outputID, outputData, err := s.pluginSchema.CallStep(s.ctx, runID, req.StepID, req.Config)
 	if err != nil {
 		s.workDone <- ServerError{
-			RunID:       "",
+			RunID:       runID,
 			Err:         fmt.Errorf("error calling step (%w)", err),
 			StepFatal:   true,
 			ServerFatal: false,
