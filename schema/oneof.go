@@ -60,7 +60,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	if reflectedValue.Kind() != reflect.Map {
 		return result, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid type for one-of type: '%s'",
+				"Invalid type for one-of type: '%s'. Expected map.",
 				reflect.TypeOf(data).Name(),
 			),
 		}
@@ -335,7 +335,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		var defaultValue KeyType
 		return defaultValue, nil, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid type for one-of type: '%s'",
+				"Invalid type for one-of type: '%s' expected struct or map.",
 				reflect.TypeOf(data).Name(),
 			),
 		}

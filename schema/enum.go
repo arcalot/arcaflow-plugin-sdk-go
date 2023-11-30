@@ -63,8 +63,11 @@ func (s EnumSchema[T]) ValidateCompatibility(typeOrData any) error {
 	for key, display := range s.ValidValuesMap {
 		matchingInputDisplay := schemaType.ValidValuesMap[key]
 		if matchingInputDisplay == nil {
+			foundValues := reflect.ValueOf(schemaType.ValidValuesMap).MapKeys()
+			expectedValues := reflect.ValueOf(s.ValidValuesMap).MapKeys()
 			return &ConstraintError{
-				Message: fmt.Sprintf("invalid enum '%T' for custom enum. Missing key %v", typeOrData, key),
+				Message: fmt.Sprintf("invalid enum values for type '%T' for custom enum. Missing key %v (and potentially others). Expected values: %s, Has values: %s",
+					typeOrData, key, expectedValues, foundValues),
 			}
 		} else if *display.Name() != *matchingInputDisplay.Name() {
 			return &ConstraintError{
