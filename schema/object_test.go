@@ -426,6 +426,75 @@ func TestTypedObjectSchema_Any(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestDefaultsStructSerialization(t *testing.T) {
+	type TestData struct {
+		Foo *string `json:"foo"`
+	}
+	s := schema.NewTypedObject[TestData](
+		"TestData",
+		map[string]*schema.PropertySchema{
+			"foo": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo(`"abc"`),
+				nil,
+			),
+		},
+	)
+	// First, unserialization
+	unserialized, err := s.Unserialize(map[string]any{})
+	assert.NoError(t, err)
+	assert.NotNil(t, unserialized)
+	assert.InstanceOf[TestData](t, unserialized)
+	assert.NotNil(t, unserialized.(TestData).Foo)
+	// Validate that default is included
+	assert.Equals(t, *unserialized.(TestData).Foo, "abc")
+
+	// Next, serialization.
+	serialized, err := s.Serialize(unserialized)
+	assert.NoError(t, err)
+	assert.NotNil(t, serialized)
+	assert.InstanceOf[map[string]any](t, serialized)
+	assert.Equals(t, assert.MapContainsKey[string](t, "foo", serialized.(map[string]any)), "abc")
+}
+
+func TestDefaultsObjectSerialization(t *testing.T) {
+	s := schema.NewObjectSchema(
+		"TestData",
+		map[string]*schema.PropertySchema{
+			"foo": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo(`"abc"`),
+				nil,
+			),
+		},
+	)
+	// First, unserialization
+	unserialized, err := s.Unserialize(map[string]any{})
+	assert.NoError(t, err)
+	assert.NotNil(t, unserialized)
+	assert.InstanceOf[map[string]any](t, unserialized)
+	assert.MapContainsKey[string](t, "foo", unserialized.(map[string]any))
+	// Validate that default is included
+	assert.Equals(t, unserialized.(map[string]any)["foo"], "abc")
+
+	// Next, serialization.
+	serialized, err := s.Serialize(unserialized)
+	assert.NoError(t, err)
+	assert.NotNil(t, serialized)
+	assert.InstanceOf[map[string]any](t, serialized)
+	assert.Equals(t, assert.MapContainsKey[string](t, "foo", serialized.(map[string]any)), "abc")
+}
+
 var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)
 
 func TestObjectSchema_ValidateCompatibility(t *testing.T) {
