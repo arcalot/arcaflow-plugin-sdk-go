@@ -10,6 +10,7 @@ type Function interface {
 	Parameters() []Type
 	Output([]Type) (Type, error)
 	Display() Display
+	String() string
 }
 
 type CallableFunction interface {
@@ -145,6 +146,23 @@ func (f FunctionSchema) Display() Display {
 	return f.DisplayValue
 }
 
+func (f FunctionSchema) String() string {
+	result := f.ID() + "("
+	for i := 0; i < len(f.Parameters()); i++ {
+		if i != 0 {
+			result += ", "
+		}
+		result += string(f.Parameters()[i].TypeID())
+	}
+	result += ") "
+	if f.OutputValue != nil {
+		result += string(f.OutputValue.TypeID())
+	} else {
+		result += "void"
+	}
+	return result
+}
+
 type CallableFunctionSchema struct {
 	IDValue            string  `json:"id"`
 	InputsValue        []Type  `json:"inputs"`
@@ -162,9 +180,11 @@ type CallableFunctionSchema struct {
 func (s CallableFunctionSchema) ID() string {
 	return s.IDValue
 }
+
 func (s CallableFunctionSchema) Parameters() []Type {
 	return s.InputsValue
 }
+
 func (s CallableFunctionSchema) Output(inputType []Type) (Type, error) {
 	if s.DynamicTypeHandler == nil {
 		return s.DefaultOutputValue, nil
@@ -172,9 +192,30 @@ func (s CallableFunctionSchema) Output(inputType []Type) (Type, error) {
 		return s.DynamicTypeHandler(inputType)
 	}
 }
+
 func (s CallableFunctionSchema) Display() Display {
 	return s.DisplayValue
 }
+
+func (f CallableFunctionSchema) String() string {
+	result := f.ID() + "("
+	for i := 0; i < len(f.Parameters()); i++ {
+		if i != 0 {
+			result += ", "
+		}
+		result += string(f.Parameters()[i].TypeID())
+	}
+	result += ") "
+	if f.DynamicTypeHandler != nil {
+		result += "dynamic"
+	} else if f.DefaultOutputValue != nil {
+		result += string(f.DefaultOutputValue.TypeID())
+	} else {
+		result += "void"
+	}
+	return result
+}
+
 func (s CallableFunctionSchema) ToFunctionSchema() (*FunctionSchema, error) {
 	if s.DynamicTypeHandler != nil && s.DefaultOutputValue == nil {
 		return nil, fmt.Errorf(
