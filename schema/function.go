@@ -19,6 +19,12 @@ type CallableFunction interface {
 	Call(arguments []any) (any, error)
 }
 
+// NewCallableFunction creates a CallableFunction schema type for the strictly typed function.
+//
+// - The handler types must match the input and output types specified.
+// - The return type of the handler is determined by the value specified for output. If output is nil, it's a void
+// function that may have no return, or a single error return.
+// - If output is not nil, the return type must match, plus it may have an error return type, too.
 func NewCallableFunction(
 	id string,
 	inputs []Type,
@@ -68,6 +74,14 @@ func NewCallableFunction(
 		Handler:            parsedHandler,
 	}, nil
 }
+
+// NewDynamicCallableFunction returns a CallableFunction for the dynamically typed function.
+//
+// - The input types must be specified and match, but you may use any types for instances when there are multiple allowed
+// inputs. The return type of the handler should be any.
+// - The handler function handles execution of the function.
+// - The typeHandler function returns the output type given the input type. If the inputs are invalid, the
+// handler should return an error.
 func NewDynamicCallableFunction(
 	id string,
 	inputs []Type,
@@ -88,6 +102,8 @@ func NewDynamicCallableFunction(
 		return nil, fmt.Errorf("expected dynamic handler to have two returns, one any and one error, but got %d return types", returnCount)
 	} else if parsedHandler.Type().Out(1).Name() != "error" {
 		return nil, fmt.Errorf("expected additional return type to be an error return, but got %s", parsedHandler.Type().Out(1).Name())
+	} else if parsedHandler.Type().Out(0).Kind() != reflect.Interface {
+		return nil, fmt.Errorf("expected 'any' return type for handler, but got %s", parsedHandler.Type().Out(0))
 	}
 	return &CallableFunctionSchema{
 		IDValue:            id,

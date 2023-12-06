@@ -360,6 +360,22 @@ func TestNewDynamicFunction_Simple(t *testing.T) {
 	assert.Equals(t, result, 5)
 }
 
+func TestNewDynamicFunction_WrongReturnType(t *testing.T) {
+	_, err := schema.NewDynamicCallableFunction(
+		"test",
+		make([]schema.Type, 0),
+		nil,
+		func() (int, error) {
+			return 5, nil
+		},
+		func(inputType []schema.Type) (schema.Type, error) {
+			return schema.NewIntSchema(nil, nil, nil), nil
+		},
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected 'any' return type for handler, but got int")
+}
+
 func TestNewDynamicFunction_1Param(t *testing.T) {
 	simpleFunc, err := schema.NewDynamicCallableFunction(
 		"test",
