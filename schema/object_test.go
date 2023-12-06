@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"go.arcalot.io/assert"
+	"strconv"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -430,6 +431,7 @@ func TestDefaultsStructSerialization(t *testing.T) {
 	type TestData struct {
 		Foo *string `json:"foo"`
 	}
+	default_foo_value := "abc"
 	s := schema.NewTypedObject[TestData](
 		"TestData",
 		map[string]*schema.PropertySchema{
@@ -440,7 +442,7 @@ func TestDefaultsStructSerialization(t *testing.T) {
 				nil,
 				nil,
 				nil,
-				schema.PointerTo(`"abc"`),
+				schema.PointerTo(strconv.Quote(default_foo_value)),
 				nil,
 			),
 		},
@@ -452,28 +454,35 @@ func TestDefaultsStructSerialization(t *testing.T) {
 	assert.InstanceOf[TestData](t, unserialized)
 	assert.NotNil(t, unserialized.(TestData).Foo)
 	// Validate that default is included
-	assert.Equals(t, *unserialized.(TestData).Foo, "abc")
+	assert.Equals(t, *unserialized.(TestData).Foo, default_foo_value)
 
 	// Next, serialization.
 	serialized, err := s.Serialize(unserialized)
 	assert.NoError(t, err)
 	assert.NotNil(t, serialized)
 	assert.InstanceOf[map[string]any](t, serialized)
-	assert.Equals(t, assert.MapContainsKey[string](t, "foo", serialized.(map[string]any)), "abc")
+	actual_value := assert.MapContainsKey[string](
+		t, "foo", serialized.(map[string]any))
+	assert.Equals(t,
+		actual_value.(string),
+		default_foo_value)
 }
 
 func TestDefaultsObjectSerialization(t *testing.T) {
+	foo_key := "foo"
+	default_foo_value := "abc"
+
 	s := schema.NewObjectSchema(
 		"TestData",
 		map[string]*schema.PropertySchema{
-			"foo": schema.NewPropertySchema(
+			foo_key: schema.NewPropertySchema(
 				schema.NewStringSchema(nil, nil, nil),
 				nil,
 				false,
 				nil,
 				nil,
 				nil,
-				schema.PointerTo(`"abc"`),
+				schema.PointerTo(strconv.Quote(default_foo_value)),
 				nil,
 			),
 		},
@@ -483,16 +492,19 @@ func TestDefaultsObjectSerialization(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, unserialized)
 	assert.InstanceOf[map[string]any](t, unserialized)
-	assert.MapContainsKey[string](t, "foo", unserialized.(map[string]any))
+	assert.MapContainsKey[string](t, foo_key, unserialized.(map[string]any))
 	// Validate that default is included
-	assert.Equals(t, unserialized.(map[string]any)["foo"], "abc")
+	assert.Equals(t,
+		unserialized.(map[string]any)[foo_key].(string), default_foo_value)
 
 	// Next, serialization.
 	serialized, err := s.Serialize(unserialized)
 	assert.NoError(t, err)
 	assert.NotNil(t, serialized)
 	assert.InstanceOf[map[string]any](t, serialized)
-	assert.Equals(t, assert.MapContainsKey[string](t, "foo", serialized.(map[string]any)), "abc")
+	actual_value := assert.MapContainsKey[string](
+		t, foo_key, serialized.(map[string]any))
+	assert.Equals(t, actual_value.(string), default_foo_value)
 }
 
 var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)
