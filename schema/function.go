@@ -19,6 +19,8 @@ type CallableFunction interface {
 	Call(arguments []any) (any, error)
 }
 
+const errorType = "error"
+
 // NewCallableFunction creates a CallableFunction schema type for the strictly typed function.
 //
 // - The handler types must match the input and output types specified.
@@ -39,31 +41,15 @@ func NewCallableFunction(
 		return nil, err
 	}
 	// Validate the output type
-	returnCount := parsedHandler.Type().NumOut()
 	if output == nil {
-		if returnCount > 1 {
-			return nil, fmt.Errorf("parameter output is nil, meaning it's a void function, or a function with just an error return, but got %d return types", returnCount)
-		} else if returnCount == 1 {
-			// Validate that it's just an error return
-			returnTypeName := parsedHandler.Type().Out(0).Name()
-			if returnTypeName != "error" {
-				return nil, fmt.Errorf("expected void or error return, but got %s", returnTypeName)
-			}
+		err := validateVoidFunc(parsedHandler)
+		if err != nil {
+			return nil, err
 		}
 	} else {
-		if returnCount > 2 || returnCount < 1 {
-			return nil, fmt.Errorf("expected handler to have one return, or one plus an error return, but got %d return types", returnCount)
-		} else {
-			// Validate the return type
-			expectedType := output.ReflectedType()
-			handlerType := parsedHandler.Type().Out(0)
-			if expectedType != handlerType {
-				return nil, fmt.Errorf("mismatched return type. expected %s, handler has %s", expectedType, handlerType)
-			}
-			// Validate error return, if applicable.
-			if returnCount == 2 && parsedHandler.Type().Out(1).Name() != "error" {
-				return nil, fmt.Errorf("expected additional return type to be an error return, but got %s", parsedHandler.Type().Out(1).Name())
-			}
+		err := validateTypedReturnFunc(parsedHandler, output)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return &CallableFunctionSchema{
@@ -73,6 +59,44 @@ func NewCallableFunction(
 		DisplayValue:       display,
 		Handler:            parsedHandler,
 	}, nil
+}
+
+func validateVoidFunc(parsedHandler reflect.Value) error {
+	returnCount := parsedHandler.Type().NumOut()
+	// A void function can have no returns or an error return
+	if returnCount > 1 {
+		return fmt.Errorf(
+			"parameter output is nil, meaning it's a void function, or a function with just an error return, but got %d return types",
+			returnCount,
+		)
+	} else if returnCount == 1 {
+		// Validate that it's just an error return
+		returnTypeName := parsedHandler.Type().Out(0).Name()
+		if returnTypeName != errorType {
+			return fmt.Errorf("expected void or error return, but got %s", returnTypeName)
+		}
+	}
+	return nil
+}
+
+func validateTypedReturnFunc(parsedHandler reflect.Value, outputType Type) error {
+	returnCount := parsedHandler.Type().NumOut()
+
+	if returnCount > 2 || returnCount < 1 {
+		return fmt.Errorf("expected handler to have one return, or one plus an error return, but got %d return types", returnCount)
+	} else {
+		// Validate the return type
+		expectedType := outputType.ReflectedType()
+		handlerType := parsedHandler.Type().Out(0)
+		if expectedType != handlerType {
+			return fmt.Errorf("mismatched return type. expected %s, handler has %s", expectedType, handlerType)
+		}
+		// Validate error return, if applicable.
+		if returnCount == 2 && parsedHandler.Type().Out(1).Name() != errorType {
+			return fmt.Errorf("expected additional return type to be an error return, but got %s", parsedHandler.Type().Out(1).Name())
+		}
+	}
+	return nil
 }
 
 // NewDynamicCallableFunction returns a CallableFunction for the dynamically typed function.
@@ -98,11 +122,12 @@ func NewDynamicCallableFunction(
 	// Validate the output type
 	returnCount := parsedHandler.Type().NumOut()
 
-	if returnCount != 2 {
+	switch {
+	case returnCount != 2:
 		return nil, fmt.Errorf("expected dynamic handler to have two returns, one any and one error, but got %d return types", returnCount)
-	} else if parsedHandler.Type().Out(1).Name() != "error" {
+	case parsedHandler.Type().Out(1).Name() != errorType:
 		return nil, fmt.Errorf("expected additional return type to be an error return, but got %s", parsedHandler.Type().Out(1).Name())
-	} else if parsedHandler.Type().Out(0).Kind() != reflect.Interface {
+	case parsedHandler.Type().Out(0).Kind() != reflect.Interface:
 		return nil, fmt.Errorf("expected 'any' return type for handler, but got %s", parsedHandler.Type().Out(0))
 	}
 	return &CallableFunctionSchema{
@@ -222,11 +247,12 @@ func (f CallableFunctionSchema) String() string {
 		result += string(f.Parameters()[i].TypeID())
 	}
 	result += ") "
-	if f.DynamicTypeHandler != nil {
+	switch {
+	case f.DynamicTypeHandler != nil:
 		result += "dynamic"
-	} else if f.DefaultOutputValue != nil {
+	case f.DefaultOutputValue != nil:
 		result += string(f.DefaultOutputValue.TypeID())
-	} else {
+	default:
 		result += "void"
 	}
 	return result
