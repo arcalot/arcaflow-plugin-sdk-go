@@ -36,7 +36,7 @@ type ObjectSchema struct {
 	IDValue         string                     `json:"id"`
 	PropertiesValue map[string]*PropertySchema `json:"properties"`
 
-	defaultValues map[string]any
+	defaultValues map[string]any // Key: Object field name, value: The default value
 
 	defaultValue     any
 	defaultValueType reflect.Type
@@ -78,16 +78,16 @@ func (o *ObjectSchema) Properties() map[string]*PropertySchema {
 func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 	v := reflect.ValueOf(data)
 	if v.Kind() != reflect.Map {
-		return result, &ConstraintError{
+		return nil, &ConstraintError{
 			Message: fmt.Sprintf("Must be a map, %T given", data),
 		}
 	}
 	rawData, err := o.convertData(v)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	if err := o.validateFieldInterdependencies(rawData); err != nil {
-		return result, err
+		return nil, err
 	}
 
 	if o.fieldCache != nil {
@@ -153,7 +153,7 @@ func (o *ObjectSchema) serializeMap(data map[string]any) (any, error) {
 		return nil, err
 	}
 
-	rawData := map[string]any{}
+	rawSerializedData := map[string]any{}
 	for k, v := range data {
 		property, ok := o.PropertiesValue[k]
 		if !ok {
@@ -163,12 +163,9 @@ func (o *ObjectSchema) serializeMap(data map[string]any) (any, error) {
 		if err != nil {
 			return nil, ConstraintErrorAddPathSegment(err, k)
 		}
-		defaultValue, hasDefaultValue := o.defaultValues[k]
-		if !hasDefaultValue && defaultValue != serializedValue {
-			rawData[k] = serializedValue
-		}
+		rawSerializedData[k] = serializedValue
 	}
-	return rawData, nil
+	return rawSerializedData, nil
 }
 
 func (o *ObjectSchema) serializeStruct(data any) (any, error) {
@@ -221,10 +218,7 @@ func (o *ObjectSchema) extractPropertyValue(propertyID string, v reflect.Value, 
 	if err != nil {
 		return nil, ConstraintErrorAddPathSegment(err, propertyID)
 	}
-	if defaultValue, ok := o.defaultValues[propertyID]; !ok || defaultValue != serializedData {
-		return &serializedData, nil
-	}
-	return nil, nil
+	return &serializedData, nil
 }
 
 func (o *ObjectSchema) getFieldReflection(propertyID string, v reflect.Value, property *PropertySchema) *reflect.Value {
