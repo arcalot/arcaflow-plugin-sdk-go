@@ -201,10 +201,10 @@ func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
 // The following test requires bypassing the validation provided in NewCallableFunction.
 func TestCallableFunctionSchema_Err_CallWrongErrorReturn(t *testing.T) {
 	callable := schema.CallableFunctionSchema{
-		IDValue:            "test",
-		InputsValue:        []schema.Type{},
-		DefaultOutputValue: nil, // No return specified here, so only zero returns, or an error return is allowed.
-		DisplayValue:       nil,
+		IDValue:           "test",
+		InputsValue:       []schema.Type{},
+		StaticOutputValue: nil, // No return specified here, so only zero returns, or an error return is allowed.
+		DisplayValue:      nil,
 		Handler: reflect.ValueOf(func() any { // Non-error return schema.Type here
 			return 5
 		}),
@@ -217,10 +217,10 @@ func TestCallableFunctionSchema_Err_CallWrongErrorReturn(t *testing.T) {
 // The following test requires bypassing the validation provided in NewCallableFunction.
 func TestCallableFunctionSchema_Err_CallWrongReturnCount(t *testing.T) {
 	callable := schema.CallableFunctionSchema{
-		IDValue:            "test",
-		InputsValue:        []schema.Type{},
-		DefaultOutputValue: nil, // No returns specified here
-		DisplayValue:       nil,
+		IDValue:           "test",
+		InputsValue:       []schema.Type{},
+		StaticOutputValue: nil, // No returns specified here
+		DisplayValue:      nil,
 		Handler: reflect.ValueOf(func() (any, any, any) { // Three returns specified here
 			return 0, 0, 0
 		}),
@@ -514,4 +514,69 @@ func TestNewDynamicFunction_SliceOfSameType(t *testing.T) {
 	result, err = simpleFunc.Call([]any{[]int{1}})
 	assert.NoError(t, err)
 	assert.Equals(t, result.([][]int), [][]int{{1}, {1}})
+}
+
+func TestFunctionToStringOneParamVoid(t *testing.T) {
+	oneParamVoidFunction, err := schema.NewCallableFunction(
+		"a",
+		[]schema.Type{schema.NewStringSchema(nil, nil, nil)},
+		nil,
+		nil,
+		func(a string) {},
+	)
+	assert.NoError(t, err)
+	funcStr := oneParamVoidFunction.String()
+	assert.Equals(t, funcStr, "a(string) void")
+}
+
+func TestFunctionToStringTwoParam(t *testing.T) {
+	oneParamVoidFunction, err := schema.NewCallableFunction(
+		"b",
+		[]schema.Type{
+			schema.NewStringSchema(nil, nil, nil),
+			schema.NewIntSchema(nil, nil, nil),
+		},
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		func(a string, b int64) int64 { return 0 },
+	)
+	assert.NoError(t, err)
+	funcStr := oneParamVoidFunction.String()
+	assert.Equals(t, funcStr, "b(string, integer) integer")
+}
+
+func TestToFunctionSchemaAndString(t *testing.T) {
+	oneParamVoidCallableFunction, err := schema.NewCallableFunction(
+		"b",
+		[]schema.Type{
+			schema.NewStringSchema(nil, nil, nil),
+			schema.NewIntSchema(nil, nil, nil),
+		},
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		func(a string, b int64) int64 { return 0 },
+	)
+	assert.NoError(t, err)
+	oneParamVoidFunction, err := oneParamVoidCallableFunction.ToFunctionSchema()
+	assert.NoError(t, err)
+
+	funcStr := oneParamVoidFunction.String()
+	assert.Equals(t, funcStr, "b(string, integer) integer")
+}
+
+func TestDynamicFunctionToString(t *testing.T) {
+	oneParamVoidFunction, err := schema.NewDynamicCallableFunction(
+		"c",
+		[]schema.Type{schema.NewAnySchema(), schema.NewIntSchema(nil, nil, nil)},
+		nil,
+		func(a any, b int64) (any, error) {
+			return a, nil
+		},
+		func(inputType []schema.Type) (schema.Type, error) {
+			return schema.NewIntSchema(nil, nil, nil), nil
+		},
+	)
+	assert.NoError(t, err)
+	funcStr := oneParamVoidFunction.String()
+	assert.Equals(t, funcStr, "c(any, integer) dynamic")
 }

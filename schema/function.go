@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type Function interface {
@@ -53,11 +54,11 @@ func NewCallableFunction(
 		}
 	}
 	return &CallableFunctionSchema{
-		IDValue:            id,
-		InputsValue:        inputs,
-		DefaultOutputValue: output,
-		DisplayValue:       display,
-		Handler:            parsedHandler,
+		IDValue:           id,
+		InputsValue:       inputs,
+		StaticOutputValue: output,
+		DisplayValue:      display,
+		Handler:           parsedHandler,
 	}, nil
 }
 
@@ -133,7 +134,7 @@ func NewDynamicCallableFunction(
 	return &CallableFunctionSchema{
 		IDValue:            id,
 		InputsValue:        inputs,
-		DefaultOutputValue: nil,
+		StaticOutputValue:  nil,
 		DisplayValue:       display,
 		Handler:            parsedHandler,
 		DynamicTypeHandler: typeHandler,
@@ -152,7 +153,7 @@ func validateInputTypeCompatibility(
 			"parameter inputs do not match handler inputs. handler has %d, expected %d",
 			actualParams, specifiedParams)
 	}
-	for i := 0; i < len(inputs); i++ {
+	for i := 0; i < specifiedParams; i++ {
 		expectedType := inputs[i].ReflectedType()
 		handlerType := handler.Type().In(i)
 		if expectedType != handlerType {
@@ -179,6 +180,14 @@ func (f FunctionSchema) Parameters() []Type {
 	return f.InputsValue
 }
 
+func (f FunctionSchema) ParameterTypeNames() []string {
+	parameterNames := make([]string, len(f.Parameters()))
+	for i := 0; i < len(f.Parameters()); i++ {
+		parameterNames[i] = string(f.Parameters()[i].TypeID())
+	}
+	return parameterNames
+}
+
 func (f FunctionSchema) Output(_ []Type) (Type, error) {
 	return f.OutputValue, nil
 }
@@ -188,14 +197,7 @@ func (f FunctionSchema) Display() Display {
 }
 
 func (f FunctionSchema) String() string {
-	result := f.ID() + "("
-	for i := 0; i < len(f.Parameters()); i++ {
-		if i != 0 {
-			result += ", "
-		}
-		result += string(f.Parameters()[i].TypeID())
-	}
-	result += ") "
+	result := f.ID() + "(" + strings.Join(f.ParameterTypeNames(), ", ") + ") "
 	if f.OutputValue != nil {
 		result += string(f.OutputValue.TypeID())
 	} else {
@@ -205,79 +207,81 @@ func (f FunctionSchema) String() string {
 }
 
 type CallableFunctionSchema struct {
-	IDValue            string  `json:"id"`
-	InputsValue        []Type  `json:"inputs"`
-	DefaultOutputValue Type    `json:"output"`
-	DisplayValue       Display `json:"display"`
-	// Should be a function call with any amount of parameters, and 0, 1 (err or data),
-	// or two return types (err and data).
-	// Params should match types in InputsValue.
-	// Return types should match OutputValue, or not be there if nil. Plus may have one addition return type: error.
+	IDValue     string `json:"id"`
+	InputsValue []Type `json:"inputs"`
+	// The output type when the output type does not change. Nil for void.
+	StaticOutputValue Type    `json:"output"`
+	DisplayValue      Display `json:"display"`
+	// A callable function whose parameters (if any) match the type schema specified in InputsValue,
+	// and whose return value type matches DefaultReturnValue, the return type from DynamicTypeHandler,
+	// or is void if both DefaultReturnValue and DynamicTypeHandler are nil.
+	// The handler may also return an error type.
 	Handler reflect.Value
 	// Returns the output type based on the input type. For advanced use cases. Cannot be void.
 	DynamicTypeHandler func(inputType []Type) (Type, error)
 }
 
-func (s CallableFunctionSchema) ID() string {
-	return s.IDValue
+func (f CallableFunctionSchema) ID() string {
+	return f.IDValue
 }
 
-func (s CallableFunctionSchema) Parameters() []Type {
-	return s.InputsValue
+func (f CallableFunctionSchema) Parameters() []Type {
+	return f.InputsValue
 }
 
-func (s CallableFunctionSchema) Output(inputType []Type) (Type, error) {
-	if s.DynamicTypeHandler == nil {
-		return s.DefaultOutputValue, nil
+func (f CallableFunctionSchema) ParameterTypeNames() []string {
+	parameterNames := make([]string, len(f.Parameters()))
+	for i := 0; i < len(f.Parameters()); i++ {
+		parameterNames[i] = string(f.Parameters()[i].TypeID())
+	}
+	return parameterNames
+}
+
+func (f CallableFunctionSchema) Output(inputType []Type) (Type, error) {
+	if f.DynamicTypeHandler == nil {
+		return f.StaticOutputValue, nil
 	} else {
-		return s.DynamicTypeHandler(inputType)
+		return f.DynamicTypeHandler(inputType)
 	}
 }
 
-func (s CallableFunctionSchema) Display() Display {
-	return s.DisplayValue
+func (f CallableFunctionSchema) Display() Display {
+	return f.DisplayValue
 }
 
 func (f CallableFunctionSchema) String() string {
-	result := f.ID() + "("
-	for i := 0; i < len(f.Parameters()); i++ {
-		if i != 0 {
-			result += ", "
-		}
-		result += string(f.Parameters()[i].TypeID())
-	}
-	result += ") "
+	result := f.ID() + "(" + strings.Join(f.ParameterTypeNames(), ", ") + ") "
 	switch {
 	case f.DynamicTypeHandler != nil:
 		result += "dynamic"
-	case f.DefaultOutputValue != nil:
-		result += string(f.DefaultOutputValue.TypeID())
+	case f.StaticOutputValue != nil:
+		result += string(f.StaticOutputValue.TypeID())
 	default:
 		result += "void"
 	}
 	return result
 }
 
-func (s CallableFunctionSchema) ToFunctionSchema() (*FunctionSchema, error) {
-	if s.DynamicTypeHandler != nil && s.DefaultOutputValue == nil {
+func (f CallableFunctionSchema) ToFunctionSchema() (*FunctionSchema, error) {
+	if f.DynamicTypeHandler != nil {
 		return nil, fmt.Errorf(
 			"function '%s' cannot be represented as a FunctionSchema because function has dynamic typing",
-			s.ID())
+			f.ID())
 	}
 	return &FunctionSchema{
-		IDValue:      s.IDValue,
-		InputsValue:  s.Parameters(),
-		OutputValue:  s.DefaultOutputValue,
-		DisplayValue: s.DisplayValue,
+		IDValue:      f.IDValue,
+		InputsValue:  f.Parameters(),
+		OutputValue:  f.StaticOutputValue,
+		DisplayValue: f.DisplayValue,
 	}, nil
 }
-func (s CallableFunctionSchema) Call(arguments []any) (any, error) {
+func (f CallableFunctionSchema) Call(arguments []any) (any, error) {
 	gotArgs := len(arguments)
-	expectedArgs := s.Handler.Type().NumIn()
+	expectedArgs := f.Handler.Type().NumIn()
 	if gotArgs != expectedArgs {
 		return nil, fmt.Errorf(
 			"incorrect number of args sent to function with ID '%s'. Expected %d, got %d",
-			s.ID(),
+			f.ID(),
 			expectedArgs,
 			gotArgs,
 		)
@@ -287,10 +291,10 @@ func (s CallableFunctionSchema) Call(arguments []any) (any, error) {
 	for i := 0; i < gotArgs; i++ {
 		args[i] = reflect.ValueOf(arguments[i])
 	}
-	result := s.Handler.Call(args)
+	result := f.Handler.Call(args)
 	gotReturns := len(result)
 	expectedReturnVals := 0
-	if s.DefaultOutputValue != nil || s.DynamicTypeHandler != nil {
+	if f.StaticOutputValue != nil || f.DynamicTypeHandler != nil {
 		expectedReturnVals = 1
 	}
 	// Validate return types
