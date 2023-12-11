@@ -117,7 +117,7 @@ func TestCallableFunctionSchema_OneReturn(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	result, err := simpleFunc.Call([]any{})
-	// There should be an error. Validate that it's the correct one.
+	// Valid result. Validate that it's "a", since that's what was returned in the handler.
 	assert.NoError(t, err)
 	assert.InstanceOf[string](t, result)
 	assert.Equals(t, result.(string), "a")
@@ -163,6 +163,7 @@ func TestCallableFunctionSchema_MultiParamWithNilErr(t *testing.T) {
 
 // Multi-param, with int output.
 func TestCallableFunctionSchema_Err_MultiParamWithErr(t *testing.T) {
+	// In this test, the error is reported from the handler to the caller.
 	simpleIntSchema := schema.NewIntSchema(nil, nil, nil)
 	simpleFunc, err := schema.NewCallableFunction(
 		"test",
@@ -181,6 +182,7 @@ func TestCallableFunctionSchema_Err_MultiParamWithErr(t *testing.T) {
 }
 
 func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
+	// In this test, the arg count mismatches on input to Call.
 	simpleIntSchema := schema.NewIntSchema(nil, nil, nil)
 	simpleFunc, err := schema.NewCallableFunction(
 		"test",
@@ -200,6 +202,8 @@ func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
 
 // The following test requires bypassing the validation provided in NewCallableFunction.
 func TestCallableFunctionSchema_Err_CallWrongErrorReturn(t *testing.T) {
+	// In this test case, we bypass the protections in NewCallableFunction, and test the
+	// late-validation by having a non-error return value specified that mismatches the schema.
 	callable := schema.CallableFunctionSchema{
 		IDValue:           "test",
 		InputsValue:       []schema.Type{},
@@ -216,6 +220,8 @@ func TestCallableFunctionSchema_Err_CallWrongErrorReturn(t *testing.T) {
 
 // The following test requires bypassing the validation provided in NewCallableFunction.
 func TestCallableFunctionSchema_Err_CallWrongReturnCount(t *testing.T) {
+	// In this test case, we bypass the protections in NewCallableFunction, and test the
+	// late-validation by having an invalid return count that mismatches the schema.
 	callable := schema.CallableFunctionSchema{
 		IDValue:           "test",
 		InputsValue:       []schema.Type{},
@@ -232,6 +238,7 @@ func TestCallableFunctionSchema_Err_CallWrongReturnCount(t *testing.T) {
 
 // Test the input validation.
 func TestNewCallableFunction_Err_MismatchedParamCount(t *testing.T) {
+	// In this test case, the input schema has a different param count as the handler.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0), // No params specified here
@@ -244,6 +251,7 @@ func TestNewCallableFunction_Err_MismatchedParamCount(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_MismatchedParamType(t *testing.T) {
+	// The handler will have a different output type (int) than the schema specifies (string)
 	_, err := schema.NewCallableFunction(
 		"test",
 		[]schema.Type{schema.NewStringSchema(nil, nil, nil)}, // String specified here
@@ -256,6 +264,7 @@ func TestNewCallableFunction_Err_MismatchedParamType(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_NilReturnMismatchedReturnCount(t *testing.T) {
+	// In this case, the schema will specify zeo returns, when the handler will have both a return type an en error return
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
@@ -270,12 +279,13 @@ func TestNewCallableFunction_Err_NilReturnMismatchedReturnCount(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_NilReturnNotError(t *testing.T) {
+	// In this case the handler will have a return type, when the schema specifies none.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
 		nil,
 		nil,
-		func() int { // This isn't a valid return given the schema. Should be error or void.
+		func() int { // Should be error or void.
 			return 0
 		},
 	)
@@ -284,10 +294,11 @@ func TestNewCallableFunction_Err_NilReturnNotError(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_NotEnoughReturns(t *testing.T) {
+	// The schema specifies a string return, when the handler has no return. They need to match.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
-		schema.NewStringSchema(nil, nil, nil), // String
+		schema.NewStringSchema(nil, nil, nil), // String specified here.
 		nil,
 		func() {}, // No returns here. We specified string earlier.
 	)
@@ -296,6 +307,7 @@ func TestNewCallableFunction_Err_NotEnoughReturns(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_MismatchedReturnType(t *testing.T) {
+	// Handler specifies int, when the schema specifies string. They need to match.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
@@ -310,6 +322,8 @@ func TestNewCallableFunction_Err_MismatchedReturnType(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_TooManyReturns(t *testing.T) {
+	// In this case, the handler will have too many returns. We allow max the schema specified return,
+	// plus an error return.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
@@ -324,6 +338,8 @@ func TestNewCallableFunction_Err_TooManyReturns(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_ReturnNotError(t *testing.T) {
+	// In this test, the return value of the handler will include two non-error returns, when we
+	// are expecting one string return, and one error return.
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
@@ -529,23 +545,7 @@ func TestFunctionToStringOneParamVoid(t *testing.T) {
 	assert.Equals(t, funcStr, "a(string) void")
 }
 
-func TestFunctionToStringTwoParam(t *testing.T) {
-	oneParamVoidFunction, err := schema.NewCallableFunction(
-		"b",
-		[]schema.Type{
-			schema.NewStringSchema(nil, nil, nil),
-			schema.NewIntSchema(nil, nil, nil),
-		},
-		schema.NewIntSchema(nil, nil, nil),
-		nil,
-		func(a string, b int64) int64 { return 0 },
-	)
-	assert.NoError(t, err)
-	funcStr := oneParamVoidFunction.String()
-	assert.Equals(t, funcStr, "b(string, integer) integer")
-}
-
-func TestToFunctionSchemaAndString(t *testing.T) {
+func TestFunctionToStringToFunctionTwoParam(t *testing.T) {
 	oneParamVoidCallableFunction, err := schema.NewCallableFunction(
 		"b",
 		[]schema.Type{
@@ -557,20 +557,24 @@ func TestToFunctionSchemaAndString(t *testing.T) {
 		func(a string, b int64) int64 { return 0 },
 	)
 	assert.NoError(t, err)
+	funcStr := oneParamVoidCallableFunction.String()
+	assert.Equals(t, funcStr, "b(string, integer) integer")
+
+	// Now the version in FunctionSchema instead of CallableFunction
 	oneParamVoidFunction, err := oneParamVoidCallableFunction.ToFunctionSchema()
 	assert.NoError(t, err)
 
-	funcStr := oneParamVoidFunction.String()
+	funcStr = oneParamVoidFunction.String()
 	assert.Equals(t, funcStr, "b(string, integer) integer")
 }
 
-func TestDynamicFunctionToString(t *testing.T) {
+func TestDynamicFunctionToStringToFunction(t *testing.T) {
 	oneParamVoidFunction, err := schema.NewDynamicCallableFunction(
 		"c",
 		[]schema.Type{schema.NewAnySchema(), schema.NewIntSchema(nil, nil, nil)},
 		nil,
 		func(a any, b int64) (any, error) {
-			return a, nil
+			return b, nil
 		},
 		func(inputType []schema.Type) (schema.Type, error) {
 			return schema.NewIntSchema(nil, nil, nil), nil
@@ -579,4 +583,9 @@ func TestDynamicFunctionToString(t *testing.T) {
 	assert.NoError(t, err)
 	funcStr := oneParamVoidFunction.String()
 	assert.Equals(t, funcStr, "c(any, integer) dynamic")
+
+	// Cannot be represented as a FunctionSchema due to the dynamic typing.
+	_, err = oneParamVoidFunction.ToFunctionSchema()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "dynamic typing")
 }
