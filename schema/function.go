@@ -125,7 +125,7 @@ func NewDynamicCallableFunction(
 
 	switch {
 	case returnCount != 2:
-		return nil, fmt.Errorf("expected dynamic handler to have two returns, one any and one error, but got %d return types", returnCount)
+		return nil, fmt.Errorf("expected dynamic handler to have two returns, one with any type, and one with error type, but got %d return types", returnCount)
 	case parsedHandler.Type().Out(1).Name() != errorType:
 		return nil, fmt.Errorf("expected additional return type to be an error return, but got %s", parsedHandler.Type().Out(1).Name())
 	case parsedHandler.Type().Out(0).Kind() != reflect.Interface:
@@ -150,7 +150,7 @@ func validateInputTypeCompatibility(
 	actualParams := handler.Type().NumIn()
 	if specifiedParams != actualParams {
 		return fmt.Errorf(
-			"parameter inputs do not match handler inputs. handler has %d, expected %d",
+			"parameter input counts do not match handler inputs. handler has %d, expected %d",
 			actualParams, specifiedParams)
 	}
 	for i := 0; i < specifiedParams; i++ {
@@ -158,8 +158,8 @@ func validateInputTypeCompatibility(
 		handlerType := handler.Type().In(i)
 		if expectedType != handlerType {
 			return fmt.Errorf(
-				"type mismatch for parameter at index %d. handler has %v, inputs specifies %v",
-				i, handlerType, expectedType)
+				"type mismatch for parameter at index %d. handler has %v, inputs schema at index %d specifies %v",
+				i, handlerType, i, expectedType)
 		}
 	}
 	return nil
@@ -213,8 +213,8 @@ type CallableFunctionSchema struct {
 	StaticOutputValue Type    `json:"output"`
 	DisplayValue      Display `json:"display"`
 	// A callable function whose parameters (if any) match the type schema specified in InputsValue,
-	// and whose return value type matches DefaultReturnValue, the return type from DynamicTypeHandler,
-	// or is void if both DefaultReturnValue and DynamicTypeHandler are nil.
+	// and whose return value type matches StaticOutputValue, the return type from DynamicTypeHandler,
+	// or is void if both StaticOutputValue and DynamicTypeHandler are nil.
 	// The handler may also return an error type.
 	Handler reflect.Value
 	// Returns the output type based on the input type. For advanced use cases. Cannot be void.
