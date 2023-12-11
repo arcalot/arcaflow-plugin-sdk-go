@@ -5,6 +5,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"go.arcalot.io/assert"
 	"testing"
 
@@ -90,6 +91,15 @@ var oneOfStringTestObjectAdProperties = map[string]*schema.PropertySchema{
 	),
 }
 
+//var oneOfStringTestObjectAType = schema.NewScopeSchema(
+//	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
+//		"A",
+//		oneOfStringTestObjectAProperties,
+//	),
+//	oneOfTestBMappedSchema,
+//	oneOfTestCMappedSchema,
+//)
+
 var oneOfStringTestObjectASchema = schema.NewScopeSchema(
 	schema.NewObjectSchema(
 		"A",
@@ -146,8 +156,25 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	var input any
 	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
+
 	assert.NoError(t, err)
 	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+
+	reserializedData, err := oneOfStringTestObjectAType.Serialize(unserializedData)
+	assert.NoError(t, err)
+	assert.NotNil(t, reserializedData)
+	fmt.Printf("%v\n", reserializedData)
+
+	//rereser := map[string]any{
+	//	"s": map[string]any{
+	//		"_type": "B",
+	//		"message": "Hello world!",
+	//	},
+	//}
+	reserializedData, err = oneOfStringTestObjectASchema.Serialize(unserializedData)
+	assert.NoError(t, err)
+	assert.NotNil(t, reserializedData)
+	fmt.Printf("%v\n", reserializedData)
 }
 
 func TestOneOfStringCompatibilityValidation(t *testing.T) {
