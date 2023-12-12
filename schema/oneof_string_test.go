@@ -5,7 +5,6 @@ package schema_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"go.arcalot.io/assert"
 	"testing"
 
@@ -91,15 +90,6 @@ var oneOfStringTestObjectAdProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-//var oneOfStringTestObjectAType = schema.NewScopeSchema(
-//	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
-//		"A",
-//		oneOfStringTestObjectAProperties,
-//	),
-//	oneOfTestBMappedSchema,
-//	oneOfTestCMappedSchema,
-//)
-
 var oneOfStringTestObjectASchema = schema.NewScopeSchema(
 	schema.NewObjectSchema(
 		"A",
@@ -146,7 +136,10 @@ var oneOfStringTestObjectAType = schema.NewScopeSchema(
 	oneOfTestCMappedSchema,
 )
 
-func TestOneOfStringUnserialization(t *testing.T) {
+// Test serialization idempotency by reserializing unserialized data,
+//
+//	serialized_data == Serialize(Unserialize(serialized_data))
+func TestOneOfString_SerializeIdempotency(t *testing.T) {
 	data := `{
 	"s": {
 		"_type": "B",
@@ -155,26 +148,20 @@ func TestOneOfStringUnserialization(t *testing.T) {
 }`
 	var input any
 	assert.NoError(t, json.Unmarshal([]byte(data), &input))
-	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
 
+	// Test from client side using a Struct Mapped Object b/c we know the type
+	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
 	assert.NoError(t, err)
 	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-
 	reserializedData, err := oneOfStringTestObjectAType.Serialize(unserializedData)
 	assert.NoError(t, err)
-	assert.NotNil(t, reserializedData)
-	fmt.Printf("%v\n", reserializedData)
+	assert.Equals(t, reserializedData, input)
 
-	//rereser := map[string]any{
-	//	"s": map[string]any{
-	//		"_type": "B",
-	//		"message": "Hello world!",
-	//	},
-	//}
-	reserializedData, err = oneOfStringTestObjectASchema.Serialize(unserializedData)
+	// Test from server side when we only have the scope and schema
+	unserializedData2, err := oneOfStringTestObjectASchema.Unserialize(input)
 	assert.NoError(t, err)
-	assert.NotNil(t, reserializedData)
-	fmt.Printf("%v\n", reserializedData)
+	reserializedData2, err := oneOfStringTestObjectASchema.Serialize(unserializedData2)
+	assert.Equals(t, reserializedData2, input)
 }
 
 func TestOneOfStringCompatibilityValidation(t *testing.T) {
@@ -248,4 +235,125 @@ func TestOneOfStringCompatibilityMapValidation(t *testing.T) {
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(invalidDiscriminator))
 	assert.NoError(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndSchema))
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndInvalidSchema))
+}
+
+var oneOfNameProperties = map[string]*schema.PropertySchema{
+	"name": schema.NewPropertySchema(
+		schema.NewOneOfStringSchema[any](
+			map[string]schema.Object{
+				"fullname": schema.NewRefSchema("FullName", nil),
+				"nickname": schema.NewRefSchema("Nickname", nil),
+			},
+			"_type",
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var fullnameProperties = map[string]*schema.PropertySchema{
+	"first_name": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"last_name": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var nicknameProperties = map[string]*schema.PropertySchema{
+	"nick": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var fullnameSchema = schema.NewObjectSchema(
+	"FullName",
+	fullnameProperties,
+)
+
+var nicknameSchema = schema.NewObjectSchema(
+	"Nickname",
+	nicknameProperties,
+)
+
+var oneOfNameRootScope = schema.NewScopeSchema(
+	schema.NewObjectSchema(
+		"RootObject",
+		oneOfNameProperties,
+	),
+	fullnameSchema,
+	nicknameSchema,
+)
+
+func TestOneOfString_Nickname(t *testing.T) {
+	var input_nick any = map[string]any{
+		"name": map[string]any{
+			"_type": "nickname",
+			"nick":  "Arca Lot",
+		},
+	}
+
+	//unserializedData, err := oneOfNameRootScope.Unserialize(input_nick)
+	//assert.NoError(t, err)
+	//reserializedData, err := oneOfNameRootScope.Serialize(unserializedData)
+	//assert.Equals(t, reserializedData, input_nick)
+
+	no_discriminator_nick := map[string]any{
+		"name": map[string]any{
+			"nick": "Arca Lot",
+		},
+	}
+	serializedNoDiscriminator, err := oneOfNameRootScope.Serialize(no_discriminator_nick)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedNoDiscriminator, input_nick)
+}
+
+func TestOneOfString_Fullname(t *testing.T) {
+	var input_full any = map[string]any{
+		"name": map[string]any{
+			"_type":      "fullname",
+			"first_name": "Arca",
+			"last_name":  "Lot",
+		},
+	}
+	unserializedData, err := oneOfNameRootScope.Unserialize(input_full)
+	assert.NoError(t, err)
+	reserializedData, err := oneOfNameRootScope.Serialize(unserializedData)
+	assert.Equals(t, reserializedData, input_full)
+
+	no_discriminator_full := map[string]any{
+		"name": map[string]any{
+			"first_name": "Arca",
+			"last_name":  "Lot",
+		},
+	}
+	serializedNoDiscriminator, err := oneOfNameRootScope.Serialize(no_discriminator_full)
+	assert.NoError(t, err)
+	assert.Equals(t, serializedNoDiscriminator, input_full)
 }
