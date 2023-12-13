@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"errors"
 	"fmt"
 	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -15,6 +16,7 @@ func TestCallableFunctionSchema_Simple(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		nil,
+		false,
 		nil,
 		func() {
 			called = true
@@ -35,6 +37,7 @@ func TestCallableFunctionSchema_Simple1Param(t *testing.T) {
 		"test",
 		[]schema.Type{schema.NewStringSchema(nil, nil, nil)},
 		nil,
+		false,
 		nil,
 		func(test string) {
 			passedInVal = test
@@ -53,6 +56,7 @@ func TestCallableFunctionSchema_SimpleWithNilErr(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		nil,
+		true,
 		nil,
 		func() error {
 			return nil
@@ -72,6 +76,7 @@ func TestCallableFunctionSchema_1ParamWithNilErr(t *testing.T) {
 		"test",
 		[]schema.Type{schema.NewStringSchema(nil, nil, nil)},
 		nil,
+		true,
 		nil,
 		func(test string) error {
 			passedInVal = test
@@ -92,6 +97,7 @@ func TestCallableFunctionSchema_SimpleWithErr(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		nil,
+		true,
 		nil,
 		func() error {
 			return fmt.Errorf("this is an error")
@@ -102,6 +108,12 @@ func TestCallableFunctionSchema_SimpleWithErr(t *testing.T) {
 	// There should be an error from the function. Validate that it's the correct one.
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "this is an error")
+	var asFunctionErr *schema.FunctionCallError
+	ok := errors.As(err, &asFunctionErr)
+	if !ok {
+		t.Fatalf("Returned error is not a FunctionCallError")
+	}
+	assert.Equals(t, asFunctionErr.IsFunctionReportedError, true)
 }
 
 // Simple, one output.
@@ -110,6 +122,7 @@ func TestCallableFunctionSchema_OneReturn(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		schema.NewStringSchema(nil, nil, nil),
+		false,
 		nil,
 		func() string {
 			return "a"
@@ -130,6 +143,7 @@ func TestCallableFunctionSchema_MultiParam(t *testing.T) {
 		"test",
 		[]schema.Type{simpleIntSchema, simpleIntSchema, simpleIntSchema, simpleIntSchema, simpleIntSchema, simpleIntSchema},
 		simpleIntSchema,
+		false,
 		nil,
 		func(a int64, b int64, c int64, d int64, e int64, f int64) int64 {
 			return a * b * c * d * e * f
@@ -149,6 +163,7 @@ func TestCallableFunctionSchema_MultiParamWithNilErr(t *testing.T) {
 		"test",
 		[]schema.Type{simpleIntSchema, simpleIntSchema, simpleIntSchema},
 		simpleIntSchema,
+		true,
 		nil,
 		func(a int64, b int64, c int64) (int64, error) {
 			return a * b * c, nil
@@ -169,6 +184,7 @@ func TestCallableFunctionSchema_Err_MultiParamWithErr(t *testing.T) {
 		"test",
 		[]schema.Type{simpleIntSchema, simpleIntSchema, simpleIntSchema},
 		simpleIntSchema,
+		true,
 		nil,
 		func(a int64, b int64, c int64) (int64, error) {
 			return a * b * c, fmt.Errorf("this is an error")
@@ -179,6 +195,12 @@ func TestCallableFunctionSchema_Err_MultiParamWithErr(t *testing.T) {
 	// There should be an error. Validate that it's the correct one.
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "this is an error")
+	var asFunctionErr *schema.FunctionCallError
+	ok := errors.As(err, &asFunctionErr)
+	if !ok {
+		t.Fatalf("Returned error is not a FunctionCallError")
+	}
+	assert.Equals(t, asFunctionErr.IsFunctionReportedError, true)
 }
 
 func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
@@ -188,6 +210,7 @@ func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
 		"test",
 		[]schema.Type{simpleIntSchema, simpleIntSchema, simpleIntSchema}, // Three params
 		simpleIntSchema,
+		true,
 		nil,
 		func(a int64, b int64, c int64) (int64, error) { // Three params
 			return a * b * c, nil
@@ -198,6 +221,12 @@ func TestCallableFunctionSchema_Err_TestIncorrectNumArgs(t *testing.T) {
 	// There should be an error. Validate that it's the correct one.
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "incorrect number of args")
+	var asFunctionErr *schema.FunctionCallError
+	ok := errors.As(err, &asFunctionErr)
+	if !ok {
+		t.Fatalf("Returned error is not a FunctionCallError")
+	}
+	assert.Equals(t, asFunctionErr.IsFunctionReportedError, false)
 }
 
 // The following test requires bypassing the validation provided in NewCallableFunction.
@@ -216,6 +245,12 @@ func TestCallableFunctionSchema_Err_CallWrongErrorReturn(t *testing.T) {
 	_, err := callable.Call(make([]any, 0))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error return val isn't an error")
+	var asFunctionErr *schema.FunctionCallError
+	ok := errors.As(err, &asFunctionErr)
+	if !ok {
+		t.Fatalf("Returned error is not a FunctionCallError")
+	}
+	assert.Equals(t, asFunctionErr.IsFunctionReportedError, false)
 }
 
 // The following test requires bypassing the validation provided in NewCallableFunction.
@@ -234,6 +269,12 @@ func TestCallableFunctionSchema_Err_CallWrongReturnCount(t *testing.T) {
 	_, err := callable.Call(make([]any, 0))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected return count")
+	var asFunctionErr *schema.FunctionCallError
+	ok := errors.As(err, &asFunctionErr)
+	if !ok {
+		t.Fatalf("Returned error is not a FunctionCallError")
+	}
+	assert.Equals(t, asFunctionErr.IsFunctionReportedError, false)
 }
 
 // Test the input validation.
@@ -243,6 +284,7 @@ func TestNewCallableFunction_Err_MismatchedParamCount(t *testing.T) {
 		"test",
 		make([]schema.Type, 0), // No params specified here
 		nil,
+		false,
 		nil,
 		func(int, int) {}, // Two params specified here
 	)
@@ -256,6 +298,7 @@ func TestNewCallableFunction_Err_MismatchedParamType(t *testing.T) {
 		"test",
 		[]schema.Type{schema.NewStringSchema(nil, nil, nil)}, // String specified here
 		nil,
+		false,
 		nil,
 		func(int) {}, // Int specified here, mismatched
 	)
@@ -269,13 +312,14 @@ func TestNewCallableFunction_Err_NilReturnMismatchedReturnCount(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		nil,
+		true,
 		nil,
 		func() (int, error) { // Zero returns specified. That's wrong.
 			return 0, nil
 		},
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parameter output is nil, meaning it's a void function")
+	assert.Contains(t, err.Error(), "incorrect return count")
 }
 
 func TestNewCallableFunction_Err_NilReturnNotError(t *testing.T) {
@@ -284,13 +328,14 @@ func TestNewCallableFunction_Err_NilReturnNotError(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		nil,
+		false,
 		nil,
 		func() int { // Should be error or void.
 			return 0
 		},
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expected void or error return")
+	assert.Contains(t, err.Error(), "incorrect return count")
 }
 
 func TestNewCallableFunction_Err_NotEnoughReturns(t *testing.T) {
@@ -299,11 +344,12 @@ func TestNewCallableFunction_Err_NotEnoughReturns(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		schema.NewStringSchema(nil, nil, nil), // String specified here.
+		false,
 		nil,
 		func() {}, // No returns here. We specified string earlier.
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expected handler to have one return")
+	assert.Contains(t, err.Error(), "incorrect return count")
 }
 
 func TestNewCallableFunction_Err_MismatchedReturnType(t *testing.T) {
@@ -312,6 +358,7 @@ func TestNewCallableFunction_Err_MismatchedReturnType(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		schema.NewStringSchema(nil, nil, nil), // String here
+		false,
 		nil,
 		func() int { // Int here, mismatched
 			return 0
@@ -328,13 +375,14 @@ func TestNewCallableFunction_Err_TooManyReturns(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		schema.NewStringSchema(nil, nil, nil),
+		true,
 		nil,
 		func() (string, string, error) { // Too may returns here
 			return "", "", nil
 		},
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expected handler to have one return")
+	assert.Contains(t, err.Error(), "incorrect return count")
 }
 
 func TestNewCallableFunction_Err_ReturnNotError(t *testing.T) {
@@ -344,13 +392,31 @@ func TestNewCallableFunction_Err_ReturnNotError(t *testing.T) {
 		"test",
 		make([]schema.Type, 0),
 		schema.NewStringSchema(nil, nil, nil),
+		true,
 		nil,
 		func() (string, string) { // Incorrect return schema.Type here
 			return "", ""
 		},
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expected additional return type to be an error return")
+	assert.Contains(t, err.Error(), "expected last return type from handler to be error")
+}
+
+func TestNewCallableFunction_Err_TooManyReturnNoErr(t *testing.T) {
+	// In this test, the return value of the handler will include two non-error returns, when we expect
+	// one non-error return
+	_, err := schema.NewCallableFunction(
+		"test",
+		make([]schema.Type, 0),
+		schema.NewStringSchema(nil, nil, nil),
+		false,
+		nil,
+		func() (string, string) { // Incorrect return schema.Type here
+			return "", ""
+		},
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "incorrect return count")
 }
 
 func TestNewDynamicFunction_Simple(t *testing.T) {
@@ -367,9 +433,10 @@ func TestNewDynamicFunction_Simple(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	// Validate type
-	typeOutput, err := simpleFunc.Output(make([]schema.Type, 0))
+	typeOutput, errOut, err := simpleFunc.Output(make([]schema.Type, 0))
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewIntSchema(nil, nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err := simpleFunc.Call([]any{})
 	assert.NoError(t, err)
@@ -406,9 +473,10 @@ func TestNewDynamicFunction_1Param(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	// Validate type
-	typeOutput, err := simpleFunc.Output(make([]schema.Type, 0))
+	typeOutput, errOut, err := simpleFunc.Output(make([]schema.Type, 0))
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewIntSchema(nil, nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err := simpleFunc.Call([]any{"test"})
 	assert.NoError(t, err)
@@ -433,38 +501,42 @@ func TestNewDynamicFunction_SameType(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate type
-	typeOutput, err := simpleFunc.Output([]schema.Type{schema.NewStringSchema(nil, nil, nil)})
+	typeOutput, errOut, err := simpleFunc.Output([]schema.Type{schema.NewStringSchema(nil, nil, nil)})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewStringSchema(nil, nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err := simpleFunc.Call([]any{"test"})
 	assert.NoError(t, err)
 	assert.Equals(t, result, "test")
 
 	// Validate type
-	typeOutput, err = simpleFunc.Output([]schema.Type{schema.NewIntSchema(nil, nil, nil)})
+	typeOutput, errOut, err = simpleFunc.Output([]schema.Type{schema.NewIntSchema(nil, nil, nil)})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewIntSchema(nil, nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err = simpleFunc.Call([]any{1})
 	assert.NoError(t, err)
 	assert.Equals(t, result, 1)
 
 	// Validate type
-	typeOutput, err = simpleFunc.Output([]schema.Type{schema.NewFloatSchema(nil, nil, nil)})
+	typeOutput, errOut, err = simpleFunc.Output([]schema.Type{schema.NewFloatSchema(nil, nil, nil)})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewFloatSchema(nil, nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err = simpleFunc.Call([]any{5.0})
 	assert.NoError(t, err)
 	assert.Equals(t, result, 5.0)
 
 	// Validate type
-	typeOutput, err = simpleFunc.Output([]schema.Type{
+	typeOutput, errOut, err = simpleFunc.Output([]schema.Type{
 		schema.NewListSchema(schema.NewIntSchema(nil, nil, nil), nil, nil),
 	})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewListSchema(schema.NewIntSchema(nil, nil, nil), nil, nil))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err = simpleFunc.Call([]any{make([]int, 0)})
 	assert.NoError(t, err)
@@ -493,31 +565,33 @@ func TestNewDynamicFunction_SliceOfSameType(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate type
-	typeOutput, err := simpleFunc.Output([]schema.Type{schema.NewStringSchema(nil, nil, nil)})
+	typeOutput, errOut, err := simpleFunc.Output([]schema.Type{schema.NewStringSchema(nil, nil, nil)})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewListSchema(
 		schema.NewStringSchema(nil, nil, nil),
 		nil, nil,
 	))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err := simpleFunc.Call([]any{"a"})
 	assert.NoError(t, err)
 	assert.Equals(t, result.([]string), []string{"a", "a"})
 
 	// Validate type
-	typeOutput, err = simpleFunc.Output([]schema.Type{schema.NewIntSchema(nil, nil, nil)})
+	typeOutput, errOut, err = simpleFunc.Output([]schema.Type{schema.NewIntSchema(nil, nil, nil)})
 	assert.NoError(t, err)
 	assert.Equals[schema.Type](t, typeOutput, schema.NewListSchema(
 		schema.NewIntSchema(nil, nil, nil),
 		nil, nil,
 	))
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err = simpleFunc.Call([]any{1})
 	assert.NoError(t, err)
 	assert.Equals(t, result.([]int), []int{1, 1})
 
 	// Validate type
-	typeOutput, err = simpleFunc.Output([]schema.Type{
+	typeOutput, errOut, err = simpleFunc.Output([]schema.Type{
 		schema.NewListSchema(schema.NewIntSchema(nil, nil, nil), nil, nil),
 	})
 	assert.NoError(t, err)
@@ -526,6 +600,7 @@ func TestNewDynamicFunction_SliceOfSameType(t *testing.T) {
 			schema.NewIntSchema(nil, nil, nil), nil, nil),
 		nil, nil),
 	)
+	assert.Equals(t, errOut, true)
 	// Validate that the function call works as intended
 	result, err = simpleFunc.Call([]any{[]int{1}})
 	assert.NoError(t, err)
@@ -537,6 +612,7 @@ func TestFunctionToStringOneParamVoid(t *testing.T) {
 		"a",
 		[]schema.Type{schema.NewStringSchema(nil, nil, nil)},
 		nil,
+		false,
 		nil,
 		func(a string) {},
 	)
@@ -553,6 +629,7 @@ func TestFunctionToStringToFunctionTwoParam(t *testing.T) {
 			schema.NewIntSchema(nil, nil, nil),
 		},
 		schema.NewIntSchema(nil, nil, nil),
+		false,
 		nil,
 		func(a string, b int64) int64 { return 0 },
 	)
@@ -582,7 +659,7 @@ func TestDynamicFunctionToStringToFunction(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	funcStr := oneParamVoidFunction.String()
-	assert.Equals(t, funcStr, "c(any, integer) dynamic")
+	assert.Equals(t, funcStr, "c(any, integer) (dynamic, error)")
 
 	// Cannot be represented as a FunctionSchema due to the dynamic typing.
 	_, err = oneParamVoidFunction.ToFunctionSchema()
