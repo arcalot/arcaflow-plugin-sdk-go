@@ -341,12 +341,92 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 
+	fmt.Printf("reflected type %v\n", reflectedType)
+	dataMap := map[string]any{}
+	for mapKey, mapVal := range data.(map[string]any) {
+		dataMap[mapKey] = reflect.TypeOf(mapVal).String()
+	}
+	dataValue := reflect.ValueOf(data)
+	fmt.Printf("%v\n", dataValue.Kind())
+	fmt.Printf("data value %v\n", dataValue)
+	fmt.Printf("--------------------------------\n")
+
+	i := 0
 	var foundKey *KeyType
+
+	err := o.validateMap(data.(map[string]any))
+	if err != nil {
+		return *foundKey, nil, err
+	}
+
 	for key, ref := range o.TypesValue {
 		underlyingReflectedType := ref.ReflectedType()
+
+		propsMap := map[string]any{}
+		var props map[string]*PropertySchema
+		//props := ref.Properties()
+		if i == 0 {
+			props = ref.Properties()
+			fmt.Printf("props %v\n", props)
+			fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props))
+			i += 1
+		} else {
+			props2 := ref.Properties()
+			fmt.Printf("props %v\n", props2)
+			//fmt.Printf("prop type compare %v\n", reflect.TypeOf(props) == reflect.TypeOf(props2))
+			//fmt.Printf("prop value compare %v\n", reflect.ValueOf(props) == reflect.ValueOf(props2))
+			fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props2))
+		}
+
+		propsVal := reflect.ValueOf(props)
+		fmt.Printf("props can convert data %v\n", propsVal.CanConvert(reflectedType))
+		fmt.Printf("deep equal? %v\n", reflect.DeepEqual(data, props))
+		fmt.Printf("deep equal val? %v\n", reflect.DeepEqual(dataValue, propsVal))
+
+		for propKey, prop := range props {
+			propsMap[propKey] = prop.Type().ReflectedType().String()
+		}
+
+		//fmt.Printf("reflected underlying type %v\n", underlyingReflectedType)
+		//fmt.Printf("type check %T\n", ref)
+		////underlyingReflectedName := underlyingReflectedType.Name()
+		////fmt.Printf("%s\n", underlyingReflectedName)
+		//underlyingReflectedStr := underlyingReflectedType.String()
+		//fmt.Printf("reflected underlying type string %v\n", underlyingReflectedStr)
 		if underlyingReflectedType == reflectedType {
+			//fmt.Printf("type id: %v\n", ref.TypeID())
+			fmt.Printf("id: %s\n", ref.ID())
+
+			//fmt.Printf("reflected underlying type %v\n", underlyingReflectedType)
+			//fmt.Printf("type check %T\n", ref)
+			//underlyingReflectedName := underlyingReflectedType.Name()
+			//fmt.Printf("reflected name %s\n", underlyingReflectedName)
+			//underlyingReflectedStr := underlyingReflectedType.String()
+			//fmt.Printf("reflected underlying type string %v\n", underlyingReflectedStr)
+
+			//fmt.Printf("kind: %v\n", underlyingReflectedType.Kind())
+
+			//result, err := saveConvertTo(data, underlyingReflectedType)
+			//if err != nil {
+			//	return *foundKey, nil, err
+			//}
+			//fmt.Printf("save convert to: %v\n", result)
+			underlyingValue := reflect.ValueOf(ref)
+			//fmt.Printf("convert ref to data %v\n", dataValue.Convert(underlyingReflectedType))
+			//fmt.Printf("ref value comparison: %v\n", dataValue == underlyingValue)
+			//fmt.Printf("underlying value type %v\n", underlyingValue.Type())
+			//fmt.Printf("underlying value interface %v\n", underlyingValue.Interface())
+			//fmt.Printf("underlying value convert %v\n", underlyingValue.Convert(reflectedType))
+
+			fmt.Printf("data convertible to %v\n", reflectedType.ConvertibleTo(underlyingReflectedType))
+			fmt.Printf("underlying value can convert data %v\n", underlyingValue.CanConvert(reflectedType))
+			//fmt.Printf("indirect %v\n", reflect.Indirect(underlyingValue))
+
+			//fmt.Printf("reflected value convert %v\n", dataValue.Convert(underlyingReflectedType))
+
 			keyValue := key
 			foundKey = &keyValue
+			fmt.Printf("======================\n")
 		}
 	}
 	if foundKey == nil {

@@ -2,9 +2,8 @@ package schema_test
 
 import (
 	"go.arcalot.io/assert"
-	"testing"
-
 	"go.flow.arcalot.io/pluginsdk/schema"
+	"testing"
 )
 
 type oneOfTestObjectB struct {
