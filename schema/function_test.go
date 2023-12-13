@@ -492,9 +492,7 @@ func TestNewDynamicFunction_SameType(t *testing.T) {
 			return a, nil
 		},
 		func(inputTypes []schema.Type) (schema.Type, error) {
-			if len(inputTypes) != 1 {
-				return nil, fmt.Errorf("expected 1 arg, got %d", len(inputTypes))
-			}
+			assert.Equals(t, len(inputTypes), 1)
 			return inputTypes[0], nil
 		},
 	)
@@ -556,9 +554,7 @@ func TestNewDynamicFunction_SliceOfSameType(t *testing.T) {
 			return result.Interface(), nil
 		},
 		func(inputTypes []schema.Type) (schema.Type, error) {
-			if len(inputTypes) != 1 {
-				return nil, fmt.Errorf("expected 1 arg, got %d", len(inputTypes))
-			}
+			assert.Equals(t, len(inputTypes), 1)
 			return schema.NewListSchema(inputTypes[0], nil, nil), nil
 		},
 	)
