@@ -247,7 +247,7 @@ func TestNewCallableFunction_Err_MismatchedParamCount(t *testing.T) {
 		func(int, int) {}, // Two params specified here
 	)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parameter inputs do not match handler inputs")
+	assert.Contains(t, err.Error(), "parameter input counts do not match handler inputs")
 }
 
 func TestNewCallableFunction_Err_MismatchedParamType(t *testing.T) {
