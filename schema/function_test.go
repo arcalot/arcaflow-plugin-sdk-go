@@ -264,7 +264,7 @@ func TestNewCallableFunction_Err_MismatchedParamType(t *testing.T) {
 }
 
 func TestNewCallableFunction_Err_NilReturnMismatchedReturnCount(t *testing.T) {
-	// In this case, the schema will specify zeo returns, when the handler will have both a return type an en error return
+	// In this case, the schema will specify zero returns, when the handler will have both a return type an en error return
 	_, err := schema.NewCallableFunction(
 		"test",
 		make([]schema.Type, 0),
@@ -546,7 +546,7 @@ func TestFunctionToStringOneParamVoid(t *testing.T) {
 }
 
 func TestFunctionToStringToFunctionTwoParam(t *testing.T) {
-	oneParamVoidCallableFunction, err := schema.NewCallableFunction(
+	callableFunc, err := schema.NewCallableFunction(
 		"b",
 		[]schema.Type{
 			schema.NewStringSchema(nil, nil, nil),
@@ -557,14 +557,14 @@ func TestFunctionToStringToFunctionTwoParam(t *testing.T) {
 		func(a string, b int64) int64 { return 0 },
 	)
 	assert.NoError(t, err)
-	funcStr := oneParamVoidCallableFunction.String()
+	funcStr := callableFunc.String()
 	assert.Equals(t, funcStr, "b(string, integer) integer")
 
 	// Now the version in FunctionSchema instead of CallableFunction
-	oneParamVoidFunction, err := oneParamVoidCallableFunction.ToFunctionSchema()
+	funcSchema, err := callableFunc.ToFunctionSchema()
 	assert.NoError(t, err)
 
-	funcStr = oneParamVoidFunction.String()
+	funcStr = funcSchema.String()
 	assert.Equals(t, funcStr, "b(string, integer) integer")
 }
 
