@@ -221,15 +221,16 @@ func (f FunctionSchema) String() string {
 }
 
 func getReturnTypeString(returnType Type, hasError bool) string {
-	if returnType != nil {
+	switch {
+	case returnType != nil:
 		if hasError {
 			return "(" + string(returnType.TypeID()) + ", error)"
 		} else {
 			return string(returnType.TypeID())
 		}
-	} else if hasError {
+	case hasError:
 		return "error"
-	} else {
+	default:
 		return "void"
 	}
 }
