@@ -79,15 +79,12 @@ func NewCallableFunction(
 
 func validateTypedReturnFunc(parsedHandler reflect.Value, errorExpected bool, outputType Type) error {
 	returnCount := parsedHandler.Type().NumOut()
-	var expectedReturnCount int
-	// Validate error return
-	if errorExpected {
-		expectedReturnCount = 1
-	} else {
-		expectedReturnCount = 0
-	}
+	expectedReturnCount := 0
 	// Currently designed to allow only one output type. However, the output type could be an object with multiple fields.
 	if outputType != nil {
+		expectedReturnCount += 1
+	}
+	if errorExpected { // One for the error
 		expectedReturnCount += 1
 	}
 	if expectedReturnCount != returnCount {
@@ -120,7 +117,8 @@ func validateTypedReturnFunc(parsedHandler reflect.Value, errorExpected bool, ou
 // NewDynamicCallableFunction returns a CallableFunction for the dynamically typed function.
 //
 // - The input types must be specified and match, but you may use any types for instances when there are multiple allowed
-// inputs. The return type of the handler should be any.
+// inputs.
+// - The return type of the handler should be any plus an error return.
 // - The handler function handles execution of the function.
 // - The typeHandler function returns the output type given the input type. If the inputs are invalid, the
 // handler should return an error.
@@ -152,7 +150,7 @@ func NewDynamicCallableFunction(
 		IDValue:            id,
 		InputsValue:        inputs,
 		StaticOutputValue:  nil,
-		OutputsError:       true,
+		OutputsError:       true, // Callable Function Schema must always be able to output error
 		DisplayValue:       display,
 		Handler:            parsedHandler,
 		DynamicTypeHandler: typeHandler,
@@ -222,12 +220,10 @@ func (f FunctionSchema) String() string {
 
 func getReturnTypeString(returnType Type, hasError bool) string {
 	switch {
+	case returnType != nil && hasError:
+		return "(" + string(returnType.TypeID()) + ", error)"
 	case returnType != nil:
-		if hasError {
-			return "(" + string(returnType.TypeID()) + ", error)"
-		} else {
-			return string(returnType.TypeID())
-		}
+		return string(returnType.TypeID())
 	case hasError:
 		return "error"
 	default:
@@ -284,7 +280,7 @@ func (f CallableFunctionSchema) Display() Display {
 func (f CallableFunctionSchema) String() string {
 	result := f.ID() + "(" + strings.Join(f.ParameterTypeNames(), ", ") + ") "
 	if f.DynamicTypeHandler != nil {
-		result += "(dynamic, error)"
+		result += "(dynamic, error)" // Note: dynamic functions must have an error return.
 	} else {
 		result += getReturnTypeString(f.StaticOutputValue, f.OutputsError)
 	}
