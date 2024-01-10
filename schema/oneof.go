@@ -109,14 +109,18 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		}
 	}
 
-	if _, ok := selectedType.Properties()[o.DiscriminatorFieldNameValue]; !ok {
+	disciminatorProperty, ok := selectedType.Properties()[o.DiscriminatorFieldNameValue]
+	if !ok {
 		delete(typedData, o.DiscriminatorFieldNameValue)
 	}
-
+	fmt.Printf("discriminator property %v\n", disciminatorProperty)
 	unserializedData, err := selectedType.Unserialize(typedData)
 	if err != nil {
 		return result, err
 	}
+	//unserializedData[o.DiscriminatorFieldNameValue]
+	fmt.Printf("interface type %v\n", o.interfaceType)
+	unserializedData.(map[string]any)[o.DiscriminatorFieldNameValue] = typedDiscriminator
 	if o.interfaceType == nil {
 		return unserializedData, nil
 	}
@@ -124,18 +128,18 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 }
 
 func (o OneOfSchema[KeyType]) ValidateType(data any) error {
-	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
+	underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return err
 	}
 	if err := underlyingType.Validate(data); err != nil {
-		return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{oneof[%v]}", discriminatorValue))
+		return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{oneof[%v]}", o.DiscriminatorFieldNameValue))
 	}
 	return nil
 }
 
 func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
-	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
+	underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +148,9 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 		return nil, err
 	}
 	mapData := serializedData.(map[string]any)
-	if _, ok := mapData[o.DiscriminatorFieldNameValue]; !ok {
-		mapData[o.DiscriminatorFieldNameValue] = discriminatorValue
-	}
+	//if _, ok := mapData[o.DiscriminatorFieldNameValue]; !ok {
+	//	mapData[o.DiscriminatorFieldNameValue] = discriminatorValue
+	//}
 	return mapData, nil
 }
 
@@ -327,13 +331,56 @@ func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType,
 	return typedDiscriminator, nil
 }
 
-func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
+func (o OneOfSchema[KeyType]) mapFindUnderlyingType(data map[string]any) (Object, error) {
+	// Validate that it has the discriminator field.
+	// If it doesn't, fail
+	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
+	selectedTypeID := data[o.DiscriminatorFieldNameValue]
+	if selectedTypeID == nil {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%s' missing", o.DiscriminatorFieldNameValue),
+		}
+	}
+	// Ensure it's the correct type
+	selectedTypeIDAsserted, ok := selectedTypeID.(KeyType)
+	if !ok {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%v' has invalid type '%T'. Expected %T",
+				o.DiscriminatorFieldNameValue, selectedTypeID, selectedTypeIDAsserted),
+		}
+	}
+	// Find the object that's associated with the selected type
+	selectedSchema := o.TypesValue[selectedTypeIDAsserted]
+	if selectedSchema == nil {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
+				selectedTypeIDAsserted, o.getTypeValues()),
+		}
+	}
+	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
+		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	}
+	err := selectedSchema.ValidateCompatibility(data)
+	if err != nil {
+		return nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
+				selectedSchema, selectedTypeIDAsserted, err),
+		}
+	}
+	return selectedSchema, nil
+}
+
+func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (Object, error) {
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&
 		(reflectedType.Kind() != reflect.Pointer || reflectedType.Elem().Kind() != reflect.Struct) {
-		var defaultValue KeyType
-		return defaultValue, nil, &ConstraintError{
+		//var defaultValue KeyType
+		return nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of type: '%s' expected struct or map.",
 				reflect.TypeOf(data).Name(),
@@ -341,51 +388,58 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 
-	fmt.Printf("reflected type %v\n", reflectedType)
-	dataMap := map[string]any{}
-	for mapKey, mapVal := range data.(map[string]any) {
-		dataMap[mapKey] = reflect.TypeOf(mapVal).String()
-	}
-	dataValue := reflect.ValueOf(data)
-	fmt.Printf("%v\n", dataValue.Kind())
-	fmt.Printf("data value %v\n", dataValue)
-	fmt.Printf("--------------------------------\n")
+	//fmt.Printf("reflected type %v\n", reflectedType)
+	//dataMap := map[string]any{}
+	//for mapKey, mapVal := range data.(map[string]any) {
+	//	dataMap[mapKey] = reflect.TypeOf(mapVal).String()
+	//}
+	//dataValue := reflect.ValueOf(data)
+	//fmt.Printf("%v\n", dataValue.Kind())
+	//fmt.Printf("data value %v\n", dataValue)
+	//fmt.Printf("--------------------------------\n")
 
-	i := 0
 	var foundKey *KeyType
 
-	err := o.validateMap(data.(map[string]any))
-	if err != nil {
-		return *foundKey, nil, err
+	if reflectedType.Kind() == reflect.Map {
+		obj, err := o.mapFindUnderlyingType(data.(map[string]any))
+		if err != nil {
+			return nil, err
+		} else {
+			//fmt.Printf("found this obj %v\n", obj)
+			return obj, nil
+		}
+	} else if reflectedType.Kind() == reflect.Struct {
+
 	}
 
+	//i := 0
 	for key, ref := range o.TypesValue {
 		underlyingReflectedType := ref.ReflectedType()
 
-		propsMap := map[string]any{}
-		var props map[string]*PropertySchema
-		//props := ref.Properties()
-		if i == 0 {
-			props = ref.Properties()
-			fmt.Printf("props %v\n", props)
-			fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props))
-			i += 1
-		} else {
-			props2 := ref.Properties()
-			fmt.Printf("props %v\n", props2)
-			//fmt.Printf("prop type compare %v\n", reflect.TypeOf(props) == reflect.TypeOf(props2))
-			//fmt.Printf("prop value compare %v\n", reflect.ValueOf(props) == reflect.ValueOf(props2))
-			fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props2))
-		}
+		//propsMap := map[string]any{}
+		//var props map[string]*PropertySchema
+		////props := ref.Properties()
+		//if i == 0 {
+		//	props = ref.Properties()
+		//	fmt.Printf("props %v\n", props)
+		//	fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props))
+		//	i += 1
+		//} else {
+		//	props2 := ref.Properties()
+		//	fmt.Printf("props %v\n", props2)
+		//	//fmt.Printf("prop type compare %v\n", reflect.TypeOf(props) == reflect.TypeOf(props2))
+		//	//fmt.Printf("prop value compare %v\n", reflect.ValueOf(props) == reflect.ValueOf(props2))
+		//	fmt.Printf("data, props value comparison %v\n", dataValue == reflect.ValueOf(props2))
+		//}
 
-		propsVal := reflect.ValueOf(props)
-		fmt.Printf("props can convert data %v\n", propsVal.CanConvert(reflectedType))
-		fmt.Printf("deep equal? %v\n", reflect.DeepEqual(data, props))
-		fmt.Printf("deep equal val? %v\n", reflect.DeepEqual(dataValue, propsVal))
-
-		for propKey, prop := range props {
-			propsMap[propKey] = prop.Type().ReflectedType().String()
-		}
+		//propsVal := reflect.ValueOf(props)
+		//fmt.Printf("props can convert data %v\n", propsVal.CanConvert(reflectedType))
+		//fmt.Printf("deep equal? %v\n", reflect.DeepEqual(data, props))
+		//fmt.Printf("deep equal val? %v\n", reflect.DeepEqual(dataValue, propsVal))
+		//
+		//for propKey, prop := range props {
+		//	propsMap[propKey] = prop.Type().ReflectedType().String()
+		//}
 
 		//fmt.Printf("reflected underlying type %v\n", underlyingReflectedType)
 		//fmt.Printf("type check %T\n", ref)
@@ -395,7 +449,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		//fmt.Printf("reflected underlying type string %v\n", underlyingReflectedStr)
 		if underlyingReflectedType == reflectedType {
 			//fmt.Printf("type id: %v\n", ref.TypeID())
-			fmt.Printf("id: %s\n", ref.ID())
+			//fmt.Printf("id: %s\n", ref.ID())
 
 			//fmt.Printf("reflected underlying type %v\n", underlyingReflectedType)
 			//fmt.Printf("type check %T\n", ref)
@@ -411,26 +465,26 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			//	return *foundKey, nil, err
 			//}
 			//fmt.Printf("save convert to: %v\n", result)
-			underlyingValue := reflect.ValueOf(ref)
+			//underlyingValue := reflect.ValueOf(ref)
 			//fmt.Printf("convert ref to data %v\n", dataValue.Convert(underlyingReflectedType))
 			//fmt.Printf("ref value comparison: %v\n", dataValue == underlyingValue)
 			//fmt.Printf("underlying value type %v\n", underlyingValue.Type())
 			//fmt.Printf("underlying value interface %v\n", underlyingValue.Interface())
 			//fmt.Printf("underlying value convert %v\n", underlyingValue.Convert(reflectedType))
 
-			fmt.Printf("data convertible to %v\n", reflectedType.ConvertibleTo(underlyingReflectedType))
-			fmt.Printf("underlying value can convert data %v\n", underlyingValue.CanConvert(reflectedType))
+			//fmt.Printf("data convertible to %v\n", reflectedType.ConvertibleTo(underlyingReflectedType))
+			//fmt.Printf("underlying value can convert data %v\n", underlyingValue.CanConvert(reflectedType))
 			//fmt.Printf("indirect %v\n", reflect.Indirect(underlyingValue))
 
 			//fmt.Printf("reflected value convert %v\n", dataValue.Convert(underlyingReflectedType))
 
 			keyValue := key
 			foundKey = &keyValue
-			fmt.Printf("======================\n")
+			//fmt.Printf("======================\n")
 		}
 	}
 	if foundKey == nil {
-		var defaultValue KeyType
+		//var defaultValue KeyType
 		dataType := reflect.TypeOf(data)
 		values := make([]string, len(o.TypesValue))
 		i := 0
@@ -441,7 +495,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			}
 			i++
 		}
-		return defaultValue, nil, &ConstraintError{
+		return nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of schema: '%s' (valid types are: %s)",
 				dataType.String(),
@@ -449,5 +503,6 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			),
 		}
 	}
-	return *foundKey, o.TypesValue[*foundKey], nil
+
+	return o.TypesValue[*foundKey], nil
 }

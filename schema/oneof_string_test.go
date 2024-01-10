@@ -5,6 +5,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"go.arcalot.io/assert"
 	"testing"
 
@@ -361,7 +362,7 @@ func TestOneOfString_Nickname(t *testing.T) {
 	var input_nick any = map[string]any{
 		"name": map[string]any{
 			"_type": "nickname",
-			"nick":  "Arca Lot",
+			"nick":  "ArcaLot",
 		},
 	}
 
@@ -370,8 +371,9 @@ func TestOneOfString_Nickname(t *testing.T) {
 	//reserializedData, err := oneOfNameRootScope.Serialize(unserializedData)
 	//assert.Equals(t, reserializedData, input_nick)
 
-	_, err := oneOfNameRootScope.Serialize(input_nick)
+	unserializedData, err := oneOfNameRootScope.Serialize(input_nick)
 	assert.NoError(t, err)
+	fmt.Printf("%s\n", unserializedData)
 
 	//no_discriminator_nick := map[string]any{
 	//	"name": map[string]any{
@@ -398,6 +400,7 @@ func TestOneOfString_Fullname(t *testing.T) {
 	unserializedData, err := oneOfNameRootScope.Unserialize(input_full)
 	assert.NoError(t, err)
 	reserializedData, err := oneOfNameRootScope.Serialize(unserializedData)
+	assert.NoError(t, err)
 	assert.Equals(t, reserializedData, input_full)
 
 	no_discriminator_full := map[string]any{

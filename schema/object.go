@@ -155,6 +155,7 @@ func (o *ObjectSchema) serializeMap(data map[string]any) (any, error) {
 
 	rawSerializedData := map[string]any{}
 	for k, v := range data {
+		// one-of discriminator field is not in the properties
 		property, ok := o.PropertiesValue[k]
 		if !ok {
 			return nil, o.invalidKeyError(k)
