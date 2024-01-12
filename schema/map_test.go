@@ -344,3 +344,19 @@ func TestMapCompatibilityValidation(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility(true))
 	assert.Error(t, s1.ValidateCompatibility([]string{}))
 }
+
+func TestMap_UnserializeIdempotent(t *testing.T) {
+	mapType := schema.NewTypedMapSchema[string, string](
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		schema.IntPointer(3),
+	)
+	var serializableInput any
+	serializableInput = map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
+	unserialized, err := mapType.UnserializeType(serializableInput)
+	assert.NoError(t, err)
+	serialized, err := mapType.Serialize(unserialized)
+	assert.NoError(t, err)
+	assert.Equals(t, serialized, serializableInput)
+}
