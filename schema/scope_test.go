@@ -185,12 +185,20 @@ func TestUnserialization(t *testing.T) {
 	assert.NoError(t, err)
 	assert.InstanceOf[scopeTestObjectA](t, result.(scopeTestObjectA))
 	assert.Equals(t, result.(scopeTestObjectA).B.C, "Hello world!")
+	// test for idempotency
+	reserialized, err := scopeTestObjectAType.Serialize(result)
+	assert.NoError(t, err)
+	assert.Equals(t, reserialized, input)
 
 	// Now as a ptr
 	resultPtr, err := scopeTestObjectATypePtr.Unserialize(input)
 	assert.NoError(t, err)
 	assert.InstanceOf[*scopeTestObjectAPtr](t, resultPtr.(*scopeTestObjectAPtr))
 	assert.Equals(t, resultPtr.(*scopeTestObjectAPtr).B.C, "Hello world!")
+	// test for idempotency
+	reserialized, err = scopeTestObjectATypePtr.Serialize(resultPtr)
+	assert.NoError(t, err)
+	assert.Equals(t, reserialized, input)
 
 	// Test empty object
 	data = `{}`
@@ -198,6 +206,10 @@ func TestUnserialization(t *testing.T) {
 	result, err = scopeTestObjectEmptySchema.Unserialize(input)
 	assert.NoError(t, err)
 	assert.InstanceOf[scopeTestObjectEmpty](t, result.(scopeTestObjectEmpty))
+	// test for idempotency
+	reserialized, err = scopeTestObjectEmptySchema.Serialize(result)
+	assert.NoError(t, err)
+	assert.Equals(t, reserialized, input)
 }
 
 func TestValidation(t *testing.T) {
