@@ -181,3 +181,24 @@ func TestListVerifyCompatibility(t *testing.T) {
 	assert.NoError(t, intListSchema.ValidateCompatibility([]any{schema.NewIntSchema(nil, nil, nil)}))
 	assert.Error(t, intListSchema.ValidateCompatibility([]any{schema.NewStringSchema(nil, nil, nil)}))
 }
+
+func TestUnserialize_Idempotent(t *testing.T) {
+	listType := schema.NewTypedListSchema[string](
+		schema.NewStringSchema(
+			nil,
+			nil,
+			nil,
+		),
+		schema.IntPointer(2),
+		nil,
+	)
+
+	var serializableInput any
+	serializableInput = []any{"foo", "bar"}
+
+	unserialized, err := listType.UnserializeType([]any{"foo", "bar"})
+	assert.NoError(t, err)
+	serialized, err := listType.SerializeType(unserialized)
+	assert.NoError(t, err)
+	assert.Equals(t, serialized, serializableInput)
+}
