@@ -192,13 +192,10 @@ func TestUnserialize_Idempotent(t *testing.T) {
 		schema.IntPointer(2),
 		nil,
 	)
-
-	var serializableInput any
-	serializableInput = []any{"foo", "bar"}
-
-	unserialized, err := listType.UnserializeType([]any{"foo", "bar"})
+	serializableInput := []any{"foo", "bar"}
+	unserialized, err := listType.Unserialize([]any{"foo", "bar"})
 	assert.NoError(t, err)
-	serialized, err := listType.SerializeType(unserialized)
+	serialized, err := listType.Serialize(unserialized)
 	assert.NoError(t, err)
-	assert.Equals(t, serialized, serializableInput)
+	assert.Equals(t, serialized.([]any), serializableInput)
 }

@@ -352,11 +352,10 @@ func TestMap_UnserializeIdempotent(t *testing.T) {
 		nil,
 		schema.IntPointer(3),
 	)
-	var serializableInput any
-	serializableInput = map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
-	unserialized, err := mapType.UnserializeType(serializableInput)
+	serializableInput := map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
+	unserialized, err := mapType.Unserialize(serializableInput)
 	assert.NoError(t, err)
 	serialized, err := mapType.Serialize(unserialized)
 	assert.NoError(t, err)
-	assert.Equals(t, serialized, serializableInput)
+	assert.Equals(t, serialized.(map[any]any), serializableInput)
 }
