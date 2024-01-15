@@ -192,8 +192,8 @@ func TestList_UnSerialize_Reversible(t *testing.T) {
 		nil,
 		nil,
 	)
-	serializableInput := []any{"foo", "bar", "baz"}
-	unserialized, err := listType.Unserialize(serializableInput)
+	input := []any{"foo", "bar", "baz"}
+	unserialized, err := listType.Unserialize(input)
 	assert.NoError(t, err)
 	serialized, err := listType.Serialize(unserialized)
 	assert.NoError(t, err)

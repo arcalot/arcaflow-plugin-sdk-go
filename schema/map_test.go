@@ -352,8 +352,8 @@ func TestMap_UnSerialize_Reversible(t *testing.T) {
 		nil,
 		nil,
 	)
-	serializableInput := map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
-	unserialized, err := mapType.Unserialize(serializableInput)
+	input := map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
+	unserialized, err := mapType.Unserialize(input)
 	assert.NoError(t, err)
 	serialized, err := mapType.Serialize(unserialized)
 	assert.NoError(t, err)
