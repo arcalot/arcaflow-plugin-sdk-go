@@ -505,6 +505,9 @@ func TestDefaultsObjectSerialization(t *testing.T) {
 	actual_value := assert.MapContainsKey[string](
 		t, foo_key, serialized.(map[string]any))
 	assert.Equals(t, actual_value.(string), default_foo_value)
+
+	// test reversibility
+
 }
 
 var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)

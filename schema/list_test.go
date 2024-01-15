@@ -193,19 +193,16 @@ func TestList_UnSerialize_Reversible(t *testing.T) {
 		nil,
 	)
 	serializableInput := []any{"foo", "bar", "baz"}
-
 	unserialized, err := listType.Unserialize(serializableInput)
 	assert.NoError(t, err)
 	serialized, err := listType.Serialize(unserialized)
 	assert.NoError(t, err)
-
 	unserialized2, err := listType.Unserialize(serialized)
 	assert.NoError(t, err)
-	// test unserialize data mapping has been reversed
-	assert.Equals(t, unserialized2, unserialized)
-
 	serialized2, err := listType.Serialize(unserialized2)
 	assert.NoError(t, err)
-	// test serialize data mapping has been reversed
+
+	// test unserialize and serialize are reversible
+	assert.Equals(t, unserialized2, unserialized)
 	assert.Equals(t, serialized2, serialized)
 }

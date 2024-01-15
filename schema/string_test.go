@@ -152,12 +152,12 @@ func testStringSerialization(
 		t.Fatalf("Incorrect value after unserialize: %s", val)
 	}
 
-	// test reversibility
 	unserialized2, err := stringType.Unserialize(val2)
 	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, val)
 	serialized2, err := stringType.Serialize(unserialized2)
 	assert.NoError(t, err)
+	// test unserialize and serialize are reversible
+	assert.Equals(t, unserialized2, val)
 	assert.Equals(t, serialized2, val2)
 }
 

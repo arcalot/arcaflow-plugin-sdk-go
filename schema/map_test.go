@@ -357,14 +357,12 @@ func TestMap_UnSerialize_Reversible(t *testing.T) {
 	assert.NoError(t, err)
 	serialized, err := mapType.Serialize(unserialized)
 	assert.NoError(t, err)
-
 	unserialized2, err := mapType.Unserialize(serialized)
 	assert.NoError(t, err)
-	// test unserialize data mapping has been reversed
-	assert.Equals(t, unserialized2, unserialized)
-
 	serialized2, err := mapType.Serialize(unserialized2)
 	assert.NoError(t, err)
-	// test serialize data mapping has been reversed
+
+	// test unserialize and serialize are reversible
+	assert.Equals(t, unserialized2, unserialized)
 	assert.Equals(t, serialized2, serialized)
 }

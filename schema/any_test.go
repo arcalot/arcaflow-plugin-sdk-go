@@ -121,7 +121,7 @@ func TestAny(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equals(t, serialized, val.serialized)
 
-			// test reversibility
+			// test unserialize and serialize are reversible
 			unserialized2, err := anyType.Unserialize(serialized)
 			assert.NoError(t, err)
 			assert.Equals(t, unserialized2, unserialized)
