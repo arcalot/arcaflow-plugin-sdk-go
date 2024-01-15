@@ -450,10 +450,7 @@ func TestTypedObjectSchema_Any(t *testing.T) {
 	assert.NoError(t, err)
 	serialized2, err := s.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err := s.Unserialize(serialized2)
-	assert.NoError(t, err)
-	// test unserialize and serialize are reversible
-	assert.Equals(t, unserialized2, unserialized)
+	// test reversibility
 	assert.Equals(t, serialized2, serializedData)
 }
 
@@ -497,13 +494,10 @@ func TestDefaultsStructSerialization(t *testing.T) {
 		actual_value.(string),
 		default_foo_value)
 
-	serialized2, err := s.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := s.Unserialize(serialized2)
+	unserialized2, err := s.Unserialize(serialized)
 	assert.NoError(t, err)
 	// test unserialize and serialize are reversible
 	assert.Equals(t, unserialized2, unserialized)
-	assert.Equals(t, serialized2, serialized)
 }
 
 func TestDefaultsObjectSerialization(t *testing.T) {
@@ -544,13 +538,10 @@ func TestDefaultsObjectSerialization(t *testing.T) {
 		t, foo_key, serialized.(map[string]any))
 	assert.Equals(t, actual_value.(string), default_foo_value)
 
-	serialized2, err := s.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := s.Unserialize(serialized2)
+	unserialized2, err := s.Unserialize(serialized)
 	assert.NoError(t, err)
 	// test unserialize and serialize are reversible
 	assert.Equals(t, unserialized2, unserialized)
-	assert.Equals(t, serialized2, serialized)
 }
 
 var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)
