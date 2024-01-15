@@ -151,6 +151,11 @@ func testStringSerialization(
 	if val2 != validValue {
 		t.Fatalf("Incorrect value after unserialize: %s", val)
 	}
+
+	unserialized2, err := stringType.Unserialize(val2)
+	assert.NoError(t, err)
+	// test unserialize and serialize are reversible
+	assert.Equals(t, unserialized2, val)
 }
 
 func TestStringParameters(t *testing.T) {

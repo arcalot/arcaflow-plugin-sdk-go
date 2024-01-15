@@ -185,12 +185,24 @@ func TestUnserialization(t *testing.T) {
 	assert.NoError(t, err)
 	assert.InstanceOf[scopeTestObjectA](t, result.(scopeTestObjectA))
 	assert.Equals(t, result.(scopeTestObjectA).B.C, "Hello world!")
+	serialized, err := scopeTestObjectAType.Serialize(result)
+	assert.NoError(t, err)
+	unserialized2, err := scopeTestObjectAType.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test reversiblity
+	assert.Equals(t, unserialized2, result)
 
 	// Now as a ptr
 	resultPtr, err := scopeTestObjectATypePtr.Unserialize(input)
 	assert.NoError(t, err)
 	assert.InstanceOf[*scopeTestObjectAPtr](t, resultPtr.(*scopeTestObjectAPtr))
 	assert.Equals(t, resultPtr.(*scopeTestObjectAPtr).B.C, "Hello world!")
+	serialized, err = scopeTestObjectATypePtr.Serialize(resultPtr)
+	assert.NoError(t, err)
+	unserialized2, err = scopeTestObjectATypePtr.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test reversiblity
+	assert.Equals(t, unserialized2, resultPtr)
 
 	// Test empty object
 	data = `{}`
@@ -198,6 +210,12 @@ func TestUnserialization(t *testing.T) {
 	result, err = scopeTestObjectEmptySchema.Unserialize(input)
 	assert.NoError(t, err)
 	assert.InstanceOf[scopeTestObjectEmpty](t, result.(scopeTestObjectEmpty))
+	serialized, err = scopeTestObjectEmptySchema.Serialize(result)
+	assert.NoError(t, err)
+	unserialized2, err = scopeTestObjectEmptySchema.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test reversiblity
+	assert.Equals(t, unserialized2, result)
 }
 
 func TestValidation(t *testing.T) {
@@ -278,6 +296,13 @@ func TestSerialization(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equals(t, serialized.(map[string]any)["b"].(map[string]any)["c"].(string), "Hello world!")
+	unserialized, err := scopeTestObjectAType.Unserialize(serialized)
+	assert.NoError(t, err)
+	serialized2, err := scopeTestObjectAType.Serialize(unserialized)
+	assert.NoError(t, err)
+
+	// test reversiblity
+	assert.Equals(t, serialized2, serialized)
 }
 
 func TestSelfSerialization(t *testing.T) {
