@@ -189,7 +189,7 @@ func TestList_UnSerialize_Reversible(t *testing.T) {
 			nil,
 			nil,
 		),
-		schema.IntPointer(3),
+		nil,
 		nil,
 	)
 	serializableInput := []any{"foo", "bar", "baz"}

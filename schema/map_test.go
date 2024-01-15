@@ -350,7 +350,7 @@ func TestMap_UnSerialize_Reversible(t *testing.T) {
 		schema.NewStringSchema(nil, nil, nil),
 		schema.NewStringSchema(nil, nil, nil),
 		nil,
-		schema.IntPointer(3),
+		nil,
 	)
 	serializableInput := map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
 	unserialized, err := mapType.Unserialize(serializableInput)
