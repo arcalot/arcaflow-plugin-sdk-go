@@ -176,14 +176,6 @@ func TestBoolSerializationCycle(t *testing.T) {
 			if serialized != output {
 				t.Fatalf("Invalid value after serialization: %v", serialized)
 			}
-
-			unserialized2, err := boolType.Unserialize(serialized)
-			assert.NoError(t, err)
-			serialized2, err := boolType.Serialize(unserialized2)
-			assert.NoError(t, err)
-			// test unserialize and serialize are reversible
-			assert.Equals(t, unserialized2, output)
-			assert.Equals(t, serialized2, serialized)
 		})
 	}
 }

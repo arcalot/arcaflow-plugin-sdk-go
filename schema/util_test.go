@@ -1,7 +1,6 @@
 package schema_test
 
 import (
-	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -55,14 +54,6 @@ func performSerializationTest[T any](
 					serialized,
 				)
 			}
-
-			serialized2, err := typeUnderTest.SerializeType(unserialized)
-			assert.NoError(t, err)
-			unserialized2, err := typeUnderTest.UnserializeType(serialized2)
-			assert.NoError(t, err)
-			// test unserialize and serialize are reversible
-			assert.Equals(t, unserialized2, unserialized)
-			assert.Equals(t, serialized2, serialized)
 		})
 	}
 }

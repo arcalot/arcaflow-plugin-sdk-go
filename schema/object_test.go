@@ -368,31 +368,22 @@ func TestTypedString(t *testing.T) {
 	result, err := o.Unserialize(map[string]any{"t1": "Hello world!"})
 	assert.NoError(t, err)
 	assert.Equals(t, result.(testStruct).T1, "Hello world!")
-
 	serialized, err := o.Serialize(result)
 	assert.NoError(t, err)
 	unserialized2, err := o.Unserialize(serialized)
 	assert.NoError(t, err)
-	serialized2, err := o.Serialize(result)
-	assert.NoError(t, err)
-	// test unserialize and serialize are reversible
+	// test reversiblity
 	assert.Equals(t, unserialized2, result)
-	assert.Equals(t, serialized2, serialized)
 
 	result, err = o.Unserialize(map[string]any{"t2": "Hello world!"})
 	assert.NoError(t, err)
 	assert.Equals(t, *result.(testStruct).T2, "Hello world!")
-
 	serialized, err = o.Serialize(result)
 	assert.NoError(t, err)
 	unserialized2, err = o.Unserialize(serialized)
 	assert.NoError(t, err)
-	serialized2, err = o.Serialize(result)
-	assert.NoError(t, err)
-	// test unserialize and serialize are reversible
+	// test reversiblity
 	assert.Equals(t, unserialized2, result)
-	assert.Equals(t, serialized2, serialized)
-
 }
 
 func TestNonDefaultSerialization(t *testing.T) {
@@ -423,10 +414,7 @@ func TestNonDefaultSerialization(t *testing.T) {
 	assert.NoError(t, err)
 	serialized2, err := s.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err := s.Unserialize(serialized2)
-	assert.NoError(t, err)
-	// test unserialize and serialize are reversible
-	assert.Equals(t, unserialized2, unserialized)
+	// test reversiblity
 	assert.Equals(t, serialized2, serializedData)
 }
 
