@@ -190,6 +190,7 @@ func TestUnserialization(t *testing.T) {
 	unserialized2, err := scopeTestObjectAType.Unserialize(serialized)
 	assert.NoError(t, err)
 	serialized2, err := scopeTestObjectAType.Serialize(result)
+	assert.NoError(t, err)
 	// test unserialize and serialize are reversible
 	assert.Equals(t, unserialized2, result)
 	assert.Equals(t, serialized2, serialized)
@@ -204,6 +205,7 @@ func TestUnserialization(t *testing.T) {
 	unserialized2, err = scopeTestObjectATypePtr.Unserialize(serialized)
 	assert.NoError(t, err)
 	serialized2, err = scopeTestObjectATypePtr.Serialize(resultPtr)
+	assert.NoError(t, err)
 	// test unserialize and serialize are reversible
 	assert.Equals(t, unserialized2, resultPtr)
 	assert.Equals(t, serialized2, serialized)
@@ -219,6 +221,7 @@ func TestUnserialization(t *testing.T) {
 	unserialized2, err = scopeTestObjectEmptySchema.Unserialize(serialized)
 	assert.NoError(t, err)
 	serialized2, err = scopeTestObjectEmptySchema.Serialize(result)
+	assert.NoError(t, err)
 	// test unserialize and serialize are reversible
 	assert.Equals(t, unserialized2, result)
 	assert.Equals(t, serialized2, serialized)
