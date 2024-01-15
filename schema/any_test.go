@@ -120,6 +120,14 @@ func TestAny(t *testing.T) {
 			serialized, err := anyType.Serialize(val.unserialized)
 			assert.NoError(t, err)
 			assert.Equals(t, serialized, val.serialized)
+
+			// test reversibility
+			unserialized2, err := anyType.Unserialize(serialized)
+			assert.NoError(t, err)
+			assert.Equals(t, unserialized2, unserialized)
+			serialized2, err := anyType.Serialize(unserialized2)
+			assert.NoError(t, err)
+			assert.Equals(t, serialized2, serialized)
 		})
 	}
 

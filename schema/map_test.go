@@ -345,7 +345,7 @@ func TestMapCompatibilityValidation(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility([]string{}))
 }
 
-func TestMap_UnserializeIdempotent(t *testing.T) {
+func TestMap_UnSerialize_Reversible(t *testing.T) {
 	mapType := schema.NewTypedMapSchema[string, string](
 		schema.NewStringSchema(nil, nil, nil),
 		schema.NewStringSchema(nil, nil, nil),
@@ -357,5 +357,14 @@ func TestMap_UnserializeIdempotent(t *testing.T) {
 	assert.NoError(t, err)
 	serialized, err := mapType.Serialize(unserialized)
 	assert.NoError(t, err)
-	assert.Equals(t, serialized.(map[any]any), serializableInput)
+
+	unserialized2, err := mapType.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test unserialize data mapping has been reversed
+	assert.Equals(t, unserialized2, unserialized)
+
+	serialized2, err := mapType.Serialize(unserialized2)
+	assert.NoError(t, err)
+	// test serialize data mapping has been reversed
+	assert.Equals(t, serialized2, serialized)
 }

@@ -182,20 +182,30 @@ func TestListVerifyCompatibility(t *testing.T) {
 	assert.Error(t, intListSchema.ValidateCompatibility([]any{schema.NewStringSchema(nil, nil, nil)}))
 }
 
-func TestUnserialize_Idempotent(t *testing.T) {
+func TestList_UnSerialize_Reversible(t *testing.T) {
 	listType := schema.NewTypedListSchema[string](
 		schema.NewStringSchema(
 			nil,
 			nil,
 			nil,
 		),
-		schema.IntPointer(2),
+		schema.IntPointer(3),
 		nil,
 	)
-	serializableInput := []any{"foo", "bar"}
-	unserialized, err := listType.Unserialize([]any{"foo", "bar"})
+	serializableInput := []any{"foo", "bar", "baz"}
+
+	unserialized, err := listType.Unserialize(serializableInput)
 	assert.NoError(t, err)
 	serialized, err := listType.Serialize(unserialized)
 	assert.NoError(t, err)
-	assert.Equals(t, serialized.([]any), serializableInput)
+
+	unserialized2, err := listType.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test unserialize data mapping has been reversed
+	assert.Equals(t, unserialized2, unserialized)
+
+	serialized2, err := listType.Serialize(unserialized2)
+	assert.NoError(t, err)
+	// test serialize data mapping has been reversed
+	assert.Equals(t, serialized2, serialized)
 }
