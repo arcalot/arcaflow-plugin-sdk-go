@@ -555,6 +555,9 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	objectTestRef.ApplyScope(testStructScope)
 	assert.NoError(t, objectTestRef.ValidateCompatibility(testStructSchema))
 	assert.NoError(t, testStructSchema.ValidateCompatibility(objectTestRef))
+	// Schema validation with scope
+	testStructScopeSchema := schema.NewScopeSchema(&testStructSchema.ObjectSchema)
+	assert.NoError(t, objectTestRef.ValidateCompatibility(testStructScopeSchema))
 
 	// map verification
 	validData := map[string]any{
