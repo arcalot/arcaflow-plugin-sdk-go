@@ -181,3 +181,24 @@ func TestListVerifyCompatibility(t *testing.T) {
 	assert.NoError(t, intListSchema.ValidateCompatibility([]any{schema.NewIntSchema(nil, nil, nil)}))
 	assert.Error(t, intListSchema.ValidateCompatibility([]any{schema.NewStringSchema(nil, nil, nil)}))
 }
+
+func TestList_UnSerialize_Reversible(t *testing.T) {
+	listType := schema.NewTypedListSchema[string](
+		schema.NewStringSchema(
+			nil,
+			nil,
+			nil,
+		),
+		nil,
+		nil,
+	)
+	input := []any{"foo", "bar", "baz"}
+	unserialized, err := listType.Unserialize(input)
+	assert.NoError(t, err)
+	serialized, err := listType.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err := listType.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test reversiblity
+	assert.Equals(t, unserialized2, unserialized)
+}

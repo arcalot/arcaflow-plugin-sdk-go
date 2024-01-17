@@ -344,3 +344,21 @@ func TestMapCompatibilityValidation(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility(true))
 	assert.Error(t, s1.ValidateCompatibility([]string{}))
 }
+
+func TestMap_UnSerialize_Reversible(t *testing.T) {
+	mapType := schema.NewTypedMapSchema[string, string](
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		nil,
+	)
+	input := map[any]any{"foo": "foo", "bar": "bar", "baz": "baz"}
+	unserialized, err := mapType.Unserialize(input)
+	assert.NoError(t, err)
+	serialized, err := mapType.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err := mapType.Unserialize(serialized)
+	assert.NoError(t, err)
+	// test reversiblity
+	assert.Equals(t, unserialized2, unserialized)
+}

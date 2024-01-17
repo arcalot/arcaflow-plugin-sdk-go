@@ -111,15 +111,21 @@ func TestAny(t *testing.T) {
 
 	anyType := schema.NewAnySchema()
 	for name, val := range validValues {
+		testCase := val
 		t.Run(name, func(t *testing.T) {
-			unserialized, err := anyType.Unserialize(val.input)
+			unserialized, err := anyType.Unserialize(testCase.input)
 			assert.NoError(t, err)
-			assert.Equals(t, unserialized, val.unserialized)
-			err = anyType.Validate(val.unserialized)
+			assert.Equals(t, unserialized, testCase.unserialized)
+			err = anyType.Validate(testCase.unserialized)
 			assert.NoError(t, err)
-			serialized, err := anyType.Serialize(val.unserialized)
+			serialized, err := anyType.Serialize(testCase.unserialized)
 			assert.NoError(t, err)
-			assert.Equals(t, serialized, val.serialized)
+			assert.Equals(t, serialized, testCase.serialized)
+
+			unserialized2, err := anyType.Unserialize(serialized)
+			assert.NoError(t, err)
+			// test unserialize and serialize are reversible
+			assert.Equals(t, unserialized2, unserialized)
 		})
 	}
 
