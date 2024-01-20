@@ -145,10 +145,14 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	//if ok {
 	//	unserializedMap[o.DiscriminatorFieldNameValue] = discriminator
 	//}
-	if o.interfaceType == nil {
-		return unserializedData, nil
+	unserializedOneOf := map[string]any{
+		o.DiscriminatorFieldNameValue: discriminator,
+		o.EncapsulationFieldNameValue: unserializedData,
 	}
-	return saveConvertTo(unserializedData, o.interfaceType)
+	if o.interfaceType == nil {
+		return unserializedOneOf, nil
+	}
+	return saveConvertTo(unserializedOneOf, o.interfaceType)
 }
 
 func (o OneOfSchema[KeyType]) ValidateType(data any) error {
@@ -444,16 +448,16 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 		}
 	}
 
-	//schemaValueOriginal := reflect.ValueOf(selectedSchema)
-	//fmt.Printf("%v\n", schemaValueOriginal)
-	//var dataClone reflect.Value
-	//dataValue := reflect.ValueOf(data)
-	//reflect.Copy(dataClone, dataValue)
-	//dataClone.
-	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
-		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
-	}
-	err := selectedSchema.ValidateCompatibility(data)
+	//if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
+	//	delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	//}
+
+	//encapsulatorValue := reflectedValue.MapIndex(reflect.ValueOf(o.EncapsulationFieldNameValue))
+	//encapsulator := encapsulatorValue.Interface()
+	typeData := data[o.EncapsulationFieldNameValue]
+
+	//typeData := reflect.ValueOf(encapsulator)
+	err := selectedSchema.ValidateCompatibility(typeData)
 	if err != nil {
 		return foundKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
