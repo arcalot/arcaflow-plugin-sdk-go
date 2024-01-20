@@ -343,6 +343,11 @@ func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
 	if ok {
 		return refSchemaType.referencedObjectCache, true
 	}
+	// Next, try scope schema.
+	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
+	if ok {
+		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
+	}
 	// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
 	value := reflect.ValueOf(typeOrData)
 	if reflect.Indirect(value).Kind() == reflect.Struct {
