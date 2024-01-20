@@ -406,3 +406,23 @@ func TestOneOfString_Fullname(t *testing.T) {
 	//assert.NoError(t, err)
 	//assert.Equals(t, serializedNoDiscriminator, input_full)
 }
+
+func TestOneOfString_FullnameNew(t *testing.T) {
+	var input_full any = map[string]any{
+		"name": map[string]any{
+			"_type": "fullname",
+			"value": map[string]any{
+				"first_name": "Arca",
+				"last_name":  "Lot",
+			},
+		},
+	}
+	unserialized0, err := oneOfNameRootScope.Unserialize(input_full)
+	assert.NoError(t, err)
+	serialized, err := oneOfNameRootScope.Serialize(unserialized0)
+	assert.NoError(t, err)
+	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
+	assert.NoError(t, err)
+	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
+	assert.Equals(t, unserialized2, unserialized)
+}

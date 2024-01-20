@@ -19,5 +19,6 @@ func NewOneOfIntSchema[ItemsInterface any](
 		reflect.TypeOf(&defaultValue).Elem(),
 		types,
 		discriminatorFieldName,
+		"value",
 	}
 }
