@@ -22,11 +22,16 @@ func performSerializationTest[T any](
 ) {
 	t.Helper()
 	for name, tc := range testCases {
+		// The call to t.Parallel() means that referencing the tc
+		// from the outer scope won't produce the proper value, so
+		// we need to place it in a variable, localTC, scoped inside
+		// the loop body.
+		localTC := tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-			unserialized, err := typeUnderTest.UnserializeType(tc.SerializedValue)
+			unserialized, err := typeUnderTest.UnserializeType(localTC.SerializedValue)
 			if err != nil {
-				if tc.ExpectError {
+				if localTC.ExpectError {
 					return
 				}
 				t.Fatal(err)
@@ -34,10 +39,10 @@ func performSerializationTest[T any](
 			if err := typeUnderTest.ValidateType(unserialized); err != nil {
 				t.Fatal(err)
 			}
-			if !compareUnserialized(unserialized, tc.ExpectUnserializedValue) {
+			if !compareUnserialized(unserialized, localTC.ExpectUnserializedValue) {
 				t.Fatalf(
 					"Unexpected unserialized value, expected: %v, got: %v",
-					tc.ExpectUnserializedValue,
+					localTC.ExpectUnserializedValue,
 					unserialized,
 				)
 			}
@@ -45,11 +50,11 @@ func performSerializationTest[T any](
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !compareSerialized(serialized, tc.ExpectedSerializedValue) {
+			if !compareSerialized(serialized, localTC.ExpectedSerializedValue) {
 				t.Fatalf(
 					"Serialized value mismatch, expected: %v (%T), got: %v (%T)",
-					tc.ExpectedSerializedValue,
-					tc.ExpectedSerializedValue,
+					localTC.ExpectedSerializedValue,
+					localTC.ExpectedSerializedValue,
 					serialized,
 					serialized,
 				)
