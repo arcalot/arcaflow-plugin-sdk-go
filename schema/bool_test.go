@@ -151,10 +151,11 @@ var boolTestSerializationCases = map[string]struct {
 }
 
 func TestBoolSerializationCycle(t *testing.T) {
+	t.Parallel()
 	for name, tc := range boolTestSerializationCases {
-		// The call to t.Parallel() means that referencing the tc
-		// from the outer scope won't produce the proper value, so
-		// we need to place it in a variable, localTC, scoped inside
+		// When executed in parallel, referencing tc from the
+		// outer scope will not produce the proper value, so we need
+		// to bind it to a variable, localTC, scoped inside
 		// the loop body.
 		localTC := tc
 		t.Run(name, func(t *testing.T) {

@@ -35,17 +35,22 @@ func TestUnitsParseInt(t *testing.T) {
 	}
 
 	for testCase, testData := range testMatrix {
+		// When executed in parallel, referencing testData from the
+		// outer scope will not produce the proper value, so we need
+		// to bind it to a variable, localTestData, scoped inside
+		// the loop body.
+		localTestData := testData
 		t.Run(testCase, func(t *testing.T) {
-			result, err := testData.units.ParseInt(testData.input)
+			result, err := localTestData.units.ParseInt(localTestData.input)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if result != testData.expected {
-				t.Fatalf("Result mismatch, expected: %d, got: %d", testData.expected, result)
+			if result != localTestData.expected {
+				t.Fatalf("Result mismatch, expected: %d, got: %d", localTestData.expected, result)
 			}
-			formatted := testData.units.FormatShortInt(result)
-			if formatted != testData.input {
-				t.Fatalf("Formatted result doesn't match input, expected: %s, got: %s", testData.input, formatted)
+			formatted := localTestData.units.FormatShortInt(result)
+			if formatted != localTestData.input {
+				t.Fatalf("Formatted result doesn't match input, expected: %s, got: %s", localTestData.input, formatted)
 			}
 		})
 	}
