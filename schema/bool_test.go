@@ -152,17 +152,22 @@ var boolTestSerializationCases = map[string]struct {
 
 func TestBoolSerializationCycle(t *testing.T) {
 	for name, tc := range boolTestSerializationCases {
+		// The call to t.Parallel() means that referencing the tc
+		// from the outer scope won't produce the proper value, so
+		// we need to place it in a variable, localTC, scoped inside
+		// the loop body.
+		localTC := tc
 		t.Run(name, func(t *testing.T) {
 			var boolType schema.Bool = schema.NewBoolSchema()
-			output, err := boolType.Unserialize(tc.input)
+			output, err := boolType.Unserialize(localTC.input)
 			if err != nil {
-				if tc.expectedError {
+				if localTC.expectedError {
 					return
 				}
-				t.Fatalf("Failed to unserialize %v: %v", tc.input, err)
+				t.Fatalf("Failed to unserialize %v: %v", localTC.input, err)
 			}
-			if output != tc.output {
-				t.Fatalf("Unexpected unserialize output for %v: %v", tc.input, output)
+			if output != localTC.output {
+				t.Fatalf("Unexpected unserialize output for %v: %v", localTC.input, output)
 			}
 
 			if err := boolType.Validate(output); err != nil {
