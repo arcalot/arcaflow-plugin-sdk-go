@@ -197,6 +197,7 @@ var testIntEnumSerializationDataSet = map[string]serializationTestCase[int64]{
 }
 
 func TestIntEnumSerialization(t *testing.T) {
+	t.Parallel()
 	performSerializationTest[int64](
 		t,
 		schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{

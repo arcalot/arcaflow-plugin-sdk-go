@@ -64,6 +64,7 @@ var testStringEnumSerializationDataSet = map[string]serializationTestCase[string
 }
 
 func TestStringEnumSerialization(t *testing.T) {
+	t.Parallel()
 	performSerializationTest[string](
 		t,
 		schema.NewStringEnumSchema(map[string]*schema.DisplayValue{

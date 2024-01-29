@@ -21,7 +21,6 @@ func performSerializationTest[T any](
 	compareSerialized func(a any, b any) bool,
 ) {
 	t.Helper()
-	t.Parallel()
 	for name, tc := range testCases {
 		// When executed in parallel, referencing tc from the
 		// outer scope will not produce the proper value, so we need
