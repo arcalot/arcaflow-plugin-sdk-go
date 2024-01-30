@@ -169,7 +169,6 @@ var testIntSerializationDataSet = map[string]serializationTestCase[int64]{
 }
 
 func TestIntSerialization(t *testing.T) {
-	t.Parallel()
 	performSerializationTest[int64](
 		t,
 		schema.NewIntSchema(schema.IntPointer(5), schema.IntPointer(10), schema.UnitBytes),
@@ -191,7 +190,6 @@ func TestDurationSerialization(t *testing.T) {
 }
 
 func TestIntSerializationNoValidation(t *testing.T) {
-	t.Parallel()
 	performSerializationTest[int64](
 		t,
 		schema.NewIntSchema(nil, nil, nil),

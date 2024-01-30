@@ -41,6 +41,7 @@ func TestUnitsParseInt(t *testing.T) {
 		// the loop body.
 		localTestData := testData
 		t.Run(testCase, func(t *testing.T) {
+			t.Parallel()
 			result, err := localTestData.units.ParseInt(localTestData.input)
 			if err != nil {
 				t.Fatal(err)
@@ -76,6 +77,7 @@ func TestUnitsParseFloat(t *testing.T) {
 
 	for testCase, testData := range testMatrix {
 		t.Run(testCase, func(t *testing.T) {
+			t.Parallel()
 			result, err := testData.units.ParseFloat(testData.input)
 			if err != nil {
 				t.Fatal(err)

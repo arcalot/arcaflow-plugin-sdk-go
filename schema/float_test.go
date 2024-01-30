@@ -197,7 +197,6 @@ var testFloatSerializationDataSet = map[string]serializationTestCase[float64]{
 }
 
 func TestFloatSerialization(t *testing.T) {
-	t.Parallel()
 	performSerializationTest[float64](
 		t,
 		schema.NewFloatSchema(
@@ -216,7 +215,6 @@ func TestFloatSerialization(t *testing.T) {
 }
 
 func TestFloatSerializationNoValidation(t *testing.T) {
-	t.Parallel()
 	performSerializationTest[float64](
 		t,
 		schema.NewFloatSchema(nil, nil, nil),

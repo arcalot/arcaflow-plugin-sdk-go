@@ -151,7 +151,6 @@ var boolTestSerializationCases = map[string]struct {
 }
 
 func TestBoolSerializationCycle(t *testing.T) {
-	t.Parallel()
 	for name, tc := range boolTestSerializationCases {
 		// When executed in parallel, referencing tc from the
 		// outer scope will not produce the proper value, so we need
@@ -159,6 +158,7 @@ func TestBoolSerializationCycle(t *testing.T) {
 		// the loop body.
 		localTC := tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			var boolType schema.Bool = schema.NewBoolSchema()
 			output, err := boolType.Unserialize(localTC.input)
 			if err != nil {

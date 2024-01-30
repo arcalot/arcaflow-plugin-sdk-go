@@ -29,6 +29,8 @@ func performSerializationTest[T any](
 		localTC := tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+			//panic("help!")
+			t.Parallel()
 			unserialized, err := typeUnderTest.UnserializeType(localTC.SerializedValue)
 			if err != nil {
 				if localTC.ExpectError {

@@ -25,7 +25,6 @@ func ExamplePatternSchema() {
 }
 
 func TestPatternType(t *testing.T) {
-	t.Parallel()
 	performSerializationTest[*regexp.Regexp](
 		t,
 		schema.NewPatternSchema(),
