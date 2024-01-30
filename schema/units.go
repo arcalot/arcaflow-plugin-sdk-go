@@ -133,7 +133,7 @@ func NewUnits(baseUnit *UnitDefinition, multipliers map[int64]*UnitDefinition) *
 		BaseUnitValue:    baseUnit,
 		MultipliersValue: multipliers,
 	}
-	//ud.updateReCache()
+	ud.updateReCache()
 	return ud
 }
 
