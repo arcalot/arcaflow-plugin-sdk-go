@@ -129,12 +129,10 @@ type Units interface {
 
 // NewUnits defines a new set of UnitsDefinition with the given parameters.
 func NewUnits(baseUnit *UnitDefinition, multipliers map[int64]*UnitDefinition) *UnitsDefinition {
-	ud := &UnitsDefinition{
+	return &UnitsDefinition{
 		BaseUnitValue:    baseUnit,
 		MultipliersValue: multipliers,
 	}
-	ud.updateReCache()
-	return ud
 }
 
 type UnitsDefinition struct {
