@@ -77,13 +77,15 @@ linters-settings:
   revive:
     severity: error
   depguard:
-    list-type: whitelist
-    include-go-root: false
-    packages:
-      - go.flow.arcalot.io/
-      - go.arcalot.io/
-      - gopkg.in/yaml.v3
-      - github.com/fxamacker/cbor
+    rules:
+      main:
+        list-mode: strict
+        allow:
+          - $gostd
+          - go.flow.arcalot.io/
+          - go.arcalot.io/
+          - gopkg.in/yaml.v3
+          - github.com/fxamacker/cbor
   govet:
     enable-all: true
     check-shadowing: false
