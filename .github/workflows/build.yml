@@ -4,6 +4,8 @@ on:
     branches:
       - main
   pull_request:
+env:
+  go_version: 1.21.6
 jobs:
   golangci-lint:
     name: golangci-lint
@@ -11,6 +13,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Pin Golang version for linting
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.go_version }}
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -24,7 +30,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.6
+          go-version: ${{ env.go_version }}
       - name: Set up gotestfmt
         uses: GoTestTools/gotestfmt-action@v2
       - uses: actions/cache@v4
@@ -67,7 +73,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.6
+          go-version: ${{ env.go_version }}
       - uses: actions/cache@v4
         with:
           path: |
