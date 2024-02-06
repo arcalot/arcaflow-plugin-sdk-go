@@ -4,30 +4,36 @@ on:
     branches:
       - main
   pull_request:
+env:
+  go_version: 1.21.6
 jobs:
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3
+        uses: actions/checkout@v4
+      - name: Pin Golang version for linting
+        uses: actions/setup-go@v5
         with:
-          version: v1.52.2
+          go-version: ${{ env.go_version }}
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.55.2
   test:
     name: go test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.18
+          go-version: ${{ env.go_version }}
       - name: Set up gotestfmt
         uses: GoTestTools/gotestfmt-action@v2
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/go/pkg/mod
@@ -63,12 +69,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.18
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3
+          go-version: ${{ env.go_version }}
+      - uses: actions/cache@v4
         with:
           path: |
             ~/go/pkg/mod
