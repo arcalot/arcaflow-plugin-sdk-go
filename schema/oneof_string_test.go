@@ -348,20 +348,33 @@ var oneOfNameNoRefsRootScope = schema.NewScopeSchema(
 )
 
 func TestOneOfString_Nickname(t *testing.T) {
-	var input_nick any = map[string]any{
+	var input any = map[string]any{
+		"name": map[string]any{
+			"_type": "nickname",
+			"value": map[string]any{
+				"nick": "ArcaLot",
+			},
+		},
+	}
+	unserialized, err := oneOfNameRootScope.Unserialize(input)
+	assert.NoError(t, err)
+	serialized, err := oneOfNameRootScope.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equals(t, unserialized2, unserialized)
+
+	var input_inline any = map[string]any{
 		"name": map[string]any{
 			"_type": "nickname",
 			"nick":  "ArcaLot",
 		},
 	}
-
-	//unserialized0, err := oneOfNameRootScope.Unserialize(input_nick)
-	//assert.NoError(t, err)
-	unserialized, err := oneOfNameRootScope.Unserialize(input_nick)
+	unserialized, err = oneOfNameRootScope.Unserialize(input_inline)
 	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized)
+	serialized, err = oneOfNameRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
+	unserialized2, err = oneOfNameRootScope.Unserialize(serialized)
 	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserialized)
 
@@ -382,32 +395,6 @@ func TestOneOfString_Nickname(t *testing.T) {
 func TestOneOfString_Fullname(t *testing.T) {
 	var input_full any = map[string]any{
 		"name": map[string]any{
-			"_type":      "fullname",
-			"first_name": "Arca",
-			"last_name":  "Lot",
-		},
-	}
-	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
-	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
-	assert.Equals(t, unserialized2, unserialized)
-
-	//no_discriminator_full := map[string]any{
-	//	"name": map[string]any{
-	//		"first_name": "Arca",
-	//		"last_name":  "Lot",
-	//	},
-	//}
-	//serializedNoDiscriminator, err := oneOfNameRootScope.Serialize(no_discriminator_full)
-	//assert.NoError(t, err)
-	//assert.Equals(t, serializedNoDiscriminator, input_full)
-}
-
-func TestOneOfString_FullnameNew(t *testing.T) {
-	var input_full any = map[string]any{
-		"name": map[string]any{
 			"_type": "fullname",
 			"value": map[string]any{
 				"first_name": "Arca",
@@ -421,4 +408,28 @@ func TestOneOfString_FullnameNew(t *testing.T) {
 	assert.NoError(t, err)
 	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
 	assert.Equals(t, unserialized2, unserialized)
+
+	var input_inline any = map[string]any{
+		"name": map[string]any{
+			"_type":      "fullname",
+			"first_name": "Arca",
+			"last_name":  "Lot",
+		},
+	}
+	unserialized, err = oneOfNameRootScope.Unserialize(input_inline)
+	assert.NoError(t, err)
+	serialized, err = oneOfNameRootScope.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err = oneOfNameRootScope.Unserialize(serialized)
+	assert.Equals(t, unserialized2, unserialized)
+
+	//no_discriminator_full := map[string]any{
+	//	"name": map[string]any{
+	//		"first_name": "Arca",
+	//		"last_name":  "Lot",
+	//	},
+	//}
+	//serializedNoDiscriminator, err := oneOfNameRootScope.Unserialize(no_discriminator_full)
+	//assert.NoError(t, err)
+	//assert.Equals(t, serializedNoDiscriminator, input_full)
 }
