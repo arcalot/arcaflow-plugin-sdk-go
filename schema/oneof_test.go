@@ -33,15 +33,15 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfString,
 	)
-	//assert.Equals(
-	//	t,
-	//	oneOfStringTestObjectAType.
-	//		Objects()["A"].
-	//		Properties()["s"].
-	//		Type().
-	//		TypeID(),
-	//	schema.TypeIDOneOfString,
-	//)
+	assert.Equals(
+		t,
+		oneOfStringTestObjectAType.
+			Objects()["A"].
+			Properties()["s"].
+			Type().
+			TypeID(),
+		schema.TypeIDOneOfString,
+	)
 	assert.Equals(
 		t,
 		oneOfIntTestObjectASchema.
@@ -51,15 +51,15 @@ func TestOneOfTypeID(t *testing.T) {
 			TypeID(),
 		schema.TypeIDOneOfInt,
 	)
-	//assert.Equals(
-	//	t,
-	//	oneOfIntTestObjectAType.
-	//		Objects()["A"].
-	//		Properties()["s"].
-	//		Type().
-	//		TypeID(),
-	//	schema.TypeIDOneOfInt,
-	//)
+	assert.Equals(
+		t,
+		oneOfIntTestObjectAType.
+			Objects()["A"].
+			Properties()["s"].
+			Type().
+			TypeID(),
+		schema.TypeIDOneOfInt,
+	)
 }
 
 var oneOfTestObjectBProperties = map[string]*schema.PropertySchema{
@@ -116,12 +116,12 @@ var oneOfTestDSchema = schema.NewObjectSchema(
 	oneOfTestObjectDProperties,
 )
 
-//var oneOfTestBMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectB](
-//	"B",
-//	oneOfTestObjectBProperties,
-//)
-//
-//var oneOfTestCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectC](
-//	"C",
-//	oneOfTestObjectCProperties,
-//)
+var oneOfTestBMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectB](
+	"B",
+	oneOfTestObjectBProperties,
+)
+
+var oneOfTestCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectC](
+	"C",
+	oneOfTestObjectCProperties,
+)

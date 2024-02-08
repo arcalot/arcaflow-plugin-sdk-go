@@ -4,6 +4,7 @@
 package schema_test
 
 import (
+	"encoding/json"
 	"go.arcalot.io/assert"
 	"testing"
 
@@ -127,28 +128,28 @@ var oneOfIntTestObjectAdSchema = schema.NewScopeSchema(
 	oneOfTestDSchema,
 )
 
-//var oneOfIntTestObjectAType = schema.NewScopeSchema(
-//	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
-//		"A",
-//		oneOfIntTestObjectAProperties,
-//	),
-//	//oneOfTestBMappedSchema,
-//	//oneOfTestCMappedSchema,
-//)
+var oneOfIntTestObjectAType = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
+		"A",
+		oneOfIntTestObjectAProperties,
+	),
+	oneOfTestBMappedSchema,
+	oneOfTestCMappedSchema,
+)
 
-//func TestOneOfIntUnserialization(t *testing.T) {
-//	data := `{
-//	"s": {
-//		"_type": 1,
-//		"message": "Hello world!"
-//	}
-//}`
-//	var input any
-//	assert.NoError(t, json.Unmarshal([]byte(data), &input))
-//	unserializedData, err := oneOfIntTestObjectAType.Unserialize(input)
-//	assert.NoError(t, err)
-//	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-//}
+func TestOneOfIntUnserialization(t *testing.T) {
+	data := `{
+	"s": {
+		"_type": 1,
+		"message": "Hello world!"
+	}
+}`
+	var input any
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	unserializedData, err := oneOfIntTestObjectAType.Unserialize(input)
+	assert.NoError(t, err)
+	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+}
 
 func TestOneOfIntCompatibilityValidation(t *testing.T) {
 	// The ones with NoError are matching schemas

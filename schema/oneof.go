@@ -82,8 +82,10 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 
 	encapsulatorValue := reflectedValue.MapIndex(reflect.ValueOf(o.EncapsulatorFieldNameValue))
 
+	// clone type value into encapsulator
+	// what happens encapsulator field name value is the same as a property
+	// in a discriminated type value
 	if !encapsulatorValue.IsValid() {
-
 		cloned := maps.Clone(data.(map[string]any))
 		delete(cloned, o.DiscriminatorFieldNameValue)
 		encapsulatedMapData := map[string]any{
@@ -93,25 +95,8 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		encapsulatorValue = reflect.ValueOf(encapsulatedMapData).MapIndex(reflect.ValueOf(o.EncapsulatorFieldNameValue))
 	}
 
-	//if !discriminatorValue.IsValid() {
-	//	return result, &ConstraintError{
-	//		Message: fmt.Sprintf("Missing discriminator field '%s' in '%v'", o.EncapsulatorFieldNameValue, data),
-	//	}
-	//}
 	encapsulator := encapsulatorValue.Interface()
-	//typedEncapsulator, err := o.getTypedDiscriminator(encapsulator)
-	//if err != nil {
-	//	return result, err
-	//}
 	encapsulatorMapValue := reflect.ValueOf(encapsulator)
-	//fmt.Printf("value of %v\n", .Len())
-	//fmt.Printf("encaps len: %d\n", encapsulatorValue.Len())
-	//fmt.Printf("%v\n", typedEncapsulator)
-	//fmt.Printf("%v\n", encapsulator)
-	//fmt.Printf()
-	//fmt.Printf("%v\n", reflectedValue.Kind())
-	//fmt.Printf("%v\n", encapsulatorValue.Kind())
-	//n := encapsulatorValue.Len()
 
 	typedData := make(map[string]any, encapsulatorMapValue.Len())
 	for _, k := range encapsulatorMapValue.MapKeys() {

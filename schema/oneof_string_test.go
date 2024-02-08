@@ -127,14 +127,14 @@ var oneOfStringTestObjectAdSchema = schema.NewScopeSchema(
 	oneOfTestDSchema,
 )
 
-//var oneOfStringTestObjectAType = schema.NewScopeSchema(
-//	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
-//		"A",
-//		oneOfStringTestObjectAProperties,
-//	),
-//	//oneOfTestBMappedSchema,
-//	//oneOfTestCMappedSchema,
-//)
+var oneOfStringTestObjectAType = schema.NewScopeSchema(
+	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
+		"A",
+		oneOfStringTestObjectAProperties,
+	),
+	oneOfTestBMappedSchema,
+	oneOfTestCMappedSchema,
+)
 
 func TestOneOfStringUnserialization(t *testing.T) {
 	data := `{
@@ -144,29 +144,31 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	}
 }`
 	var input any
-	//assert.NoError(t, json.Unmarshal([]byte(data), &input))
-	//unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
-	//assert.NoError(t, err)
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
+	assert.NoError(t, err)
 	//assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-	//
+
 	//unserialized0, err := oneOfStringTestObjectAType.Unserialize(input)
 	//assert.NoError(t, err)
-	//serialized, err := oneOfStringTestObjectAType.Serialize(unserialized0)
-	//assert.NoError(t, err)
-	//unserialized2, err := oneOfStringTestObjectAType.Unserialize(serialized)
-	//assert.NoError(t, err)
-	//assert.Equals(t, unserialized2, unserializedData)
-
-	assert.NoError(t, json.Unmarshal([]byte(data), &input))
-	unserializedData, err := oneOfStringTestObjectASchema.Unserialize(input)
+	serialized, err := oneOfStringTestObjectAType.Serialize(unserializedData)
 	assert.NoError(t, err)
-	//assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-
-	serialized, err := oneOfStringTestObjectASchema.Serialize(unserializedData)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfStringTestObjectASchema.Unserialize(serialized)
+	unserialized2, err := oneOfStringTestObjectAType.Unserialize(serialized)
 	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserializedData)
+
+	// Not explicitly using a struct mapped object, but the type is inferred
+	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
+	//assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	//unserializedData, err := oneOfStringTestObjectASchema.Unserialize(input)
+	//assert.NoError(t, err)
+	////assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+	//
+	//serialized, err := oneOfStringTestObjectASchema.Serialize(unserializedData)
+	//assert.NoError(t, err)
+	//unserialized2, err := oneOfStringTestObjectASchema.Unserialize(serialized)
+	//assert.NoError(t, err)
+	//assert.Equals(t, unserialized2, unserializedData)
 }
 
 func TestOneOfStringCompatibilityValidation(t *testing.T) {
