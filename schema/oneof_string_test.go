@@ -6,6 +6,7 @@ package schema_test
 import (
 	"encoding/json"
 	"go.arcalot.io/assert"
+	"maps"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -419,10 +420,12 @@ func TestOneOfString_FullnameNew(t *testing.T) {
 	}
 	unserialized0, err := oneOfNameRootScope.Unserialize(input_full)
 	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized0)
+	cloned := maps.Clone(unserialized0.(map[string]any))
+	serialized, err := oneOfNameRootScope.Serialize(cloned)
+	//serialized, err := oneOfNameRootScope.Serialize(unserialized0)
 	assert.NoError(t, err)
-	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
-	assert.NoError(t, err)
+	//unserialized, err := oneOfNameRootScope.Unserialize(input_full)
+	//assert.NoError(t, err)
 	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
-	assert.Equals(t, unserialized2, unserialized)
+	assert.Equals(t, unserialized2, unserialized0)
 }

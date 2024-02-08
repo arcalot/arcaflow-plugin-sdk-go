@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 )
@@ -80,6 +81,18 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	}
 
 	encapsulatorValue := reflectedValue.MapIndex(reflect.ValueOf(o.EncapsulationFieldNameValue))
+
+	if !encapsulatorValue.IsValid() {
+
+		cloned := maps.Clone(data.(map[string]any))
+		delete(cloned, o.DiscriminatorFieldNameValue)
+		encapsulatedMapData := map[string]any{
+			o.DiscriminatorFieldNameValue: typedDiscriminator,
+			o.EncapsulationFieldNameValue: cloned,
+		}
+		encapsulatorValue = reflect.ValueOf(encapsulatedMapData).MapIndex(reflect.ValueOf(o.EncapsulationFieldNameValue))
+	}
+
 	//if !discriminatorValue.IsValid() {
 	//	return result, &ConstraintError{
 	//		Message: fmt.Sprintf("Missing discriminator field '%s' in '%v'", o.EncapsulationFieldNameValue, data),
@@ -171,15 +184,16 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	serializedData, err := underlyingType.Serialize(data)
+	mapData := data.(map[string]any)
+	serializedData, err := underlyingType.Serialize(mapData[o.EncapsulationFieldNameValue])
 	if err != nil {
 		return nil, err
 	}
-	mapData := serializedData.(map[string]any)
-	if _, ok := mapData[o.DiscriminatorFieldNameValue]; !ok {
-		mapData[o.DiscriminatorFieldNameValue] = discriminatorValue
+	mapDiscriminatedTypeData := serializedData.(map[string]any)
+	if _, ok := mapDiscriminatedTypeData[o.DiscriminatorFieldNameValue]; !ok {
+		mapDiscriminatedTypeData[o.DiscriminatorFieldNameValue] = discriminatorValue
 	}
-	return mapData, nil
+	return mapDiscriminatedTypeData, nil
 }
 
 func (o OneOfSchema[KeyType]) Unserialize(data any) (any, error) {
