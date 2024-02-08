@@ -19,7 +19,7 @@ type OneOfSchema[KeyType int64 | string] struct {
 	interfaceType               reflect.Type
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
-	EncapsulationFieldNameValue string             `json:"encapsulation_field_name"`
+	EncapsulatorFieldNameValue  string             `json:"encapsulator_field_name_value"`
 }
 
 func (o OneOfSchema[KeyType]) TypeID() TypeID {
@@ -80,7 +80,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		return result, err
 	}
 
-	encapsulatorValue := reflectedValue.MapIndex(reflect.ValueOf(o.EncapsulationFieldNameValue))
+	encapsulatorValue := reflectedValue.MapIndex(reflect.ValueOf(o.EncapsulatorFieldNameValue))
 
 	if !encapsulatorValue.IsValid() {
 
@@ -88,14 +88,14 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		delete(cloned, o.DiscriminatorFieldNameValue)
 		encapsulatedMapData := map[string]any{
 			o.DiscriminatorFieldNameValue: typedDiscriminator,
-			o.EncapsulationFieldNameValue: cloned,
+			o.EncapsulatorFieldNameValue:  cloned,
 		}
-		encapsulatorValue = reflect.ValueOf(encapsulatedMapData).MapIndex(reflect.ValueOf(o.EncapsulationFieldNameValue))
+		encapsulatorValue = reflect.ValueOf(encapsulatedMapData).MapIndex(reflect.ValueOf(o.EncapsulatorFieldNameValue))
 	}
 
 	//if !discriminatorValue.IsValid() {
 	//	return result, &ConstraintError{
-	//		Message: fmt.Sprintf("Missing discriminator field '%s' in '%v'", o.EncapsulationFieldNameValue, data),
+	//		Message: fmt.Sprintf("Missing discriminator field '%s' in '%v'", o.EncapsulatorFieldNameValue, data),
 	//	}
 	//}
 	encapsulator := encapsulatorValue.Interface()
@@ -160,7 +160,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	//}
 	unserializedOneOf := map[string]any{
 		o.DiscriminatorFieldNameValue: discriminator,
-		o.EncapsulationFieldNameValue: unserializedData,
+		o.EncapsulatorFieldNameValue:  unserializedData,
 	}
 	if o.interfaceType == nil {
 		return unserializedOneOf, nil
@@ -186,7 +186,7 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	}
 	mapData := data.(map[string]any)
 
-	serializedData, err := underlyingType.Serialize(mapData[o.EncapsulationFieldNameValue])
+	serializedData, err := underlyingType.Serialize(mapData[o.EncapsulatorFieldNameValue])
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +464,7 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 		}
 	}
 
-	typeData := data[o.EncapsulationFieldNameValue]
+	typeData := data[o.EncapsulatorFieldNameValue]
 	err := selectedSchema.ValidateCompatibility(typeData)
 	if err != nil {
 		return foundKey, nil, &ConstraintError{
