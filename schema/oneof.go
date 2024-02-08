@@ -185,6 +185,7 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 		return nil, err
 	}
 	mapData := data.(map[string]any)
+
 	serializedData, err := underlyingType.Serialize(mapData[o.EncapsulationFieldNameValue])
 	if err != nil {
 		return nil, err
@@ -267,7 +268,9 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 	// Validate that it has the discriminator field.
 	// If it doesn't, fail
 	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
-	selectedTypeID := data[o.DiscriminatorFieldNameValue]
+	clonedData := maps.Clone(data)
+
+	selectedTypeID := clonedData[o.DiscriminatorFieldNameValue]
 	if selectedTypeID == nil {
 		return &ConstraintError{
 			Message: fmt.Sprintf(
@@ -293,9 +296,9 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 		}
 	}
 	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
-		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+		delete(clonedData, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
 	}
-	err := selectedSchema.ValidateCompatibility(data)
+	err := selectedSchema.ValidateCompatibility(clonedData)
 	if err != nil {
 		return &ConstraintError{
 			Message: fmt.Sprintf(

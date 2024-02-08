@@ -355,11 +355,11 @@ func TestOneOfString_Nickname(t *testing.T) {
 		},
 	}
 
-	unserialized0, err := oneOfNameRootScope.Unserialize(input_nick)
-	assert.NoError(t, err)
+	//unserialized0, err := oneOfNameRootScope.Unserialize(input_nick)
+	//assert.NoError(t, err)
 	unserialized, err := oneOfNameRootScope.Unserialize(input_nick)
 	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized0)
+	serialized, err := oneOfNameRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
 	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
 	assert.NoError(t, err)
@@ -387,11 +387,9 @@ func TestOneOfString_Fullname(t *testing.T) {
 			"last_name":  "Lot",
 		},
 	}
-	unserialized0, err := oneOfNameRootScope.Unserialize(input_full)
-	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized0)
-	assert.NoError(t, err)
 	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
+	assert.NoError(t, err)
+	serialized, err := oneOfNameRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
 	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
 	assert.Equals(t, unserialized2, unserialized)
@@ -417,14 +415,10 @@ func TestOneOfString_FullnameNew(t *testing.T) {
 			},
 		},
 	}
-	unserialized0, err := oneOfNameRootScope.Unserialize(input_full)
+	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
 	assert.NoError(t, err)
-	//cloned := maps.Clone(unserialized0.(map[string]any))
-	serialized, err := oneOfNameRootScope.Serialize(unserialized0)
-	//serialized, err := oneOfNameRootScope.Serialize(unserialized0)
+	serialized, err := oneOfNameRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	//unserialized, err := oneOfNameRootScope.Unserialize(input_full)
-	//assert.NoError(t, err)
 	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
-	assert.Equals(t, unserialized2, unserialized0)
+	assert.Equals(t, unserialized2, unserialized)
 }
