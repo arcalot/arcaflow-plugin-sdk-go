@@ -386,13 +386,14 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		return myKey, mySchemaObj, nil
 	}
 
-	for key, ref := range o.TypesValue {
-		underlyingReflectedType := ref.ReflectedType()
-		if underlyingReflectedType == reflectedType {
-			keyValue := key
-			foundKey = &keyValue
-		}
-	}
+	// reflectedType matches every underlying reflected type
+	//for key, ref := range o.TypesValue {
+	//	underlyingReflectedType := ref.ReflectedType()
+	//	if underlyingReflectedType == reflectedType {
+	//		keyValue := key
+	//		foundKey = &keyValue
+	//	}
+	//}
 	if foundKey == nil {
 		var defaultValue KeyType
 		dataType := reflect.TypeOf(data)
@@ -450,21 +451,30 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 		}
 	}
 
-	typeData := data[o.EncapsulatorFieldNameValue]
-	err := selectedSchema.ValidateCompatibility(typeData)
-	if err != nil {
-		return foundKey, nil, &ConstraintError{
-			Message: fmt.Sprintf(
-				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
-				selectedSchema, selectedTypeIDAsserted, err),
-		}
-	}
+	// not possible to ValidateCompatibility when typeData
+	// is a struct, instead of a map
+	// it also doesn't like it when the typeData is inserted
+	// into a map
+	//typeData := data[o.EncapsulatorFieldNameValue]
+	//err := selectedSchema.ValidateCompatibility(
+	//	map[string]any{
+	//		o.DiscriminatorFieldNameValue: selectedTypeIDAsserted,
+	//		o.EncapsulatorFieldNameValue:  typeData,
+	//	})
+	//if err != nil {
+	//	return foundKey, nil, &ConstraintError{
+	//		Message: fmt.Sprintf(
+	//			"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
+	//			selectedSchema, selectedTypeIDAsserted, err),
+	//	}
+	//}
+
 	return foundKey, selectedSchema, nil
 }
 
 func (o OneOfSchema[KeyType]) encapsulateData(data map[string]any) (map[string]any, error) {
 	if !o.inline {
-		return nil, fmt.Errorf("data already encapsulated by user")
+		return data, nil
 	}
 	cloneData := maps.Clone(data)
 	typedDiscriminator, err := o.getTypedDiscriminator(o.DiscriminatorFieldNameValue)

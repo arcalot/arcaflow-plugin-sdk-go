@@ -20,5 +20,6 @@ func NewOneOfIntSchema[ItemsInterface any](
 		types,
 		discriminatorFieldName,
 		"value",
+		false,
 	}
 }
