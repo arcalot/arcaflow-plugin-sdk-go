@@ -159,16 +159,16 @@ func TestOneOfStringUnserialization(t *testing.T) {
 
 	// Not explicitly using a struct mapped object, but the type is inferred
 	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
-	//assert.NoError(t, json.Unmarshal([]byte(data), &input))
-	//unserializedData, err := oneOfStringTestObjectASchema.Unserialize(input)
-	//assert.NoError(t, err)
-	////assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-	//
-	//serialized, err := oneOfStringTestObjectASchema.Serialize(unserializedData)
-	//assert.NoError(t, err)
-	//unserialized2, err := oneOfStringTestObjectASchema.Unserialize(serialized)
-	//assert.NoError(t, err)
-	//assert.Equals(t, unserialized2, unserializedData)
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	unserializedData, err = oneOfStringTestObjectASchema.Unserialize(input)
+	assert.NoError(t, err)
+	//assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+
+	serialized, err = oneOfStringTestObjectASchema.Serialize(unserializedData)
+	assert.NoError(t, err)
+	unserialized2, err = oneOfStringTestObjectASchema.Unserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equals(t, unserialized2, unserializedData)
 }
 
 func TestOneOfStringCompatibilityValidation(t *testing.T) {
