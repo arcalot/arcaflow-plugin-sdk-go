@@ -20,6 +20,7 @@ type OneOfSchema[KeyType int64 | string] struct {
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
 	EncapsulatorFieldNameValue  string             `json:"encapsulator_field_name_value"`
+	inline                      bool
 }
 
 func (o OneOfSchema[KeyType]) TypeID() TypeID {
@@ -459,4 +460,20 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 		}
 	}
 	return foundKey, selectedSchema, nil
+}
+
+func (o OneOfSchema[KeyType]) encapsulateData(data map[string]any) (map[string]any, error) {
+	if !o.inline {
+		return nil, fmt.Errorf("data already encapsulated by user")
+	}
+	cloneData := maps.Clone(data)
+	typedDiscriminator, err := o.getTypedDiscriminator(o.DiscriminatorFieldNameValue)
+	if err != nil {
+		return nil, err
+	}
+	delete(cloneData, o.DiscriminatorFieldNameValue)
+	return map[string]any{
+		o.DiscriminatorFieldNameValue: typedDiscriminator,
+		o.EncapsulatorFieldNameValue:  cloneData,
+	}, nil
 }
