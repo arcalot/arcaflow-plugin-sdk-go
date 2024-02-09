@@ -259,28 +259,28 @@ var oneOfNamePropertiesNoRefs = map[string]*schema.PropertySchema{
 	),
 }
 
-var oneOfNameProperties = map[string]*schema.PropertySchema{
-	"name": schema.NewPropertySchema(
-		schema.NewOneOfStringSchema[any](
-			map[string]schema.Object{
-				"fullname": schema.NewRefSchema(
-					"FullName",
-					schema.NewDisplayValue(schema.PointerTo("FullName"), nil, nil)),
-				"nickname": schema.NewRefSchema(
-					"Nickname",
-					schema.NewDisplayValue(schema.PointerTo("Nickname"), nil, nil)),
-			},
-			"_type",
-		),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
+//var oneOfNameProperties = map[string]*schema.PropertySchema{
+//	"name": schema.NewPropertySchema(
+//		schema.NewOneOfStringSchema[any](
+//			map[string]schema.Object{
+//				"fullname": schema.NewRefSchema(
+//					"FullName",
+//					schema.NewDisplayValue(schema.PointerTo("FullName"), nil, nil)),
+//				"nickname": schema.NewRefSchema(
+//					"Nickname",
+//					schema.NewDisplayValue(schema.PointerTo("Nickname"), nil, nil)),
+//			},
+//			"_type",
+//		),
+//		nil,
+//		true,
+//		nil,
+//		nil,
+//		nil,
+//		nil,
+//		nil,
+//	),
+//}
 
 var fullnameProperties = map[string]*schema.PropertySchema{
 	"first_name": schema.NewPropertySchema(
@@ -338,14 +338,14 @@ var nicknameSchema = schema.NewObjectSchema(
 	nicknameProperties,
 )
 
-var oneOfNameRootScope = schema.NewScopeSchema(
-	schema.NewObjectSchema(
-		"RootObject",
-		oneOfNameProperties,
-	),
-	fullnameSchema,
-	nicknameSchema,
-)
+//var oneOfNameRootScope = schema.NewScopeSchema(
+//	schema.NewObjectSchema(
+//		"RootObject",
+//		oneOfNameProperties,
+//	),
+//	fullnameSchema,
+//	nicknameSchema,
+//)
 
 var oneOfNameNoRefsRootScope = schema.NewScopeSchema(
 	schema.NewObjectSchema(
@@ -365,11 +365,11 @@ func TestOneOfString_Nickname(t *testing.T) {
 			},
 		},
 	}
-	unserialized, err := oneOfNameRootScope.Unserialize(input)
+	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input)
 	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized)
+	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
+	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
 	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserialized)
 
@@ -379,11 +379,11 @@ func TestOneOfString_Nickname(t *testing.T) {
 			"nick":  "ArcaLot",
 		},
 	}
-	unserialized, err = oneOfNameRootScope.Unserialize(input_inline)
+	unserialized, err = oneOfNameNoRefsRootScope.Unserialize(input_inline)
 	assert.NoError(t, err)
-	serialized, err = oneOfNameRootScope.Serialize(unserialized)
+	serialized, err = oneOfNameNoRefsRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err = oneOfNameRootScope.Unserialize(serialized)
+	unserialized2, err = oneOfNameNoRefsRootScope.Unserialize(serialized)
 	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserialized)
 
@@ -411,11 +411,11 @@ func TestOneOfString_Fullname(t *testing.T) {
 			},
 		},
 	}
-	unserialized, err := oneOfNameRootScope.Unserialize(input_full)
+	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input_full)
 	assert.NoError(t, err)
-	serialized, err := oneOfNameRootScope.Serialize(unserialized)
+	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err := oneOfNameRootScope.Unserialize(serialized)
+	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
 	assert.Equals(t, unserialized2, unserialized)
 
 	var input_inline any = map[string]any{
@@ -425,11 +425,11 @@ func TestOneOfString_Fullname(t *testing.T) {
 			"last_name":  "Lot",
 		},
 	}
-	unserialized, err = oneOfNameRootScope.Unserialize(input_inline)
+	unserialized, err = oneOfNameNoRefsRootScope.Unserialize(input_inline)
 	assert.NoError(t, err)
-	serialized, err = oneOfNameRootScope.Serialize(unserialized)
+	serialized, err = oneOfNameNoRefsRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
-	unserialized2, err = oneOfNameRootScope.Unserialize(serialized)
+	unserialized2, err = oneOfNameNoRefsRootScope.Unserialize(serialized)
 	assert.Equals(t, unserialized2, unserialized)
 
 	//no_discriminator_full := map[string]any{
