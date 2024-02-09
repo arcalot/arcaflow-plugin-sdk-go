@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 )
@@ -246,10 +247,11 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 				selectedTypeIDAsserted, o.getTypeValues()),
 		}
 	}
+	cloneData := maps.Clone(data)
 	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
-		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+		delete(cloneData, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
 	}
-	err := selectedSchema.ValidateCompatibility(data)
+	err := selectedSchema.ValidateCompatibility(cloneData)
 	if err != nil {
 		return &ConstraintError{
 			Message: fmt.Sprintf(
@@ -342,12 +344,12 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 	}
 
 	var foundKey *KeyType
-	for key, ref := range o.TypesValue {
-		underlyingReflectedType := ref.ReflectedType()
-		if underlyingReflectedType == reflectedType {
-			keyValue := key
-			foundKey = &keyValue
+	if reflectedType.Kind() == reflect.Map {
+		myKey, mySchemaObj, err := o.mapUnderlyingType(data.(map[string]any))
+		if err != nil {
+			return *foundKey, nil, err
 		}
+		return myKey, mySchemaObj, nil
 	}
 	if foundKey == nil {
 		var defaultValue KeyType
@@ -370,4 +372,41 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 	return *foundKey, o.TypesValue[*foundKey], nil
+}
+
+func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, Object, error) {
+	// Validate that it has the discriminator field.
+	// If it doesn't, fail
+	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
+
+	var foundKey KeyType
+	selectedTypeID := data[o.DiscriminatorFieldNameValue]
+	if selectedTypeID == nil {
+		return foundKey, nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%s' missing", o.DiscriminatorFieldNameValue),
+		}
+	}
+	// Ensure it's the correct type
+	selectedTypeIDAsserted, ok := selectedTypeID.(KeyType)
+	if !ok {
+		return foundKey, nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator field '%v' has invalid type '%T'. Expected %T",
+				o.DiscriminatorFieldNameValue, selectedTypeID, selectedTypeIDAsserted),
+		}
+	}
+	foundKey = selectedTypeIDAsserted
+
+	// Find the object that's associated with the selected type
+	selectedSchema := o.TypesValue[selectedTypeIDAsserted]
+	if selectedSchema == nil {
+		return foundKey, nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
+				selectedTypeIDAsserted, o.getTypeValues()),
+		}
+	}
+
+	return foundKey, selectedSchema, nil
 }
