@@ -148,9 +148,6 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
 	assert.NoError(t, err)
 	//assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-
-	//unserialized0, err := oneOfStringTestObjectAType.Unserialize(input)
-	//assert.NoError(t, err)
 	serialized, err := oneOfStringTestObjectAType.Serialize(unserializedData)
 	assert.NoError(t, err)
 	unserialized2, err := oneOfStringTestObjectAType.Unserialize(serialized)
@@ -163,7 +160,6 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	unserializedData, err = oneOfStringTestObjectASchema.Unserialize(input)
 	assert.NoError(t, err)
 	//assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
-
 	serialized, err = oneOfStringTestObjectASchema.Serialize(unserializedData)
 	assert.NoError(t, err)
 	unserialized2, err = oneOfStringTestObjectASchema.Unserialize(serialized)
