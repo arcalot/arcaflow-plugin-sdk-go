@@ -50,6 +50,7 @@ var mapKeyType = NewOneOfStringSchema[any](
 		),
 	},
 	"type_id",
+	false,
 )
 var displayType = NewDisplayValue(
 	PointerTo("Display"),
@@ -194,6 +195,7 @@ var valueType = NewOneOfStringSchema[any](
 		),
 	},
 	"type_id",
+	false,
 )
 var scopeObject = NewStructMappedObjectSchema[*ScopeSchema](
 	"Scope",
@@ -555,6 +557,7 @@ var basicObjects = []*ObjectSchema{
 							string(TypeIDObject): NewRefSchema("Object", nil),
 						},
 						"type_id",
+						false,
 					),
 					nil,
 					nil,
@@ -601,6 +604,7 @@ var basicObjects = []*ObjectSchema{
 							string(TypeIDObject): NewRefSchema("Object", nil),
 						},
 						"type_id",
+						false,
 					),
 					nil,
 					nil,

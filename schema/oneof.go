@@ -19,6 +19,8 @@ type OneOfSchema[KeyType int64 | string] struct {
 	interfaceType               reflect.Type
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
+	// whether or not the discriminator is inlined in the underlying objects' schema
+	DiscriminatorInlined bool `json:"discriminator_inlined"`
 }
 
 func (o OneOfSchema[KeyType]) TypeID() TypeID {
@@ -110,13 +112,20 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		}
 	}
 
-	if _, ok := selectedType.Properties()[o.DiscriminatorFieldNameValue]; !ok {
-		delete(typedData, o.DiscriminatorFieldNameValue)
+	cloneData := maps.Clone(typedData)
+	if !o.DiscriminatorInlined {
+		delete(cloneData, o.DiscriminatorFieldNameValue)
 	}
 
-	unserializedData, err := selectedType.Unserialize(typedData)
+	unserializedData, err := selectedType.Unserialize(cloneData)
 	if err != nil {
 		return result, err
+	}
+
+	unserializedMap, ok := unserializedData.(map[string]any)
+	if ok {
+		unserializedMap[o.DiscriminatorFieldNameValue] = discriminator
+		return unserializedMap, nil
 	}
 	if o.interfaceType == nil {
 		return unserializedData, nil
@@ -140,6 +149,22 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	dataMap, ok := data.(map[string]any)
+	if ok {
+		cloneData := maps.Clone(dataMap)
+		if !o.DiscriminatorInlined {
+			delete(cloneData, o.DiscriminatorFieldNameValue)
+		}
+		data = cloneData
+	}
+	//reflectedType := reflect.TypeOf(data)
+	//if reflectedType.Kind() == reflect.Map {
+	//	cloneData := maps.Clone(data.(map[string]any))
+	//	if !o.DiscriminatorInlined {
+	//		delete(cloneData, o.DiscriminatorFieldNameValue)
+	//	}
+	//	data = cloneData
+	//}
 	serializedData, err := underlyingType.Serialize(data)
 	if err != nil {
 		return nil, err
@@ -330,11 +355,12 @@ func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType,
 }
 
 func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
+	var defaultValue KeyType
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&
 		(reflectedType.Kind() != reflect.Pointer || reflectedType.Elem().Kind() != reflect.Struct) {
-		var defaultValue KeyType
+
 		return defaultValue, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of type: '%s' expected struct or map.",
@@ -347,12 +373,36 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 	if reflectedType.Kind() == reflect.Map {
 		myKey, mySchemaObj, err := o.mapUnderlyingType(data.(map[string]any))
 		if err != nil {
-			return *foundKey, nil, err
+			return defaultValue, nil, err
 		}
 		return myKey, mySchemaObj, nil
+	} else if reflectedType.Kind() == reflect.Struct {
+		fmt.Printf("%v\n", reflectedType)
+		for key, ref := range o.TypesValue {
+			underlyingReflectedType := ref.ReflectedType()
+			if underlyingReflectedType == reflectedType {
+				keyValue := key
+				foundKey = &keyValue
+			}
+		}
+		//obj, ok := data.(Object)
+		//if !ok {
+		//	return defaultValue, nil, fmt.Errorf("finding underlying type asserting data is an object")
+		//}
+		//var objID any = obj.ID()
+		//objKeyType, ok := objID.(KeyType)
+		//if !ok {
+		//	return defaultValue, nil, fmt.Errorf("finding underlying type asserting key type")
+		//}
+		//selectedSchema := o.TypesValue[objKeyType]
+		//if selectedSchema == nil {
+		//	return defaultValue, nil, fmt.Errorf("finding underlying type for selected struct mapped schema")
+		//}
+		//return *foundKey, selectedSchema, nil
 	}
+
+	// probably don't need this
 	if foundKey == nil {
-		var defaultValue KeyType
 		dataType := reflect.TypeOf(data)
 		values := make([]string, len(o.TypesValue))
 		i := 0
@@ -410,3 +460,5 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 
 	return foundKey, selectedSchema, nil
 }
+
+// TODO: validate underlying type(s) for inline field

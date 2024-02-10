@@ -19,6 +19,7 @@ var oneOfStringTestObjectAProperties = map[string]*schema.PropertySchema{
 				"C": schema.NewRefSchema("C", nil),
 			},
 			"_type",
+			false,
 		),
 		nil,
 		true,
@@ -39,6 +40,7 @@ var oneOfStringTestObjectAbProperties = map[string]*schema.PropertySchema{
 				"C": schema.NewRefSchema("C", nil),
 			},
 			"_difftype",
+			false,
 		),
 		nil,
 		true,
@@ -59,6 +61,7 @@ var oneOfStringTestObjectAcProperties = map[string]*schema.PropertySchema{
 				"D": schema.NewRefSchema("C", nil),
 			},
 			"_type",
+			false,
 		),
 		nil,
 		true,
@@ -79,6 +82,7 @@ var oneOfStringTestObjectAdProperties = map[string]*schema.PropertySchema{
 				"C": schema.NewRefSchema("D", nil),
 			},
 			"_type",
+			false,
 		),
 		nil,
 		true,
@@ -148,6 +152,23 @@ func TestOneOfStringUnserialization(t *testing.T) {
 	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
 	assert.NoError(t, err)
 	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestObjectB).Message, "Hello world!")
+	serialized, err := oneOfStringTestObjectAType.Serialize(unserializedData)
+	assert.NoError(t, err)
+	unserialized2, err := oneOfStringTestObjectAType.Unserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equals(t, unserialized2, unserializedData)
+
+	// Not explicitly using a struct mapped object, but the type is inferred
+	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	unserializedData, err = oneOfStringTestObjectASchema.Unserialize(input)
+	assert.NoError(t, err)
+	assert.Equals(t, unserializedData.(map[string]any)["s"].(oneOfTestObjectB).Message, "Hello world!")
+	serialized, err = oneOfStringTestObjectASchema.Serialize(unserializedData)
+	assert.NoError(t, err)
+	unserialized2, err = oneOfStringTestObjectASchema.Unserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equals(t, unserialized2, unserializedData)
 }
 
 func TestOneOfStringCompatibilityValidation(t *testing.T) {
@@ -221,4 +242,121 @@ func TestOneOfStringCompatibilityMapValidation(t *testing.T) {
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(invalidDiscriminator))
 	assert.NoError(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndSchema))
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndInvalidSchema))
+}
+
+var oneOfNamePropertiesNoRefs = map[string]*schema.PropertySchema{
+	"name": schema.NewPropertySchema(
+		schema.NewOneOfStringSchema[any](
+			map[string]schema.Object{
+				"fullname": fullnameSchema,
+				"nickname": nicknameSchema,
+			},
+			"_type",
+			false,
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var fullnameProperties = map[string]*schema.PropertySchema{
+	"first_name": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("first_name"), nil, nil),
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"last_name": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("last_name"), nil, nil),
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"middle": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("middle"), nil, nil),
+		false,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var nicknameProperties = map[string]*schema.PropertySchema{
+	"nick": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("nick"), nil, nil),
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var fullnameSchema = schema.NewObjectSchema(
+	"FullName",
+	fullnameProperties,
+)
+
+var nicknameSchema = schema.NewObjectSchema(
+	"Nickname",
+	nicknameProperties,
+)
+
+var oneOfNameNoRefsRootScope = schema.NewScopeSchema(
+	schema.NewObjectSchema(
+		"RootObject",
+		oneOfNamePropertiesNoRefs,
+	),
+	fullnameSchema,
+	nicknameSchema,
+)
+
+func TestOneOfString_Nickname(t *testing.T) {
+	var input any = map[string]any{
+		"name": map[string]any{
+			"_type": "nickname",
+			"nick":  "ArcaLot",
+		},
+	}
+	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input)
+	assert.NoError(t, err)
+	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equals(t, unserialized2, unserialized)
+}
+
+func TestOneOfString_Fullname(t *testing.T) {
+	var input_full any = map[string]any{
+		"name": map[string]any{
+			"_type":      "fullname",
+			"first_name": "Arca",
+			"last_name":  "Lot",
+		},
+	}
+	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input_full)
+	assert.NoError(t, err)
+	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
+	assert.NoError(t, err)
+	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
+	assert.Equals(t, unserialized2, unserialized)
 }
