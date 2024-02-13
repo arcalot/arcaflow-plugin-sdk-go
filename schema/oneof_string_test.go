@@ -552,3 +552,195 @@ func TestOneOfStringInline_Unserialization(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserializedData)
 }
+
+type inlinedTestObjectA struct {
+	DType       string `json:"d_type"`
+	OtherFieldA string `json:"other_field_a"`
+}
+
+type inlinedTestObjectB struct {
+	DType       string `json:"d_type"`
+	OtherFieldB string `json:"other_field_b"`
+}
+
+type nonInlinedTestObjectA struct {
+	OtherFieldA string `json:"other_field_a"`
+}
+
+type nonInlinedTestObjectB struct {
+	OtherFieldB string `json:"other_field_b"`
+}
+
+var inlinedTestObjectAProperties = map[string]*schema.PropertySchema{
+	"d_type": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"other_field_a": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var inlinedTestObjectBProperties = map[string]*schema.PropertySchema{
+	"d_type": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+	"other_field_b": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var nonInlinedTestObjectAProperties = map[string]*schema.PropertySchema{
+	"other_field_a": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var nonInlinedTestObjectBProperties = map[string]*schema.PropertySchema{
+	"other_field_b": schema.NewPropertySchema(
+		schema.NewStringSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
+
+var inlinedTestObjectAMappedSchema = schema.NewStructMappedObjectSchema[inlinedTestObjectA](
+	"inlined_A",
+	inlinedTestObjectAProperties,
+)
+
+var inlinedTestObjectBMappedSchema = schema.NewStructMappedObjectSchema[inlinedTestObjectB](
+	"inlined_B",
+	inlinedTestObjectBProperties,
+)
+
+var nonInlinedTestObjectAMappedSchema = schema.NewStructMappedObjectSchema[nonInlinedTestObjectA](
+	"non_inlined_A",
+	nonInlinedTestObjectAProperties,
+)
+
+var nonInlinedTestObjectBMappedSchema = schema.NewStructMappedObjectSchema[nonInlinedTestObjectB](
+	"non_inlined_B",
+	nonInlinedTestObjectBProperties,
+)
+
+var inlinedTestObjectASchema = schema.NewObjectSchema(
+	"inlined_A",
+	inlinedTestObjectAProperties,
+)
+
+var inlinedTestObjectBSchema = schema.NewObjectSchema(
+	"inlined_B",
+	inlinedTestObjectBProperties,
+)
+
+var nonInlinedTestObjectASchema = schema.NewObjectSchema(
+	"non_inlined_A",
+	nonInlinedTestObjectAProperties,
+)
+
+var nonInlinedTestObjectBSchema = schema.NewObjectSchema(
+	"non_inlined_B",
+	nonInlinedTestObjectBProperties,
+)
+
+func TestOneOf_InlinedStructMapped(t *testing.T) {
+	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": inlinedTestObjectAMappedSchema,
+		"B": inlinedTestObjectBMappedSchema,
+	}, "d_type", true)
+	serializedData := map[string]any{
+		"d_type":        "A",
+		"other_field_a": "test",
+	}
+	// Since this is struct-mapped, unserializedData is a struct.
+	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
+	reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
+	assert.Equals[any](t, reserializedData, serializedData)
+}
+
+func TestOneOf_NonInlinedStructMapped(t *testing.T) {
+	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": nonInlinedTestObjectAMappedSchema,
+		"B": nonInlinedTestObjectBMappedSchema,
+	}, "d_type", false)
+	serializedData := map[string]any{
+		"d_type":        "A",
+		"other_field_a": "test",
+	}
+	// Since this is struct-mapped, unserializedData is a struct.
+	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
+	reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
+	assert.Equals[any](t, reserializedData, serializedData)
+}
+
+func TestOneOf_InlinedNonStructMapped(t *testing.T) {
+	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": inlinedTestObjectASchema,
+		"B": inlinedTestObjectBSchema,
+	}, "d_type", true)
+	serializedData := map[string]any{
+		"d_type":        "A",
+		"other_field_a": "test",
+	}
+	// Since this is not struct-mapped, unserializedData is a map.
+	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
+	reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
+	assert.Equals[any](t, reserializedData, serializedData)
+}
+
+func TestOneOf_NonInlinedNonStructMapped(t *testing.T) {
+	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": nonInlinedTestObjectASchema,
+		"B": nonInlinedTestObjectBSchema,
+	}, "d_type", false)
+	assert.NoError(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
+	serializedData := map[string]any{
+		"d_type":        "A",
+		"other_field_a": "test",
+	}
+	// Since this is not struct-mapped, unserializedData is a map.
+	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
+	reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
+	assert.Equals[any](t, reserializedData, serializedData)
+
+}

@@ -461,7 +461,7 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 	return foundKey, selectedSchema, nil
 }
 
-func (o OneOfSchema[KeyType]) validateSubtypeDiscriminatorInlineFields() error {
+func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 	if !o.DiscriminatorInlined {
 		for key, typeValue := range o.Types() {
 			_, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
