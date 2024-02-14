@@ -462,31 +462,6 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 }
 
 func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
-	//if !o.DiscriminatorInlined {
-	//	for key, typeValue := range o.Types() {
-	//		_, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
-	//		if hasDiscriminator {
-	//			return fmt.Errorf(
-	//				"object id %q has conflicting field %q; either remove that field or set inline to true for %T[%T]",
-	//				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
-	//		}
-	//	}
-	//} else {
-	//	for key, typeValue := range o.Types() {
-	//		typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
-	//		if !hasDiscriminator {
-	//			return fmt.Errorf(
-	//				"object id %q needs discriminator field %q; either add that field or set inline to false for %T[%T]",
-	//				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
-	//		}
-	//		if typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind() {
-	//			return fmt.Errorf(
-	//				"object id %q discriminator %q type %v does not match OneOfSchema discriminator type %T",
-	//				typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), key)
-	//		}
-	//	}
-	//}
-
 	for key, typeValue := range o.TypesValue {
 		typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
 		if !o.DiscriminatorInlined && hasDiscriminator {
