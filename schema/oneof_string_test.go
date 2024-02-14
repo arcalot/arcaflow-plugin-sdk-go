@@ -804,15 +804,17 @@ var inlinedTestIntDiscriminatorBSchema = schema.NewObjectSchema(
 func TestOneOf_Error_InvalidDiscriminatorTypeInSubtype(t *testing.T) {
 	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": inlinedTestIntDiscriminatorAMappedSchema,
-		"B": inlinedTestIntDiscriminatorBMappedSchema,
+		"B": inlinedTestObjectBMappedSchema,
 	}, "d_type", true)
 	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
-	//serializedData := map[string]any{
-	//	"d_type":        "A",
-	//	"other_field_a": "test",
-	//}
-	//// Since this is struct-mapped, unserializedData is a struct.
-	//unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
-	//reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
-	//assert.Equals[any](t, reserializedData, serializedData)
+
+}
+
+func TestOneOf_Error_InvalidDiscriminatorTypeInSubtypeForSchema(t *testing.T) {
+	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": inlinedTestIntDiscriminatorASchema,
+		"B": inlinedTestObjectBMappedSchema,
+	}, "d_type", true)
+	assert.NoError(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
+
 }

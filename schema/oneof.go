@@ -491,8 +491,8 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 			err := typeValueDiscriminatorValue.TypeValue.Validate(typedDiscriminator)
 			if err != nil {
 				return fmt.Errorf(
-					"object id %q discriminator %q type %T does not match OneOfSchema discriminator type %T",
-					typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue, typedDiscriminator)
+					"object id %q discriminator %q type %v does not match OneOfSchema discriminator type %T",
+					typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), typedDiscriminator)
 			}
 		}
 	}
