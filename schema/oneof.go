@@ -472,10 +472,6 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 			}
 		}
 	} else {
-		typedDiscriminator, err := o.getTypedDiscriminator(o.DiscriminatorFieldNameValue)
-		if err != nil {
-			return err
-		}
 		for key, typeValue := range o.Types() {
 			typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
 			if !hasDiscriminator {
@@ -483,16 +479,10 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 					"object id %q needs discriminator field %q; either add that field or set inline to false for %T[%T]",
 					typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
 			}
-
-			// When the one-of's discriminator type (key type) and the
-			// subtype's discriminator do not match, the subtype's
-			// discriminator schema will return an error upon validating
-			// the one-of's discriminator as data.
-			err := typeValueDiscriminatorValue.TypeValue.Validate(typedDiscriminator)
-			if err != nil {
+			if typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind() {
 				return fmt.Errorf(
 					"object id %q discriminator %q type %v does not match OneOfSchema discriminator type %T",
-					typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), typedDiscriminator)
+					typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), key)
 			}
 		}
 	}

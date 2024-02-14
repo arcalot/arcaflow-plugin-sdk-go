@@ -807,14 +807,14 @@ func TestOneOf_Error_InvalidDiscriminatorTypeInSubtype(t *testing.T) {
 		"B": inlinedTestObjectBMappedSchema,
 	}, "d_type", true)
 	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
-
+	// check error message
 }
 
-func TestOneOf_Error_InvalidDiscriminatorTypeInSubtypeForSchema(t *testing.T) {
-	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
-		"A": inlinedTestIntDiscriminatorASchema,
-		"B": inlinedTestObjectBMappedSchema,
+func TestOneOf_Error_OneOfInt_InvalidDiscriminatorType(t *testing.T) {
+	oneofSchema := schema.NewOneOfIntSchema[any](map[int64]schema.Object{
+		1: inlinedTestIntDiscriminatorASchema,
+		2: inlinedTestObjectBMappedSchema,
 	}, "d_type", true)
-	assert.NoError(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
-
+	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
+	// check error message
 }
