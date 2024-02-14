@@ -478,29 +478,17 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 		}
 		for key, typeValue := range o.Types() {
 			typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
-			// discriminator field is in subtype
-
-			//refDiscValue := reflect.TypeOf(typeValueDiscriminatorValue)
-			//fmt.Printf("type value discr value %v", refDiscValue)
-			//refDiscValueElem := reflect.TypeOf(typeValueDiscriminatorValue).Elem()
-			//fmt.Printf("type value discr value elem %v", refDiscValueElem)
-			//refDiscValueKind := reflect.TypeOf(typeValueDiscriminatorValue).Kind()
-			//fmt.Printf("%v", refDiscValueKind)
-			//refTypedDisc := reflect.TypeOf(typedDiscriminator).Kind()
-			//fmt.Printf("type of typed discriminator %v", refTypedDisc)
-			//mytype := typeValueDiscriminatorValue.TypeValue
-			//fmt.Printf("%v\n", mytype)
-			//eqlss := typeValueDiscriminatorValue.TypeValue.Validate(typedDiscriminator)
-			//fmt.Printf("eqlss %v", eqlss)
-
 			if !hasDiscriminator {
 				return fmt.Errorf(
 					"object id %q needs discriminator field %q; either add that field or set inline to false for %T[%T]",
 					typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
 			}
-			// check key type matches discriminator field name value type
+
+			// When the one-of's discriminator type (key type) and the
+			// subtype's discriminator do not match, the subtype's
+			// discriminator schema will return an error upon validating
+			// the one-of's discriminator as data.
 			err := typeValueDiscriminatorValue.TypeValue.Validate(typedDiscriminator)
-			//if reflect.TypeOf(typeValueDiscriminatorValue).Elem() != reflect.TypeOf(typedDiscriminator) {
 			if err != nil {
 				return fmt.Errorf(
 					"object id %q discriminator %q type %T does not match OneOfSchema discriminator type %T",
@@ -508,10 +496,5 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 			}
 		}
 	}
-
-	//for key, typeValue := range o.Types() {
-	//
-	//}
-
 	return nil
 }
