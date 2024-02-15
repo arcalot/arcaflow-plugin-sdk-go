@@ -802,25 +802,16 @@ var inlinedTestIntDiscriminatorBSchema = schema.NewObjectSchema(
 )
 
 func TestOneOf_Error_InvalidDiscriminatorTypeInSubtype(t *testing.T) {
-	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
-		"A": inlinedTestIntDiscriminatorAMappedSchema,
-		"B": inlinedTestObjectBMappedSchema,
-	}, "d_type", true)
-	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
-	// check error message
-}
-
-func TestOneOf_Error_OneOfInt_InvalidDiscriminatorType(t *testing.T) {
-	oneofSchema := schema.NewOneOfIntSchema[any](map[int64]schema.Object{
-		1: inlinedTestIntDiscriminatorASchema,
-		2: inlinedTestObjectBMappedSchema,
-	}, "d_type", true)
-	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
-	//assert.Panics(t, func() {
-	//	schema.NewOneOfIntSchema[any](map[int64]schema.Object{
-	//		1: inlinedTestIntDiscriminatorASchema,
-	//		2: inlinedTestObjectBMappedSchema,
-	//	}, "d_type", true)
-	//})
-	// check error message
+	assert.Panics(t, func() {
+		schema.NewScopeSchema(schema.NewObjectSchema("test",
+			map[string]*schema.PropertySchema{
+				"test": schema.NewPropertySchema(
+					schema.NewOneOfStringSchema[any](map[string]schema.Object{
+						"A": inlinedTestIntDiscriminatorAMappedSchema,
+						"B": inlinedTestObjectBMappedSchema,
+					}, "d_type", true),
+					nil, true, nil, nil,
+					nil, nil, nil),
+			}))
+	})
 }

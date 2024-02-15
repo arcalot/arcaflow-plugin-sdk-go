@@ -16,15 +16,10 @@ func NewOneOfIntSchema[ItemsInterface any](
 	discriminatorInlined bool,
 ) *OneOfSchema[int64] {
 	var defaultValue ItemsInterface
-	oos := &OneOfSchema[int64]{
+	return &OneOfSchema[int64]{
 		reflect.TypeOf(&defaultValue).Elem(),
 		types,
 		discriminatorFieldName,
 		discriminatorInlined,
 	}
-	//err := oos.ValidateSubtypeDiscriminatorInlineFields()
-	//if err != nil {
-	//	panic(err)
-	//}
-	return oos
 }

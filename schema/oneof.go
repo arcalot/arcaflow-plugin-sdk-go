@@ -47,6 +47,11 @@ func (o OneOfSchema[KeyType]) ApplyScope(scope Scope) {
 	for _, t := range o.TypesValue {
 		t.ApplyScope(scope)
 	}
+	// scope must be applied before we can access the subtypes' properties
+	err := o.ValidateSubtypeDiscriminatorInlineFields()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (o OneOfSchema[KeyType]) ReflectedType() reflect.Type {
@@ -157,14 +162,6 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 		}
 		data = cloneData
 	}
-	//reflectedType := reflect.TypeOf(data)
-	//if reflectedType.Kind() == reflect.Map {
-	//	cloneData := maps.Clone(data.(map[string]any))
-	//	if !o.DiscriminatorInlined {
-	//		delete(cloneData, o.DiscriminatorFieldNameValue)
-	//	}
-	//	data = cloneData
-	//}
 	serializedData, err := underlyingType.Serialize(data)
 	if err != nil {
 		return nil, err
@@ -474,7 +471,7 @@ func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
 		} else if o.DiscriminatorInlined && hasDiscriminator && (typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind()) {
 			return fmt.Errorf(
-				"object id %q discriminator %q type %v does not match OneOfSchema discriminator type %T",
+				"the type of object id %v's discriminator field %q does not match OneOfSchema discriminator type; expected %v got %T",
 				typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), key)
 		}
 	}
