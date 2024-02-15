@@ -132,6 +132,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		unserializedMap[o.DiscriminatorFieldNameValue] = discriminator
 		return unserializedMap, nil
 	}
+
 	if o.interfaceType == nil {
 		return unserializedData, nil
 	}
@@ -374,7 +375,6 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 		return myKey, mySchemaObj, nil
 	} else if reflectedType.Kind() == reflect.Struct {
-		fmt.Printf("%v\n", reflectedType)
 		for key, ref := range o.TypesValue {
 			underlyingReflectedType := ref.ReflectedType()
 			if underlyingReflectedType == reflectedType {
@@ -382,23 +382,8 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 				foundKey = &keyValue
 			}
 		}
-		//obj, ok := data.(Object)
-		//if !ok {
-		//	return defaultValue, nil, fmt.Errorf("finding underlying type asserting data is an object")
-		//}
-		//var objID any = obj.ID()
-		//objKeyType, ok := objID.(KeyType)
-		//if !ok {
-		//	return defaultValue, nil, fmt.Errorf("finding underlying type asserting key type")
-		//}
-		//selectedSchema := o.TypesValue[objKeyType]
-		//if selectedSchema == nil {
-		//	return defaultValue, nil, fmt.Errorf("finding underlying type for selected struct mapped schema")
-		//}
-		//return *foundKey, selectedSchema, nil
 	}
 
-	// probably don't need this
 	if foundKey == nil {
 		dataType := reflect.TypeOf(data)
 		values := make([]string, len(o.TypesValue))
@@ -452,6 +437,19 @@ func (o OneOfSchema[KeyType]) mapUnderlyingType(data map[string]any) (KeyType, O
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
 				selectedTypeIDAsserted, o.getTypeValues()),
+		}
+	}
+
+	cloneData := maps.Clone(data)
+	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
+		delete(cloneData, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
+	}
+	err := selectedSchema.ValidateCompatibility(cloneData)
+	if err != nil {
+		return foundKey, nil, &ConstraintError{
+			Message: fmt.Sprintf(
+				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
+				selectedSchema, selectedTypeIDAsserted, err),
 		}
 	}
 
