@@ -816,5 +816,11 @@ func TestOneOf_Error_OneOfInt_InvalidDiscriminatorType(t *testing.T) {
 		2: inlinedTestObjectBMappedSchema,
 	}, "d_type", true)
 	assert.Error(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
+	//assert.Panics(t, func() {
+	//	schema.NewOneOfIntSchema[any](map[int64]schema.Object{
+	//		1: inlinedTestIntDiscriminatorASchema,
+	//		2: inlinedTestObjectBMappedSchema,
+	//	}, "d_type", true)
+	//})
 	// check error message
 }
