@@ -219,18 +219,3 @@ func TestOneOfIntCompatibilityMapValidation(t *testing.T) {
 	assert.NoError(t, oneOfIntTestObjectASchema.ValidateCompatibility(combinedMapAndSchema))
 	assert.Error(t, oneOfIntTestObjectASchema.ValidateCompatibility(combinedMapAndInvalidSchema))
 }
-
-func TestOneOf_Error_OneOfInt_InvalidDiscriminatorType(t *testing.T) {
-	assert.Panics(t, func() {
-		schema.NewScopeSchema(schema.NewObjectSchema("test",
-			map[string]*schema.PropertySchema{
-				"test": schema.NewPropertySchema(
-					schema.NewOneOfIntSchema[any](map[int64]schema.Object{
-						1: inlinedTestIntDiscriminatorASchema,
-						2: inlinedTestObjectBMappedSchema,
-					}, "d_type", true),
-					nil, true, nil, nil,
-					nil, nil, nil),
-			}))
-	})
-}

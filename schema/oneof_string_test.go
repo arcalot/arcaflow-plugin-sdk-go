@@ -769,11 +769,11 @@ var inlinedTestIntDiscriminatorAProperties = map[string]*schema.PropertySchema{
 }
 
 var inlinedTestIntDiscriminatorBProperties = map[string]*schema.PropertySchema{
-	"d_type": schema.NewPropertySchema(
-		schema.NewIntSchema(nil, nil, nil),
-		nil, true, nil, nil, nil,
-		nil, nil,
-	),
+	//"d_type": schema.NewPropertySchema(
+	//	schema.NewIntSchema(nil, nil, nil),
+	//	nil, true, nil, nil, nil,
+	//	nil, nil,
+	//),
 	"other_field_b": schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
 		nil, true, nil, nil, nil,
@@ -801,15 +801,51 @@ var inlinedTestIntDiscriminatorBSchema = schema.NewObjectSchema(
 	inlinedTestIntDiscriminatorBProperties,
 )
 
-func TestOneOf_Error_InvalidDiscriminatorTypeInSubtype(t *testing.T) {
+func TestOneOf_Error_SubtypeHasInvalidDiscriminatorType(t *testing.T) {
+	testSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": inlinedTestIntDiscriminatorAMappedSchema,
+		"B": inlinedTestObjectBMappedSchema,
+	}, "d_type", true)
+
 	assert.Panics(t, func() {
 		schema.NewScopeSchema(schema.NewObjectSchema("test",
 			map[string]*schema.PropertySchema{
 				"test": schema.NewPropertySchema(
-					schema.NewOneOfStringSchema[any](map[string]schema.Object{
-						"A": inlinedTestIntDiscriminatorAMappedSchema,
-						"B": inlinedTestObjectBMappedSchema,
-					}, "d_type", true),
+					testSchema,
+					nil, true, nil, nil,
+					nil, nil, nil),
+			}))
+	})
+}
+
+func TestOneOf_Error_InlineSubtypeMissingDiscriminator(t *testing.T) {
+	testSchema := schema.NewOneOfIntSchema[any](map[int64]schema.Object{
+		1: inlinedTestIntDiscriminatorASchema,
+		2: inlinedTestIntDiscriminatorBSchema,
+	}, "d_type", true)
+
+	assert.Panics(t, func() {
+		schema.NewScopeSchema(schema.NewObjectSchema("test",
+			map[string]*schema.PropertySchema{
+				"test": schema.NewPropertySchema(
+					testSchema,
+					nil, true, nil, nil,
+					nil, nil, nil),
+			}))
+	})
+}
+
+func TestOneOf_Error_SubtypeHasDiscriminator(t *testing.T) {
+	testSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
+		"A": inlinedTestIntDiscriminatorASchema,
+		"B": nonInlinedTestObjectBSchema,
+	}, "d_type", false)
+
+	assert.Panics(t, func() {
+		schema.NewScopeSchema(schema.NewObjectSchema("test",
+			map[string]*schema.PropertySchema{
+				"test": schema.NewPropertySchema(
+					testSchema,
 					nil, true, nil, nil,
 					nil, nil, nil),
 			}))
