@@ -510,11 +510,6 @@ type inlinedTestIntDiscriminatorA struct {
 	OtherFieldA string `json:"other_field_a"`
 }
 
-type inlinedTestIntDiscriminatorB struct {
-	DType       int    `json:"d_type"`
-	OtherFieldB string `json:"other_field_b"`
-}
-
 var inlinedTestIntDiscriminatorAProperties = map[string]*schema.PropertySchema{
 	"d_type": schema.NewPropertySchema(
 		schema.NewIntSchema(nil, nil, nil),
@@ -539,11 +534,6 @@ var inlinedTestNoDiscriminatorBProperties = map[string]*schema.PropertySchema{
 var inlinedTestIntDiscriminatorAMappedSchema = schema.NewStructMappedObjectSchema[inlinedTestIntDiscriminatorA](
 	"inlined_int_A",
 	inlinedTestIntDiscriminatorAProperties,
-)
-
-var inlinedTestIntDiscriminatorBMappedSchema = schema.NewStructMappedObjectSchema[inlinedTestIntDiscriminatorB](
-	"inlined_int_B",
-	inlinedTestNoDiscriminatorBProperties,
 )
 
 var inlinedTestIntDiscriminatorASchema = schema.NewObjectSchema(
