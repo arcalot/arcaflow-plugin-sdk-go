@@ -412,15 +412,17 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
 	for key, typeValue := range o.TypesValue {
 		typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
-		if !o.DiscriminatorInlined && hasDiscriminator {
+		switch {
+		case !o.DiscriminatorInlined && hasDiscriminator:
 			return fmt.Errorf(
 				"object id %q has conflicting field %q; either remove that field or set inline to true for %T[%T]",
 				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
-		} else if o.DiscriminatorInlined && !hasDiscriminator {
+		case o.DiscriminatorInlined && !hasDiscriminator:
 			return fmt.Errorf(
 				"object id %q needs discriminator field %q; either add that field or set inline to false for %T[%T]",
 				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
-		} else if o.DiscriminatorInlined && hasDiscriminator && (typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind()) {
+		case o.DiscriminatorInlined && hasDiscriminator &&
+			(typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind()):
 			return fmt.Errorf(
 				"the type of object id %v's discriminator field %q does not match OneOfSchema discriminator type; expected %v got %T",
 				typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), key)
