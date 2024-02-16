@@ -5,11 +5,14 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"go.arcalot.io/assert"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
+
+const discriminatorFieldName = "d_type"
 
 var oneOfStringTestObjectAProperties = map[string]*schema.PropertySchema{
 	"s": schema.NewPropertySchema(
@@ -332,7 +335,7 @@ type nonInlinedTestObjectB struct {
 }
 
 var inlinedTestObjectAProperties = map[string]*schema.PropertySchema{
-	"d_type": schema.NewPropertySchema(
+	discriminatorFieldName: schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		true,
@@ -355,7 +358,7 @@ var inlinedTestObjectAProperties = map[string]*schema.PropertySchema{
 }
 
 var inlinedTestObjectBProperties = map[string]*schema.PropertySchema{
-	"d_type": schema.NewPropertySchema(
+	discriminatorFieldName: schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
 		nil,
 		true,
@@ -447,10 +450,10 @@ func TestOneOf_InlinedStructMapped(t *testing.T) {
 	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": inlinedTestObjectAMappedSchema,
 		"B": inlinedTestObjectBMappedSchema,
-	}, "d_type", true)
+	}, discriminatorFieldName, true)
 	serializedData := map[string]any{
-		"d_type":        "A",
-		"other_field_a": "test",
+		discriminatorFieldName: "A",
+		"other_field_a":        "test",
 	}
 	// Since this is struct-mapped, unserializedData is a struct.
 	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
@@ -462,10 +465,10 @@ func TestOneOf_NonInlinedStructMapped(t *testing.T) {
 	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": nonInlinedTestObjectAMappedSchema,
 		"B": nonInlinedTestObjectBMappedSchema,
-	}, "d_type", false)
+	}, discriminatorFieldName, false)
 	serializedData := map[string]any{
-		"d_type":        "A",
-		"other_field_a": "test",
+		discriminatorFieldName: "A",
+		"other_field_a":        "test",
 	}
 	// Since this is struct-mapped, unserializedData is a struct.
 	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
@@ -477,10 +480,10 @@ func TestOneOf_InlinedNonStructMapped(t *testing.T) {
 	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": inlinedTestObjectASchema,
 		"B": inlinedTestObjectBSchema,
-	}, "d_type", true)
+	}, discriminatorFieldName, true)
 	serializedData := map[string]any{
-		"d_type":        "A",
-		"other_field_a": "test",
+		discriminatorFieldName: "A",
+		"other_field_a":        "test",
 	}
 	// Since this is not struct-mapped, unserializedData is a map.
 	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
@@ -492,10 +495,10 @@ func TestOneOf_NonInlinedNonStructMapped(t *testing.T) {
 	oneofSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": nonInlinedTestObjectASchema,
 		"B": nonInlinedTestObjectBSchema,
-	}, "d_type", false)
+	}, discriminatorFieldName, false)
 	serializedData := map[string]any{
-		"d_type":        "A",
-		"other_field_a": "test",
+		discriminatorFieldName: "A",
+		"other_field_a":        "test",
 	}
 	// Since this is not struct-mapped, unserializedData is a map.
 	unserializedData := assert.NoErrorR[any](t)(oneofSchema.Unserialize(serializedData))
@@ -510,7 +513,7 @@ type inlinedTestIntDiscriminatorA struct {
 }
 
 var inlinedTestIntDiscriminatorAProperties = map[string]*schema.PropertySchema{
-	"d_type": schema.NewPropertySchema(
+	discriminatorFieldName: schema.NewPropertySchema(
 		schema.NewIntSchema(nil, nil, nil),
 		nil, true, nil, nil, nil,
 		nil, nil,
@@ -549,9 +552,12 @@ func TestOneOf_Error_SubtypeHasInvalidDiscriminatorType(t *testing.T) {
 	testSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": inlinedTestIntDiscriminatorAMappedSchema,
 		"B": inlinedTestObjectBMappedSchema,
-	}, "d_type", true)
+	}, discriminatorFieldName, true)
+	expMsg := fmt.Sprintf(
+		"discriminator field %q does not match OneOfSchema discriminator type",
+		discriminatorFieldName)
 
-	assert.Panics(t, func() {
+	assert.PanicsContains(t, func() {
 		schema.NewScopeSchema(schema.NewObjectSchema("test",
 			map[string]*schema.PropertySchema{
 				"test": schema.NewPropertySchema(
@@ -559,16 +565,17 @@ func TestOneOf_Error_SubtypeHasInvalidDiscriminatorType(t *testing.T) {
 					nil, true, nil, nil,
 					nil, nil, nil),
 			}))
-	})
+	}, expMsg)
 }
 
 func TestOneOf_Error_InlineSubtypeMissingDiscriminator(t *testing.T) {
 	testSchema := schema.NewOneOfIntSchema[any](map[int64]schema.Object{
 		1: inlinedTestIntDiscriminatorASchema,
 		2: inlinedTestIntDiscriminatorBSchema,
-	}, "d_type", true)
+	}, discriminatorFieldName, true)
+	expMsg := "needs discriminator field"
 
-	assert.Panics(t, func() {
+	assert.PanicsContains(t, func() {
 		schema.NewScopeSchema(schema.NewObjectSchema("test",
 			map[string]*schema.PropertySchema{
 				"test": schema.NewPropertySchema(
@@ -576,16 +583,17 @@ func TestOneOf_Error_InlineSubtypeMissingDiscriminator(t *testing.T) {
 					nil, true, nil, nil,
 					nil, nil, nil),
 			}))
-	})
+	}, expMsg)
 }
 
 func TestOneOf_Error_SubtypeHasDiscriminator(t *testing.T) {
 	testSchema := schema.NewOneOfStringSchema[any](map[string]schema.Object{
 		"A": inlinedTestIntDiscriminatorASchema,
 		"B": nonInlinedTestObjectBSchema,
-	}, "d_type", false)
+	}, discriminatorFieldName, false)
+	expMsg := "has conflicting field"
 
-	assert.Panics(t, func() {
+	assert.PanicsContains(t, func() {
 		schema.NewScopeSchema(schema.NewObjectSchema("test",
 			map[string]*schema.PropertySchema{
 				"test": schema.NewPropertySchema(
@@ -593,5 +601,5 @@ func TestOneOf_Error_SubtypeHasDiscriminator(t *testing.T) {
 					nil, true, nil, nil,
 					nil, nil, nil),
 			}))
-	})
+	}, expMsg)
 }
