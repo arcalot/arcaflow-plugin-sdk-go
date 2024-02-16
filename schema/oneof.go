@@ -85,6 +85,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	if err != nil {
 		return result, err
 	}
+
 	typedData := make(map[string]any, reflectedValue.Len())
 	for _, k := range reflectedValue.MapKeys() {
 		v := reflectedValue.MapIndex(k)
@@ -121,7 +122,6 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	if !o.DiscriminatorInlined {
 		delete(cloneData, o.DiscriminatorFieldNameValue)
 	}
-
 	unserializedData, err := selectedType.Unserialize(cloneData)
 	if err != nil {
 		return result, err
@@ -356,6 +356,7 @@ func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType,
 
 func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
 	var defaultValue KeyType
+
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&
