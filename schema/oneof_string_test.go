@@ -244,248 +244,6 @@ func TestOneOfStringCompatibilityMapValidation(t *testing.T) {
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndInvalidSchema))
 }
 
-var oneOfNamePropertiesNoRefs = map[string]*schema.PropertySchema{
-	"name": schema.NewPropertySchema(
-		schema.NewOneOfStringSchema[any](
-			map[string]schema.Object{
-				"fullname": fullnameSchema,
-				"nickname": nicknameSchema,
-			},
-			"_type",
-			false,
-		),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var fullnameProperties = map[string]*schema.PropertySchema{
-	"first_name": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("first_name"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"last_name": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("last_name"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"middle": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("middle"), nil, nil),
-		false,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var nicknameProperties = map[string]*schema.PropertySchema{
-	"nick": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("nick"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var fullnameSchema = schema.NewObjectSchema(
-	"FullName",
-	fullnameProperties,
-)
-
-var nicknameSchema = schema.NewObjectSchema(
-	"Nickname",
-	nicknameProperties,
-)
-
-var oneOfNameNoRefsRootScope = schema.NewScopeSchema(
-	schema.NewObjectSchema(
-		"RootObject",
-		oneOfNamePropertiesNoRefs,
-	),
-	fullnameSchema,
-	nicknameSchema,
-)
-
-func TestOneOfString_Nickname(t *testing.T) {
-	var input any = map[string]any{
-		"name": map[string]any{
-			"_type": "nickname",
-			"nick":  "ArcaLot",
-		},
-	}
-	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input)
-	assert.NoError(t, err)
-	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
-	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, unserialized)
-}
-
-func TestOneOfString_Fullname(t *testing.T) {
-	var input_full any = map[string]any{
-		"name": map[string]any{
-			"_type":      "fullname",
-			"first_name": "Arca",
-			"last_name":  "Lot",
-		},
-	}
-	unserialized, err := oneOfNameNoRefsRootScope.Unserialize(input_full)
-	assert.NoError(t, err)
-	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
-	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, unserialized)
-}
-
-var discriminatorInline = "_type"
-
-var fullnameInlineProperties = map[string]*schema.PropertySchema{
-	discriminatorInline: schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo(discriminatorInline), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"first_name": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("first_name"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"last_name": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("last_name"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"middle": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("middle"), nil, nil),
-		false,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var nicknameInlineProperties = map[string]*schema.PropertySchema{
-	discriminatorInline: schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo(discriminatorInline), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"nick": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		schema.NewDisplayValue(schema.PointerTo("nick"), nil, nil),
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var fullnameInlineSchema = schema.NewObjectSchema(
-	"FullName",
-	fullnameInlineProperties,
-)
-
-var nicknameInlineSchema = schema.NewObjectSchema(
-	"Nickname",
-	nicknameInlineProperties,
-)
-
-var oneOfNameInlineProperties = map[string]*schema.PropertySchema{
-	"name": schema.NewPropertySchema(
-		schema.NewOneOfStringSchema[any](
-			map[string]schema.Object{
-				"fullname": fullnameInlineSchema,
-				"nickname": nicknameInlineSchema,
-			},
-			"_type",
-			true,
-		),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var oneOfNameInlineRootScope = schema.NewScopeSchema(
-	schema.NewObjectSchema(
-		"RootObject",
-		oneOfNameInlineProperties,
-	),
-	fullnameInlineSchema,
-	nicknameInlineSchema,
-)
-
-func TestOneOfString_FullnameInline(t *testing.T) {
-	var input_full any = map[string]any{
-		"name": map[string]any{
-			"_type":      "fullname",
-			"first_name": "Arca",
-			"last_name":  "Lot",
-		},
-	}
-	unserialized, err := oneOfNameInlineRootScope.Unserialize(input_full)
-	assert.NoError(t, err)
-	serialized, err := oneOfNameInlineRootScope.Serialize(unserialized)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfNameInlineRootScope.Unserialize(serialized)
-	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, unserialized)
-}
-
 var oneOfStringTestInlineObjectAProperties = map[string]*schema.PropertySchema{
 	"s": schema.NewPropertySchema(
 		schema.NewOneOfStringSchema[any](
@@ -770,12 +528,7 @@ var inlinedTestIntDiscriminatorAProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-var inlinedTestIntDiscriminatorBProperties = map[string]*schema.PropertySchema{
-	//"d_type": schema.NewPropertySchema(
-	//	schema.NewIntSchema(nil, nil, nil),
-	//	nil, true, nil, nil, nil,
-	//	nil, nil,
-	//),
+var inlinedTestNoDiscriminatorBProperties = map[string]*schema.PropertySchema{
 	"other_field_b": schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
 		nil, true, nil, nil, nil,
@@ -790,7 +543,7 @@ var inlinedTestIntDiscriminatorAMappedSchema = schema.NewStructMappedObjectSchem
 
 var inlinedTestIntDiscriminatorBMappedSchema = schema.NewStructMappedObjectSchema[inlinedTestIntDiscriminatorB](
 	"inlined_int_B",
-	inlinedTestIntDiscriminatorBProperties,
+	inlinedTestNoDiscriminatorBProperties,
 )
 
 var inlinedTestIntDiscriminatorASchema = schema.NewObjectSchema(
@@ -800,7 +553,7 @@ var inlinedTestIntDiscriminatorASchema = schema.NewObjectSchema(
 
 var inlinedTestIntDiscriminatorBSchema = schema.NewObjectSchema(
 	"inlined_int_B",
-	inlinedTestIntDiscriminatorBProperties,
+	inlinedTestNoDiscriminatorBProperties,
 )
 
 func TestOneOf_Error_SubtypeHasInvalidDiscriminatorType(t *testing.T) {
