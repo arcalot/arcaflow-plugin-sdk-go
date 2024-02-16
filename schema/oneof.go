@@ -355,14 +355,14 @@ func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType,
 }
 
 func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
-	var defaultValue KeyType
+	var nilKey KeyType
 
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&
 		(reflectedType.Kind() != reflect.Pointer || reflectedType.Elem().Kind() != reflect.Struct) {
 
-		return defaultValue, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of type: '%s' expected struct or map.",
 				reflect.TypeOf(data).Name(),
@@ -374,19 +374,18 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 	if reflectedType.Kind() == reflect.Map {
 		myKey, mySchemaObj, err := o.validateMap(data.(map[string]any))
 		if err != nil {
-			return defaultValue, nil, err
+			return nilKey, nil, err
 		}
 		return myKey, mySchemaObj, nil
-	} else {
-		for key, ref := range o.TypesValue {
-			underlyingReflectedType := ref.ReflectedType()
-			if underlyingReflectedType == reflectedType {
-				keyValue := key
-				foundKey = &keyValue
-			}
+	}
+	// else
+	for key, ref := range o.TypesValue {
+		underlyingReflectedType := ref.ReflectedType()
+		if underlyingReflectedType == reflectedType {
+			keyValue := key
+			foundKey = &keyValue
 		}
 	}
-
 	if foundKey == nil {
 		dataType := reflect.TypeOf(data)
 		values := make([]string, len(o.TypesValue))
@@ -398,7 +397,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			}
 			i++
 		}
-		return defaultValue, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of schema: '%s' (valid types are: %s)",
 				dataType.String(),
