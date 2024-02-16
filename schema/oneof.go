@@ -144,6 +144,14 @@ func (o OneOfSchema[KeyType]) ValidateType(data any) error {
 	if err != nil {
 		return err
 	}
+	dataMap, ok := data.(map[string]any)
+	if ok {
+		cloneData := maps.Clone(dataMap)
+		if !o.DiscriminatorInlined {
+			delete(cloneData, o.DiscriminatorFieldNameValue)
+		}
+		data = cloneData
+	}
 	if err := underlyingType.Validate(data); err != nil {
 		return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{oneof[%v]}", discriminatorValue))
 	}
@@ -243,13 +251,13 @@ func (o OneOfSchema[KeyType]) validateSchema(otherSchema OneOfSchema[KeyType]) e
 }
 
 func (o OneOfSchema[KeyType]) validateMap(data map[string]any) (KeyType, Object, error) {
-	var defaultKey KeyType
+	var nilKey KeyType
 	// Validate that it has the discriminator field.
 	// If it doesn't, fail
 	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
 	selectedTypeID := data[o.DiscriminatorFieldNameValue]
 	if selectedTypeID == nil {
-		return defaultKey, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator field '%s' missing", o.DiscriminatorFieldNameValue),
 		}
@@ -257,7 +265,7 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) (KeyType, Object,
 	// Ensure it's the correct type
 	selectedTypeIDAsserted, ok := selectedTypeID.(KeyType)
 	if !ok {
-		return defaultKey, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator field '%v' has invalid type '%T'. Expected %T",
 				o.DiscriminatorFieldNameValue, selectedTypeID, selectedTypeIDAsserted),
@@ -266,19 +274,21 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) (KeyType, Object,
 	// Find the object that's associated with the selected type
 	selectedSchema := o.TypesValue[selectedTypeIDAsserted]
 	if selectedSchema == nil {
-		return defaultKey, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
 				selectedTypeIDAsserted, o.getTypeValues()),
 		}
 	}
 	cloneData := maps.Clone(data)
-	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
+	if !o.DiscriminatorInlined { // Check to see if the discriminator is part of the sub-object.
 		delete(cloneData, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
 	}
+	data = cloneData
+
 	err := selectedSchema.ValidateCompatibility(cloneData)
 	if err != nil {
-		return defaultKey, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
 				selectedSchema, selectedTypeIDAsserted, err),
