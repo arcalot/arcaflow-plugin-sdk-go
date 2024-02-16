@@ -358,6 +358,7 @@ func TestOneOfString_Fullname(t *testing.T) {
 	serialized, err := oneOfNameNoRefsRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
 	unserialized2, err := oneOfNameNoRefsRootScope.Unserialize(serialized)
+	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserialized)
 }
 
@@ -481,6 +482,7 @@ func TestOneOfString_FullnameInline(t *testing.T) {
 	serialized, err := oneOfNameInlineRootScope.Serialize(unserialized)
 	assert.NoError(t, err)
 	unserialized2, err := oneOfNameInlineRootScope.Unserialize(serialized)
+	assert.NoError(t, err)
 	assert.Equals(t, unserialized2, unserialized)
 }
 
