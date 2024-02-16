@@ -48,7 +48,7 @@ func (o OneOfSchema[KeyType]) ApplyScope(scope Scope) {
 		t.ApplyScope(scope)
 	}
 	// scope must be applied before we can access the subtypes' properties
-	err := o.ValidateSubtypeDiscriminatorInlineFields()
+	err := o.validateSubtypeDiscriminatorInlineFields()
 	if err != nil {
 		panic(err)
 	}
@@ -409,7 +409,10 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 	return *foundKey, o.TypesValue[*foundKey], nil
 }
 
-func (o OneOfSchema[KeyType]) ValidateSubtypeDiscriminatorInlineFields() error {
+// validateSubtypeDiscriminatorInlineFields checks to see if a subtype's
+// discriminator field has been written in accordance with the OneOfSchema's
+// declaration.
+func (o OneOfSchema[KeyType]) validateSubtypeDiscriminatorInlineFields() error {
 	for key, typeValue := range o.TypesValue {
 		typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
 		switch {

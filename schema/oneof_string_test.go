@@ -448,7 +448,6 @@ func TestOneOf_InlinedStructMapped(t *testing.T) {
 		"A": inlinedTestObjectAMappedSchema,
 		"B": inlinedTestObjectBMappedSchema,
 	}, "d_type", true)
-	assert.NoError(t, oneofSchema.ValidateSubtypeDiscriminatorInlineFields())
 	serializedData := map[string]any{
 		"d_type":        "A",
 		"other_field_a": "test",
