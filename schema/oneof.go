@@ -367,8 +367,6 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 
-	mytype := reflectedType.Kind()
-	fmt.Printf("%v\n", mytype)
 	var foundKey *KeyType
 	if reflectedType.Kind() == reflect.Map {
 		myKey, mySchemaObj, err := o.mapUnderlyingType(data.(map[string]any))
@@ -376,7 +374,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			return defaultValue, nil, err
 		}
 		return myKey, mySchemaObj, nil
-	} else if reflectedType.Kind() == reflect.Struct {
+	} else {
 		for key, ref := range o.TypesValue {
 			underlyingReflectedType := ref.ReflectedType()
 			if underlyingReflectedType == reflectedType {
