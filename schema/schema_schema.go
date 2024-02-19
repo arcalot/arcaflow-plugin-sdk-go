@@ -543,8 +543,8 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 				nil,
+				PointerTo("false"),
 				nil,
-				[]string{"\"inlined\""},
 			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
@@ -604,8 +604,8 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 				nil,
+				PointerTo("false"),
 				nil,
-				[]string{"\"inlined\""},
 			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),

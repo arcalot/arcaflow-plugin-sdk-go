@@ -218,7 +218,6 @@ func Test_OneOfString_ConstructorBypass(t *testing.T) {
 						"required": true,
 						"type": map[string]any{
 							"discriminator_field_name": "_type",
-							"discriminator_inlined":    false,
 							"type_id":                  "one_of_string",
 							"types": map[string]any{
 								"fullname": map[string]any{
