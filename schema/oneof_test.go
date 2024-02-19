@@ -206,6 +206,7 @@ var oneOfTestInlineCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestI
 	oneOfTestInlineObjectCProperties,
 )
 
+//nolint:funlen
 func Test_OneOfString_ConstructorBypass(t *testing.T) {
 	input_schema := map[string]any{
 		"root": "InputParams",
