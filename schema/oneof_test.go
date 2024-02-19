@@ -1,9 +1,11 @@
 package schema_test
 
 import (
-	"go.arcalot.io/assert"
+	"encoding/json"
+	"fmt"
 	"testing"
 
+	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema"
 )
 
@@ -205,3 +207,90 @@ var oneOfTestInlineCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestI
 	"C",
 	oneOfTestInlineObjectCProperties,
 )
+
+func Test_OneOfString_ConstructorBypass(t *testing.T) {
+	data := `{
+    "objects": {
+      "FullName": {
+        "id": "FullName",
+        "properties": {
+          "first_name": {
+            "required": true,
+            "type": {
+              "type_id": "string"
+            }
+          },
+          "last_name": {
+            "required": true,
+            "type": {
+              "type_id": "string"
+            }
+          }
+        }
+      },
+      "Nickname": {
+        "id": "Nickname",
+        "properties": {
+          "nick": {
+            "required": true,
+            "type": {
+              "type_id": "string"
+            }
+          }
+        }
+      },
+      "InputParams": {
+        "id": "InputParams",
+        "properties": {
+          "name": {
+            "required": true,
+            "type": {
+              "discriminator_field_name": "_type",
+              "type_id": "one_of_string",
+              "types": {
+                "fullname": {
+                  "id": "FullName",
+                  "type_id": "ref"
+                },
+                "nickname": {
+                  "id": "Nickname",
+                  "type_id": "ref"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "root": "InputParams"
+}`
+	var input any
+	assert.NoError(t, json.Unmarshal([]byte(data), &input))
+	fmt.Printf("%v\n", input)
+	myScopeSchema := schema.DescribeScope()
+	scopeAny, err := myScopeSchema.Unserialize(input)
+	assert.NoError(t, err)
+	scopeSchemaTyped := scopeAny.(*schema.ScopeSchema)
+	scopeSchemaTyped.ApplyScope(scopeSchemaTyped)
+	fmt.Printf("%v\n", scopeSchemaTyped)
+
+	//var input_nick any = map[string]any{
+	//	"name": map[string]any{
+	//		"_type": "nickname",
+	//		"nick":  "ArcaLot",
+	//	},
+	//}
+
+	var input_full any = map[string]any{
+		"name": map[string]any{
+			"_type":      "fullname",
+			"first_name": "Arca",
+			"last_name":  "Lot",
+		},
+	}
+
+	unserializedData, err := scopeSchemaTyped.Unserialize(input_full)
+	assert.NoError(t, err)
+	fmt.Printf("%v\n", unserializedData)
+
+}

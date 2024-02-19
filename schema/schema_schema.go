@@ -532,6 +532,20 @@ var basicObjects = []*ObjectSchema{
 	NewStructMappedObjectSchema[*OneOfSchema[int64]](
 		"OneOfIntSchema",
 		map[string]*PropertySchema{
+			"discriminator_inlined": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Discriminator Inlined"),
+					PointerTo("whether or not the discriminator is inlined in the underlying objects' schema."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"inlined\""},
+			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
@@ -579,6 +593,20 @@ var basicObjects = []*ObjectSchema{
 	NewStructMappedObjectSchema[*OneOfSchema[string]](
 		"OneOfStringSchema",
 		map[string]*PropertySchema{
+			"discriminator_inlined": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Discriminator Inlined"),
+					PointerTo("whether or not the discriminator is inlined in the underlying objects' schema."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				nil,
+				[]string{"\"inlined\""},
+			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
