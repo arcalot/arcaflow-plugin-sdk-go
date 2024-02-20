@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go.arcalot.io/assert"
+	"reflect"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -266,54 +267,6 @@ var oneOfStringTestInlineObjectAProperties = map[string]*schema.PropertySchema{
 	),
 }
 
-var oneOfStringTestInlineObjectAType = schema.NewScopeSchema(
-	schema.NewStructMappedObjectSchema[oneOfTestObjectA](
-		"A",
-		oneOfStringTestInlineObjectAProperties,
-	),
-	oneOfTestInlineBMappedSchema,
-	oneOfTestInlineCMappedSchema,
-)
-
-var oneOfStringTestInlineObjectASchema = schema.NewScopeSchema(
-	schema.NewObjectSchema(
-		"A",
-		oneOfStringTestInlineObjectAProperties,
-	),
-	oneOfTestInlineBSchema,
-	oneOfTestInlineCSchema,
-)
-
-func TestOneOfStringInline_Unserialization(t *testing.T) {
-	data := `{
-		"s": {
-			"choice": "B",
-			"message": "Hello world!"
-		}
-	}`
-	var input any
-	assert.NoError(t, json.Unmarshal([]byte(data), &input))
-	unserializedData, err := oneOfStringTestInlineObjectAType.Unserialize(input)
-	assert.NoError(t, err)
-	assert.Equals(t, unserializedData.(oneOfTestObjectA).S.(oneOfTestInlineObjectB).Message, "Hello world!")
-	serialized, err := oneOfStringTestInlineObjectAType.Serialize(unserializedData)
-	assert.NoError(t, err)
-	unserialized2, err := oneOfStringTestInlineObjectAType.Unserialize(serialized)
-	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, unserializedData)
-
-	// Not explicitly using a struct mapped object, but the type is inferred
-	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
-	unserializedData, err = oneOfStringTestInlineObjectASchema.Unserialize(input)
-	assert.NoError(t, err)
-	assert.Equals(t, unserializedData.(map[string]any)["s"].(oneOfTestInlineObjectB).Message, "Hello world!")
-	serialized, err = oneOfStringTestInlineObjectASchema.Serialize(unserializedData)
-	assert.NoError(t, err)
-	unserialized2, err = oneOfStringTestInlineObjectASchema.Unserialize(serialized)
-	assert.NoError(t, err)
-	assert.Equals(t, unserialized2, unserializedData)
-}
-
 type inlinedTestObjectA struct {
 	DType       string `json:"d_type"`
 	OtherFieldA string `json:"other_field_a"`
@@ -503,6 +456,26 @@ func TestOneOf_NonInlinedNonStructMapped(t *testing.T) {
 	reserializedData := assert.NoErrorR[any](t)(oneofSchema.Serialize(unserializedData))
 	assert.Equals[any](t, reserializedData, serializedData)
 
+	var input_mismatched_type any = struct{}{}
+	error_msg := fmt.Sprintf("Invalid type for one-of schema")
+	err := oneofSchema.Validate(input_mismatched_type)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), error_msg)
+
+	var input_invalid_type any = true
+	error_msg = fmt.Sprintf("Invalid type for one-of type: %q. Expected map.", reflect.TypeOf(input_invalid_type).Kind())
+	_, err = oneofSchema.Unserialize(input_invalid_type)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), error_msg)
+	error_msg = fmt.Sprintf("Invalid type for one-of type: %q expected struct or map.", reflect.TypeOf(input_invalid_type).Kind())
+	err = oneofSchema.Validate(input_invalid_type)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), error_msg)
+
+	var input_nil any = nil
+	_, err = oneofSchema.Unserialize(input_nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "bug: data is nil")
 }
 
 type inlinedTestIntDiscriminatorA struct {

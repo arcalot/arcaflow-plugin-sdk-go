@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"fmt"
 	"testing"
 
 	"go.arcalot.io/assert"
@@ -206,8 +207,12 @@ var oneOfTestInlineCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestI
 	oneOfTestInlineObjectCProperties,
 )
 
-//nolint:funlen
-func Test_OneOfString_ConstructorBypass(t *testing.T) {
+// Test_OneOf_ConstructorBypass tests the behavior of a OneOf object created
+// by the Scope Scope Schema through unserialization of data without using a
+// New* constructor function, like NewOneOfStringSchema or NewOneOfIntSchema,
+// behaves as one would expect from a OneOf object created from a constructor.
+func Test_OneOf_ConstructorBypass(t *testing.T) { //nolint:funlen
+	discriminator_field := "_type"
 	input_schema := map[string]any{
 		"root": "InputParams",
 		"objects": map[string]any{
@@ -217,7 +222,7 @@ func Test_OneOfString_ConstructorBypass(t *testing.T) {
 					"name": map[string]any{
 						"required": true,
 						"type": map[string]any{
-							"discriminator_field_name": "_type",
+							"discriminator_field_name": discriminator_field,
 							"type_id":                  "one_of_string",
 							"types": map[string]any{
 								"fullname": map[string]any{
@@ -265,16 +270,31 @@ func Test_OneOfString_ConstructorBypass(t *testing.T) {
 	}
 	var input_data_fullname any = map[string]any{
 		"name": map[string]any{
-			"_type":      "fullname",
-			"first_name": "Arca",
-			"last_name":  "Lot",
+			discriminator_field: "fullname",
+			"first_name":        "Arca",
+			"last_name":         "Lot",
 		},
 	}
+
 	scopeAny := assert.NoErrorR[any](t)(schema.DescribeScope().Unserialize(input_schema))
 	scopeSchemaTyped := scopeAny.(*schema.ScopeSchema)
 	scopeSchemaTyped.ApplyScope(scopeSchemaTyped)
+	assert.NoError(t, scopeSchemaTyped.Validate(input_data_fullname))
 	unserialized := assert.NoErrorR[any](t)(scopeSchemaTyped.Unserialize(input_data_fullname))
 	serialized := assert.NoErrorR[any](t)(scopeSchemaTyped.Serialize(unserialized))
 	unserialized2 := assert.NoErrorR[any](t)(scopeSchemaTyped.Unserialize(serialized))
 	assert.Equals(t, unserialized2, unserialized)
+
+	var input_invalid_discriminator_value any = map[string]any{
+		"name": map[string]any{
+			discriminator_field: 1,
+			"first_name":        "Arca",
+			"last_name":         "Lot",
+		},
+	}
+	error_msg := fmt.Sprintf("Invalid value for %q", discriminator_field)
+	_, err := scopeSchemaTyped.Unserialize(input_invalid_discriminator_value)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), error_msg)
+
 }
