@@ -145,11 +145,11 @@ var oneOfStringTestObjectAType = schema.NewScopeSchema(
 
 func TestOneOfStringUnserialization(t *testing.T) {
 	data := `{
-	"s": {
-		"_type": "B",
-		"message": "Hello world!"
-	}
-}`
+		"s": {
+			"_type": "B",
+			"message": "Hello world!"
+		}
+	}`
 	var input any
 	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err := oneOfStringTestObjectAType.Unserialize(input)
@@ -163,7 +163,6 @@ func TestOneOfStringUnserialization(t *testing.T) {
 
 	// Not explicitly using a struct mapped object, but the type is inferred
 	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
-	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err = oneOfStringTestObjectASchema.Unserialize(input)
 	assert.NoError(t, err)
 	assert.Equals(t, unserializedData.(map[string]any)["s"].(oneOfTestObjectB).Message, "Hello world!")
@@ -287,11 +286,11 @@ var oneOfStringTestInlineObjectASchema = schema.NewScopeSchema(
 
 func TestOneOfStringInline_Unserialization(t *testing.T) {
 	data := `{
-	"s": {
-		"choice": "B",
-		"message": "Hello world!"
-	}
-}`
+		"s": {
+			"choice": "B",
+			"message": "Hello world!"
+		}
+	}`
 	var input any
 	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err := oneOfStringTestInlineObjectAType.Unserialize(input)
@@ -305,7 +304,6 @@ func TestOneOfStringInline_Unserialization(t *testing.T) {
 
 	// Not explicitly using a struct mapped object, but the type is inferred
 	// by the compiler when the oneOfTestBMappedSchema is in the test suite.
-	assert.NoError(t, json.Unmarshal([]byte(data), &input))
 	unserializedData, err = oneOfStringTestInlineObjectASchema.Unserialize(input)
 	assert.NoError(t, err)
 	assert.Equals(t, unserializedData.(map[string]any)["s"].(oneOfTestInlineObjectB).Message, "Hello world!")
