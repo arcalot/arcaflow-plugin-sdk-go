@@ -24,20 +24,6 @@ type oneOfTestObjectA struct {
 	S any `json:"s"`
 }
 
-type oneOfTestInlineObjectB struct {
-	Message string `json:"message"`
-	Choice  string `json:"choice"`
-}
-
-func (o oneOfTestInlineObjectB) String() string {
-	return o.Message
-}
-
-type oneOfTestInlineObjectC struct {
-	M      string `json:"m"`
-	Choice string `json:"choice"`
-}
-
 func TestOneOfTypeID(t *testing.T) {
 	assert.Equals(
 		t,
@@ -139,72 +125,6 @@ var oneOfTestBMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectB
 var oneOfTestCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectC](
 	"C",
 	oneOfTestObjectCProperties,
-)
-
-var oneOfTestInlineObjectBProperties = map[string]*schema.PropertySchema{
-	"message": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"choice": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var oneOfTestInlineObjectCProperties = map[string]*schema.PropertySchema{
-	"m": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-	"choice": schema.NewPropertySchema(
-		schema.NewStringSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
-var oneOfTestInlineBSchema = schema.NewObjectSchema(
-	"B",
-	oneOfTestInlineObjectBProperties,
-)
-
-var oneOfTestInlineCSchema = schema.NewObjectSchema(
-	"C",
-	oneOfTestInlineObjectCProperties,
-)
-
-var oneOfTestInlineBMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestInlineObjectB](
-	"B",
-	oneOfTestInlineObjectBProperties,
-)
-
-var oneOfTestInlineCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestInlineObjectC](
-	"C",
-	oneOfTestInlineObjectCProperties,
 )
 
 // Test_OneOf_ConstructorBypass tests the behavior of a OneOf object created

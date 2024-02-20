@@ -247,26 +247,6 @@ func TestOneOfStringCompatibilityMapValidation(t *testing.T) {
 	assert.Error(t, oneOfStringTestObjectASchema.ValidateCompatibility(combinedMapAndInvalidSchema))
 }
 
-var oneOfStringTestInlineObjectAProperties = map[string]*schema.PropertySchema{
-	"s": schema.NewPropertySchema(
-		schema.NewOneOfStringSchema[any](
-			map[string]schema.Object{
-				"B": schema.NewRefSchema("B", nil),
-				"C": schema.NewRefSchema("C", nil),
-			},
-			"choice",
-			true,
-		),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	),
-}
-
 type inlinedTestObjectA struct {
 	DType       string `json:"d_type"`
 	OtherFieldA string `json:"other_field_a"`
@@ -457,13 +437,12 @@ func TestOneOf_NonInlinedNonStructMapped(t *testing.T) {
 	assert.Equals[any](t, reserializedData, serializedData)
 
 	var input_mismatched_type any = struct{}{}
-	error_msg := fmt.Sprintf("Invalid type for one-of schema")
 	err := oneofSchema.Validate(input_mismatched_type)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), error_msg)
+	assert.Contains(t, err.Error(), "Invalid type for one-of schema")
 
 	var input_invalid_type any = true
-	error_msg = fmt.Sprintf("Invalid type for one-of type: %q. Expected map.", reflect.TypeOf(input_invalid_type).Kind())
+	error_msg := fmt.Sprintf("Invalid type for one-of type: %q. Expected map.", reflect.TypeOf(input_invalid_type).Kind())
 	_, err = oneofSchema.Unserialize(input_invalid_type)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), error_msg)
