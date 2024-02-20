@@ -364,7 +364,6 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 		return myKey, mySchemaObj, nil
 	}
-	// else
 	for key, ref := range o.TypesValue {
 		underlyingReflectedType := ref.ReflectedType()
 		if underlyingReflectedType == reflectedType {
