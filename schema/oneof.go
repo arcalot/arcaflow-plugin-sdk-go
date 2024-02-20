@@ -121,21 +121,16 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		}
 	}
 
-	cloneData := maps.Clone(typedData)
-	if !o.DiscriminatorInlined {
-		delete(cloneData, o.DiscriminatorFieldNameValue)
-	}
+	cloneData := o.deleteDiscriminator(typedData)
 	unserializedData, err := selectedType.Unserialize(cloneData)
 	if err != nil {
 		return result, err
 	}
-
 	unserializedMap, ok := unserializedData.(map[string]any)
 	if ok {
 		unserializedMap[o.DiscriminatorFieldNameValue] = discriminator
 		return unserializedMap, nil
 	}
-
 	return saveConvertTo(unserializedData, o.ReflectedType())
 }
 
@@ -146,11 +141,7 @@ func (o OneOfSchema[KeyType]) ValidateType(data any) error {
 	}
 	dataMap, ok := data.(map[string]any)
 	if ok {
-		cloneData := maps.Clone(dataMap)
-		if !o.DiscriminatorInlined {
-			delete(cloneData, o.DiscriminatorFieldNameValue)
-		}
-		data = cloneData
+		data = o.deleteDiscriminator(dataMap)
 	}
 	if err := underlyingType.Validate(data); err != nil {
 		return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{oneof[%v]}", discriminatorValue))
@@ -165,11 +156,7 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	}
 	dataMap, ok := data.(map[string]any)
 	if ok {
-		cloneData := maps.Clone(dataMap)
-		if !o.DiscriminatorInlined {
-			delete(cloneData, o.DiscriminatorFieldNameValue)
-		}
-		data = cloneData
+		data = o.deleteDiscriminator(dataMap)
 	}
 	serializedData, err := underlyingType.Serialize(data)
 	if err != nil {
@@ -280,11 +267,7 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) (KeyType, Object,
 				selectedTypeIDAsserted, o.getTypeValues()),
 		}
 	}
-	cloneData := maps.Clone(data)
-	if !o.DiscriminatorInlined { // Check to see if the discriminator is part of the sub-object.
-		delete(cloneData, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
-	}
-
+	cloneData := o.deleteDiscriminator(data)
 	err := selectedSchema.ValidateCompatibility(cloneData)
 	if err != nil {
 		return nilKey, nil, &ConstraintError{
@@ -434,4 +417,14 @@ func (o OneOfSchema[KeyType]) validateSubtypeDiscriminatorInlineFields() error {
 		}
 	}
 	return nil
+}
+
+func (o OneOfSchema[KeyType]) deleteDiscriminator(mymap map[string]any) map[string]any {
+	// the discriminator is not a property of the subtype
+	if !o.DiscriminatorInlined {
+		cloneData := maps.Clone(mymap)
+		delete(cloneData, o.DiscriminatorFieldNameValue)
+		return cloneData
+	}
+	return mymap
 }
