@@ -51,7 +51,12 @@ func (f FloatSchema) Max() *float64 {
 func (f FloatSchema) Units() *UnitsDefinition {
 	return f.UnitsValue
 }
-func (f FloatSchema) ApplyScope(scope Scope) {
+func (f FloatSchema) ApplyScope(scope Scope, namespace string) {
+}
+
+func (f FloatSchema) ValidateReferences() error {
+	// Not applicable
+	return nil
 }
 
 func (f FloatSchema) Unserialize(data any) (any, error) {

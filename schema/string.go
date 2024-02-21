@@ -53,7 +53,12 @@ func (s StringSchema) Pattern() *regexp.Regexp {
 	return s.PatternValue
 }
 
-func (s StringSchema) ApplyScope(scope Scope) {
+func (s StringSchema) ApplyScope(scope Scope, namespace string) {
+}
+
+func (s StringSchema) ValidateReferences() error {
+	// Not applicable
+	return nil
 }
 
 func (s StringSchema) Unserialize(data any) (any, error) {

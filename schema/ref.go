@@ -21,13 +21,25 @@ func NewRefSchema(id string, display Display) *RefSchema {
 	return &RefSchema{
 		id,
 		display,
+		"",
+		nil,
+	}
+}
+
+// NewNamespacedRefSchema creates a new reference to an object in a wrapping Scope by ID and namespace.
+func NewNamespacedRefSchema(id string, namespace string, display Display) *RefSchema {
+	return &RefSchema{
+		id,
+		display,
+		namespace,
 		nil,
 	}
 }
 
 type RefSchema struct {
-	IDValue      string  `json:"id"`
-	DisplayValue Display `json:"display"`
+	IDValue         string  `json:"id"`
+	DisplayValue    Display `json:"display"`
+	ObjectNamespace string  `json:"namespace"`
 
 	referencedObjectCache Object
 }
@@ -35,7 +47,7 @@ type RefSchema struct {
 func (r *RefSchema) Properties() map[string]*PropertySchema {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Properties was called before ApplyScope!",
+			Message: fmt.Sprintf("Properties was called before ApplyScope with namespace %q", r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.Properties()
@@ -44,7 +56,7 @@ func (r *RefSchema) Properties() map[string]*PropertySchema {
 func (r *RefSchema) GetDefaults() map[string]any {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "GetDefaults was called before ApplyScope!",
+			Message: fmt.Sprintf("GetDefaults was called before ApplyScope with namespace %q", r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.GetDefaults()
@@ -57,7 +69,7 @@ func (r *RefSchema) TypeID() TypeID {
 func (r *RefSchema) GetObject() Object {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "GetObject was called before ApplyScope!",
+			Message: fmt.Sprintf("GetObject was called before ApplyScope with namespace %q", r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache
@@ -66,7 +78,7 @@ func (r *RefSchema) GetObject() Object {
 func (r *RefSchema) ReflectedType() reflect.Type {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "ReflectedType was called before ApplyScope!",
+			Message: fmt.Sprintf("ReflectedType was called before ApplyScope with namespace %q", r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.ReflectedType()
@@ -80,8 +92,10 @@ func (r *RefSchema) Display() Display {
 	return r.DisplayValue
 }
 
-func (r *RefSchema) ApplyScope(scope Scope) {
-
+func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
+	if namespace != r.ObjectNamespace {
+		return
+	}
 	objects := scope.Objects()
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
@@ -92,10 +106,27 @@ func (r *RefSchema) ApplyScope(scope Scope) {
 	r.referencedObjectCache = referencedObject
 }
 
+func (r *RefSchema) ValidateReferences() error {
+	if r.referencedObjectCache != nil {
+		return nil
+	}
+
+	return BadArgumentError{
+		Message: fmt.Sprintf(
+			"Ref object reference could not find an object with ID %q in namespace %q",
+			r.IDValue,
+			r.ObjectNamespace,
+		),
+	}
+}
+
 func (r *RefSchema) Unserialize(data any) (any, error) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+			Message: fmt.Sprintf(
+				"Unserialize called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
+				r.ObjectNamespace,
+			),
 		})
 	}
 	return r.referencedObjectCache.Unserialize(data)
@@ -104,7 +135,10 @@ func (r *RefSchema) Unserialize(data any) (any, error) {
 func (r *RefSchema) Validate(data any) error {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+			Message: fmt.Sprintf(
+				"Validate called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
+				r.ObjectNamespace,
+			),
 		})
 	}
 	return r.referencedObjectCache.Validate(data)
@@ -113,7 +147,10 @@ func (r *RefSchema) Validate(data any) error {
 func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+			Message: fmt.Sprintf(
+				"ValidateCompatibility called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
+				r.ObjectNamespace,
+			),
 		})
 	}
 	schemaType, ok := typeOrData.(*RefSchema)
@@ -126,7 +163,10 @@ func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
 func (r *RefSchema) Serialize(data any) (any, error) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: "Unserialize called before ApplyScope. Did you add your RefType to a scope?",
+			Message: fmt.Sprintf(
+				"Serialize called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
+				r.ObjectNamespace,
+			),
 		})
 	}
 	return r.referencedObjectCache.Serialize(data)

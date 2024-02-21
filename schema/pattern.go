@@ -25,7 +25,12 @@ func (p PatternSchema) TypeID() TypeID {
 	return TypeIDPattern
 }
 
-func (p PatternSchema) ApplyScope(scope Scope) {
+func (p PatternSchema) ApplyScope(scope Scope, namespace string) {
+}
+
+func (p PatternSchema) ValidateReferences() error {
+	// Not applicable
+	return nil
 }
 
 func (p PatternSchema) ReflectedType() reflect.Type {

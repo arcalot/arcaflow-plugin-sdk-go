@@ -121,8 +121,13 @@ func (b BoolSchema) SerializeType(data bool) (any, error) {
 	return b.Serialize(data)
 }
 
-func (b BoolSchema) ApplyScope(scope Scope) {
+func (b BoolSchema) ApplyScope(scope Scope, namespace string) {
 
+}
+
+func (a BoolSchema) ValidateReferences() error {
+	// Not applicable
+	return nil
 }
 
 func (b BoolSchema) TypeID() TypeID {

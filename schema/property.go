@@ -122,8 +122,12 @@ func (p *PropertySchema) Examples() []string {
 	return p.ExamplesValue
 }
 
-func (p *PropertySchema) ApplyScope(scope Scope) {
-	p.TypeValue.ApplyScope(scope)
+func (p *PropertySchema) ApplyScope(scope Scope, namespace string) {
+	p.TypeValue.ApplyScope(scope, namespace)
+}
+
+func (p *PropertySchema) ValidateReferences() error {
+	return p.TypeValue.ValidateReferences()
 }
 
 func (p *PropertySchema) Unserialize(data any) (any, error) {

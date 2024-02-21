@@ -40,10 +40,19 @@ func (o OneOfSchema[KeyType]) DiscriminatorFieldName() string {
 	return o.DiscriminatorFieldNameValue
 }
 
-func (o OneOfSchema[KeyType]) ApplyScope(scope Scope) {
+func (o OneOfSchema[KeyType]) ApplyScope(scope Scope, namespace string) {
 	for _, t := range o.TypesValue {
-		t.ApplyScope(scope)
+		t.ApplyScope(scope, namespace)
 	}
+}
+func (o OneOfSchema[KeyType]) ValidateReferences() error {
+	for _, t := range o.TypesValue {
+		err := t.ValidateReferences()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (o OneOfSchema[KeyType]) ReflectedType() reflect.Type {

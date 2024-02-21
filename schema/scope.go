@@ -32,7 +32,7 @@ func NewScopeSchema(rootObject *ObjectSchema, objects ...*ObjectSchema) *ScopeSc
 	}
 
 	for _, v := range objectMap {
-		v.ApplyScope(schema)
+		v.ApplyScope(schema, "")
 	}
 
 	return schema
@@ -92,10 +92,28 @@ func (s *ScopeSchema) Serialize(data any) (any, error) {
 	return s.ObjectsValue[s.RootValue].Serialize(data)
 }
 
-func (s *ScopeSchema) ApplyScope(_ Scope) {
-	for _, v := range s.ObjectsValue {
-		v.ApplyScope(s)
+func (s *ScopeSchema) ApplyScope(scope Scope, namespace string) {
+	if namespace == "" {
+		// Same namespace, so pass in self with default namespace.
+		for _, v := range s.ObjectsValue {
+			v.ApplyScope(s, "")
+		}
+	} else {
+		// Separate namespace. Pass in the other scope instead.
+		for _, v := range s.ObjectsValue {
+			v.ApplyScope(scope, namespace)
+		}
 	}
+}
+
+func (s *ScopeSchema) ValidateReferences() error {
+	for _, v := range s.ObjectsValue {
+		err := v.ValidateReferences()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *ScopeSchema) TypeID() TypeID {

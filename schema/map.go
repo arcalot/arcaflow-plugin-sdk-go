@@ -80,9 +80,16 @@ func (m MapSchema[K, V]) Max() *int64 {
 	return m.MaxValue
 }
 
-func (m MapSchema[K, V]) ApplyScope(scope Scope) {
-	m.KeysValue.ApplyScope(scope)
-	m.ValuesValue.ApplyScope(scope)
+func (m MapSchema[K, V]) ApplyScope(scope Scope, namespace string) {
+	m.KeysValue.ApplyScope(scope, namespace)
+	m.ValuesValue.ApplyScope(scope, namespace)
+}
+func (m MapSchema[K, V]) ValidateReferences() error {
+	err := m.KeysValue.ValidateReferences()
+	if err != nil {
+		return err
+	}
+	return m.ValuesValue.ValidateReferences()
 }
 
 func (m MapSchema[K, V]) Unserialize(data any) (any, error) {

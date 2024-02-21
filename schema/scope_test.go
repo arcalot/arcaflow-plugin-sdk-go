@@ -313,3 +313,78 @@ func TestSelfSerialization(t *testing.T) {
 		t.Fatalf("Unexpected root object: %s", serializedScopeMap["root"])
 	}
 }
+
+//nolint:funlen
+func TestApplyingExternalNamespace(t *testing.T) {
+	// This test tests applying with scopes, properties, and objects, maps, and lists.
+	// It must be passed through all of those types. Validating this makes sure that
+	// it gets applied all the way down, and errors are propagated up.
+	var testScope = schema.NewScopeSchema(
+		schema.NewObjectSchema(
+			"scopeTestObjectA",
+			map[string]*schema.PropertySchema{
+				"b": schema.NewPropertySchema(
+					schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+				"list-type": schema.NewPropertySchema(
+					schema.NewListSchema(
+						schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+						nil,
+						nil,
+					),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+				"map-type": schema.NewPropertySchema(
+					schema.NewMapSchema(
+						schema.NewIntSchema(nil, nil, nil),
+						schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+						nil,
+						nil,
+					),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
+	)
+	var externalScope = schema.NewScopeSchema(
+		schema.NewObjectSchema(
+			"scopeTestObjectB",
+			map[string]*schema.PropertySchema{
+				"c": schema.NewPropertySchema(
+					schema.NewStringSchema(nil, nil, nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
+	)
+	// Not applied yet
+	assert.Error(t, testScope.ValidateReferences())
+	testScope.ApplyScope(externalScope, "test-namespace")
+	// Now it's applied, so the error should be resolved.
+	assert.NoError(t, testScope.ValidateReferences())
+}

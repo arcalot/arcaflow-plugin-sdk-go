@@ -63,7 +63,10 @@ type Serializable interface {
 	// Serialize serializes the provided data.
 	Serialize(data any) (any, error)
 	// ApplyScope notifies the current schema being added to a scope.
-	ApplyScope(scope Scope)
+	ApplyScope(scope Scope, namespace string)
+	// ValidateReferences validates that all references had their referenced objects found.
+	// Useful to ensure the error is caught early rather than later when it's used.
+	ValidateReferences() error
 }
 
 // Type adds the type ID to Serializable as part of the Schema tree.

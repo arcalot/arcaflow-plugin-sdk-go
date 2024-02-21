@@ -552,7 +552,7 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same
 	// Schema validation with ref
 	objectTestRef := schema.NewRefSchema("testStruct", nil)
-	objectTestRef.ApplyScope(testStructScope)
+	objectTestRef.ApplyScope(testStructScope, "")
 	assert.NoError(t, objectTestRef.ValidateCompatibility(testStructSchema))
 	assert.NoError(t, testStructSchema.ValidateCompatibility(objectTestRef))
 	// Schema validation with scope
