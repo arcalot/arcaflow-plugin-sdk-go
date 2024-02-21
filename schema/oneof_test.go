@@ -207,7 +207,7 @@ func Test_OneOf_ConstructorBypass(t *testing.T) { //nolint:funlen
 
 	var input_invalid_discriminator_value any = map[string]any{
 		"name": map[string]any{
-			discriminator_field: 1,
+			discriminator_field: "robotname",
 			"first_name":        "Arca",
 			"last_name":         "Lot",
 		},
@@ -216,5 +216,4 @@ func Test_OneOf_ConstructorBypass(t *testing.T) { //nolint:funlen
 	_, err := scopeSchemaTyped.Unserialize(input_invalid_discriminator_value)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), error_msg)
-
 }
