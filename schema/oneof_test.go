@@ -128,7 +128,7 @@ var oneOfTestCMappedSchema = schema.NewStructMappedObjectSchema[oneOfTestObjectC
 )
 
 // Test_OneOf_ConstructorBypass tests the behavior of a OneOf object created
-// by the Scope Scope Schema, a scope that contains the schema of a scope
+// by the Scope ScopeSchema, a scope that contains the schema of a scope
 // and an object, through unserialization of data without using a
 // New* constructor function, like NewOneOfStringSchema or NewOneOfIntSchema,
 // behaves as one would expect from a OneOf object created from a constructor.
