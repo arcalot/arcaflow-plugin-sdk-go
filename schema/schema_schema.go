@@ -50,6 +50,7 @@ var mapKeyType = NewOneOfStringSchema[any](
 		),
 	},
 	"type_id",
+	false,
 )
 var displayType = NewDisplayValue(
 	PointerTo("Display"),
@@ -194,6 +195,7 @@ var valueType = NewOneOfStringSchema[any](
 		),
 	},
 	"type_id",
+	false,
 )
 var scopeObject = NewStructMappedObjectSchema[*ScopeSchema](
 	"Scope",
@@ -530,6 +532,20 @@ var basicObjects = []*ObjectSchema{
 	NewStructMappedObjectSchema[*OneOfSchema[int64]](
 		"OneOfIntSchema",
 		map[string]*PropertySchema{
+			"discriminator_inlined": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Discriminator Inlined"),
+					PointerTo("whether or not the discriminator is inlined in the underlying objects' schema."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				PointerTo("false"),
+				nil,
+			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
@@ -538,7 +554,7 @@ var basicObjects = []*ObjectSchema{
 						"field is present on any of the component objects it must also be an int."),
 					nil,
 				),
-				false,
+				true,
 				nil,
 				nil,
 				nil,
@@ -555,6 +571,7 @@ var basicObjects = []*ObjectSchema{
 							string(TypeIDObject): NewRefSchema("Object", nil),
 						},
 						"type_id",
+						false,
 					),
 					nil,
 					nil,
@@ -576,6 +593,20 @@ var basicObjects = []*ObjectSchema{
 	NewStructMappedObjectSchema[*OneOfSchema[string]](
 		"OneOfStringSchema",
 		map[string]*PropertySchema{
+			"discriminator_inlined": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Discriminator Inlined"),
+					PointerTo("whether or not the discriminator is inlined in the underlying objects' schema."),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				PointerTo("false"),
+				nil,
+			),
 			"discriminator_field_name": NewPropertySchema(
 				NewStringSchema(nil, nil, nil),
 				NewDisplayValue(
@@ -584,7 +615,7 @@ var basicObjects = []*ObjectSchema{
 						"field is present on any of the component objects it must also be an int."),
 					nil,
 				),
-				false,
+				true,
 				nil,
 				nil,
 				nil,
@@ -601,6 +632,7 @@ var basicObjects = []*ObjectSchema{
 							string(TypeIDObject): NewRefSchema("Object", nil),
 						},
 						"type_id",
+						false,
 					),
 					nil,
 					nil,
