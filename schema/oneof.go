@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 )
@@ -18,6 +19,8 @@ type OneOfSchema[KeyType int64 | string] struct {
 	interfaceType               reflect.Type
 	TypesValue                  map[KeyType]Object `json:"types"`
 	DiscriminatorFieldNameValue string             `json:"discriminator_field_name"`
+	// whether or not the discriminator is inlined in the underlying objects' schema
+	DiscriminatorInlined bool `json:"discriminator_inlined"`
 }
 
 func (o OneOfSchema[KeyType]) TypeID() TypeID {
@@ -44,6 +47,11 @@ func (o OneOfSchema[KeyType]) ApplyScope(scope Scope, namespace string) {
 	for _, t := range o.TypesValue {
 		t.ApplyScope(scope, namespace)
 	}
+	// scope must be applied before we can access the subtypes' properties
+	err := o.validateSubtypeDiscriminatorInlineFields()
+	if err != nil {
+		panic(err)
+	}
 }
 func (o OneOfSchema[KeyType]) ValidateReferences() error {
 	for _, t := range o.TypesValue {
@@ -65,11 +73,14 @@ func (o OneOfSchema[KeyType]) ReflectedType() reflect.Type {
 
 //nolint:funlen
 func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) {
+	if data == nil {
+		return nil, fmt.Errorf("bug: data is nil in OneOfSchema UnserializeType")
+	}
 	reflectedValue := reflect.ValueOf(data)
 	if reflectedValue.Kind() != reflect.Map {
 		return result, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid type for one-of type: '%s'. Expected map.",
+				"Invalid type for one-of type: %q. Expected map.",
 				reflect.TypeOf(data).Name(),
 			),
 		}
@@ -86,6 +97,7 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 	if err != nil {
 		return result, err
 	}
+
 	typedData := make(map[string]any, reflectedValue.Len())
 	for _, k := range reflectedValue.MapKeys() {
 		v := reflectedValue.MapIndex(k)
@@ -111,31 +123,34 @@ func (o OneOfSchema[KeyType]) UnserializeType(data any) (result any, err error) 
 		}
 		return result, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid value for '%s', expected one of: %s",
+				"Invalid value for %q, expected one of: %s",
 				o.DiscriminatorFieldNameValue,
 				strings.Join(validDiscriminators, ", "),
 			),
 		}
 	}
 
-	if _, ok := selectedType.Properties()[o.DiscriminatorFieldNameValue]; !ok {
-		delete(typedData, o.DiscriminatorFieldNameValue)
-	}
-
-	unserializedData, err := selectedType.Unserialize(typedData)
+	cloneData := o.deleteDiscriminator(typedData)
+	unserializedData, err := selectedType.Unserialize(cloneData)
 	if err != nil {
 		return result, err
 	}
-	if o.interfaceType == nil {
-		return unserializedData, nil
+	unserializedMap, ok := unserializedData.(map[string]any)
+	if ok {
+		unserializedMap[o.DiscriminatorFieldNameValue] = discriminator
+		return unserializedMap, nil
 	}
-	return saveConvertTo(unserializedData, o.interfaceType)
+	return saveConvertTo(unserializedData, o.ReflectedType())
 }
 
 func (o OneOfSchema[KeyType]) ValidateType(data any) error {
 	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return err
+	}
+	dataMap, ok := data.(map[string]any)
+	if ok {
+		data = o.deleteDiscriminator(dataMap)
 	}
 	if err := underlyingType.Validate(data); err != nil {
 		return ConstraintErrorAddPathSegment(err, fmt.Sprintf("{oneof[%v]}", discriminatorValue))
@@ -147,6 +162,10 @@ func (o OneOfSchema[KeyType]) SerializeType(data any) (any, error) {
 	discriminatorValue, underlyingType, err := o.findUnderlyingType(data)
 	if err != nil {
 		return nil, err
+	}
+	dataMap, ok := data.(map[string]any)
+	if ok {
+		data = o.deleteDiscriminator(dataMap)
 	}
 	serializedData, err := underlyingType.Serialize(data)
 	if err != nil {
@@ -171,7 +190,8 @@ func (o OneOfSchema[KeyType]) ValidateCompatibility(typeOrData any) error {
 	// If not, verify it as data.
 	inputAsMap, ok := typeOrData.(map[string]any)
 	if ok {
-		return o.validateMap(inputAsMap)
+		_, _, err := o.validateMap(inputAsMap)
+		return err
 	}
 	value := reflect.ValueOf(typeOrData)
 	if reflect.Indirect(value).Kind() != reflect.Struct {
@@ -226,13 +246,14 @@ func (o OneOfSchema[KeyType]) validateSchema(otherSchema OneOfSchema[KeyType]) e
 	return nil
 }
 
-func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
+func (o OneOfSchema[KeyType]) validateMap(data map[string]any) (KeyType, Object, error) {
+	var nilKey KeyType
 	// Validate that it has the discriminator field.
 	// If it doesn't, fail
 	// If it does, pass the non-discriminator fields into the ValidateCompatibility method for the object
 	selectedTypeID := data[o.DiscriminatorFieldNameValue]
 	if selectedTypeID == nil {
-		return &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator field '%s' missing", o.DiscriminatorFieldNameValue),
 		}
@@ -240,7 +261,7 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 	// Ensure it's the correct type
 	selectedTypeIDAsserted, ok := selectedTypeID.(KeyType)
 	if !ok {
-		return &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator field '%v' has invalid type '%T'. Expected %T",
 				o.DiscriminatorFieldNameValue, selectedTypeID, selectedTypeIDAsserted),
@@ -249,24 +270,22 @@ func (o OneOfSchema[KeyType]) validateMap(data map[string]any) error {
 	// Find the object that's associated with the selected type
 	selectedSchema := o.TypesValue[selectedTypeIDAsserted]
 	if selectedSchema == nil {
-		return &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Discriminator value '%v' is invalid. Expected one of: %v",
 				selectedTypeIDAsserted, o.getTypeValues()),
 		}
 	}
-	if selectedSchema.Properties()[o.DiscriminatorFieldNameValue] == nil { // Check to see if the discriminator is part of the sub-object.
-		delete(data, o.DiscriminatorFieldNameValue) // The discriminator isn't part of the object.
-	}
-	err := selectedSchema.ValidateCompatibility(data)
+	cloneData := o.deleteDiscriminator(data)
+	err := selectedSchema.ValidateCompatibility(cloneData)
 	if err != nil {
-		return &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for OneOfSchema. Failed to validate as selected schema type '%T' from discriminator value '%v' (%s)",
 				selectedSchema, selectedTypeIDAsserted, err),
 		}
 	}
-	return nil
+	return selectedTypeIDAsserted, selectedSchema, nil
 }
 
 func (o OneOfSchema[KeyType]) getTypeValues() []KeyType {
@@ -280,10 +299,7 @@ func (o OneOfSchema[KeyType]) getTypeValues() []KeyType {
 }
 
 func (o OneOfSchema[KeyType]) Validate(data any) error {
-	if o.interfaceType == nil {
-		return o.ValidateType(data)
-	}
-	d, err := saveConvertTo(data, o.interfaceType)
+	d, err := saveConvertTo(data, o.ReflectedType())
 	if err != nil {
 		return err
 	}
@@ -291,10 +307,7 @@ func (o OneOfSchema[KeyType]) Validate(data any) error {
 }
 
 func (o OneOfSchema[KeyType]) Serialize(data any) (result any, err error) {
-	if o.interfaceType == nil {
-		return nil, o.ValidateType(data)
-	}
-	d, err := saveConvertTo(data, o.interfaceType)
+	d, err := saveConvertTo(data, o.ReflectedType())
 	if err != nil {
 		return nil, err
 	}
@@ -337,20 +350,29 @@ func (o OneOfSchema[KeyType]) getTypedDiscriminator(discriminator any) (KeyType,
 }
 
 func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, error) {
+	var nilKey KeyType
+
 	reflectedType := reflect.TypeOf(data)
 	if reflectedType.Kind() != reflect.Struct &&
 		reflectedType.Kind() != reflect.Map &&
 		(reflectedType.Kind() != reflect.Pointer || reflectedType.Elem().Kind() != reflect.Struct) {
-		var defaultValue KeyType
-		return defaultValue, nil, &ConstraintError{
+
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
-				"Invalid type for one-of type: '%s' expected struct or map.",
+				"Invalid type for one-of type: %q expected struct or map.",
 				reflect.TypeOf(data).Name(),
 			),
 		}
 	}
 
 	var foundKey *KeyType
+	if reflectedType.Kind() == reflect.Map {
+		myKey, mySchemaObj, err := o.validateMap(data.(map[string]any))
+		if err != nil {
+			return nilKey, nil, err
+		}
+		return myKey, mySchemaObj, nil
+	}
 	for key, ref := range o.TypesValue {
 		underlyingReflectedType := ref.ReflectedType()
 		if underlyingReflectedType == reflectedType {
@@ -359,7 +381,6 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 	if foundKey == nil {
-		var defaultValue KeyType
 		dataType := reflect.TypeOf(data)
 		values := make([]string, len(o.TypesValue))
 		i := 0
@@ -370,7 +391,7 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 			}
 			i++
 		}
-		return defaultValue, nil, &ConstraintError{
+		return nilKey, nil, &ConstraintError{
 			Message: fmt.Sprintf(
 				"Invalid type for one-of schema: '%s' (valid types are: %s)",
 				dataType.String(),
@@ -379,4 +400,39 @@ func (o OneOfSchema[KeyType]) findUnderlyingType(data any) (KeyType, Object, err
 		}
 	}
 	return *foundKey, o.TypesValue[*foundKey], nil
+}
+
+// validateSubtypeDiscriminatorInlineFields checks to see if a subtype's
+// discriminator field has been written in accordance with the OneOfSchema's
+// declaration.
+func (o OneOfSchema[KeyType]) validateSubtypeDiscriminatorInlineFields() error {
+	for key, typeValue := range o.TypesValue {
+		typeValueDiscriminatorValue, hasDiscriminator := typeValue.Properties()[o.DiscriminatorFieldNameValue]
+		switch {
+		case !o.DiscriminatorInlined && hasDiscriminator:
+			return fmt.Errorf(
+				"object id %q has conflicting field %q; either remove that field or set inline to true for %T[%T]",
+				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
+		case o.DiscriminatorInlined && !hasDiscriminator:
+			return fmt.Errorf(
+				"object id %q needs discriminator field %q; either add that field or set inline to false for %T[%T]",
+				typeValue.ID(), o.DiscriminatorFieldNameValue, o, key)
+		case o.DiscriminatorInlined && hasDiscriminator &&
+			(typeValueDiscriminatorValue.ReflectedType().Kind() != reflect.TypeOf(key).Kind()):
+			return fmt.Errorf(
+				"the type of object id %v's discriminator field %q does not match OneOfSchema discriminator type; expected %v got %T",
+				typeValue.ID(), o.DiscriminatorFieldNameValue, typeValueDiscriminatorValue.TypeID(), key)
+		}
+	}
+	return nil
+}
+
+func (o OneOfSchema[KeyType]) deleteDiscriminator(mymap map[string]any) map[string]any {
+	// the discriminator is not a property of the subtype
+	if !o.DiscriminatorInlined {
+		cloneData := maps.Clone(mymap)
+		delete(cloneData, o.DiscriminatorFieldNameValue)
+		return cloneData
+	}
+	return mymap
 }

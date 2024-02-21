@@ -13,11 +13,13 @@ type OneOfInt interface {
 func NewOneOfIntSchema[ItemsInterface any](
 	types map[int64]Object,
 	discriminatorFieldName string,
+	discriminatorInlined bool,
 ) *OneOfSchema[int64] {
 	var defaultValue ItemsInterface
 	return &OneOfSchema[int64]{
 		reflect.TypeOf(&defaultValue).Elem(),
 		types,
 		discriminatorFieldName,
+		discriminatorInlined,
 	}
 }
