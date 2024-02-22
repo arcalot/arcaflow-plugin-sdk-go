@@ -50,6 +50,8 @@ const (
 	TypeIDAny TypeID = "any"
 )
 
+const DEFAULT_NAMESPACE string = ""
+
 // Serializable describes the minimum feature set a part of the schema hierarchy must implement.
 type Serializable interface {
 	// ReflectedType returns the underlying unserialized type.

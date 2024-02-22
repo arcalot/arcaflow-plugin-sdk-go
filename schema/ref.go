@@ -94,7 +94,7 @@ func (r *RefSchema) Display() Display {
 
 func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 	if namespace != r.ObjectNamespace {
-		return
+		return // The scope does not apply to this reference.
 	}
 	objects := scope.Objects()
 	referencedObject, ok := objects[r.IDValue]

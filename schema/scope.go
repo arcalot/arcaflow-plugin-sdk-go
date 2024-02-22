@@ -32,7 +32,7 @@ func NewScopeSchema(rootObject *ObjectSchema, objects ...*ObjectSchema) *ScopeSc
 	}
 
 	for _, v := range objectMap {
-		v.ApplyScope(schema, "")
+		v.ApplyScope(schema, DEFAULT_NAMESPACE)
 	}
 
 	return schema
@@ -93,10 +93,10 @@ func (s *ScopeSchema) Serialize(data any) (any, error) {
 }
 
 func (s *ScopeSchema) ApplyScope(scope Scope, namespace string) {
-	if namespace == "" {
+	if namespace == DEFAULT_NAMESPACE {
 		// Same namespace, so pass in self with default namespace.
 		for _, v := range s.ObjectsValue {
-			v.ApplyScope(s, "")
+			v.ApplyScope(s, DEFAULT_NAMESPACE)
 		}
 	} else {
 		// Separate namespace. Pass in the other scope instead.
