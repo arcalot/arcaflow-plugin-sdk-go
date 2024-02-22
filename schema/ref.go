@@ -21,7 +21,7 @@ func NewRefSchema(id string, display Display) *RefSchema {
 	return &RefSchema{
 		id,
 		display,
-		"",
+		DEFAULT_NAMESPACE,
 		nil,
 	}
 }
