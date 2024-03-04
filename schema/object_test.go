@@ -13,19 +13,26 @@ type testStruct struct {
 	Field2 string `json:"field3"`
 }
 
-var fieldKey1 = "Field1"
-var fieldKey2 = "field3"
-
 var testSchemaProperties = map[string]*schema.PropertySchema{
-	fieldKey1: schema.NewPropertySchema(
+	"Field1": schema.NewPropertySchema(
 		schema.NewIntSchema(nil, nil, nil),
-		nil, true, nil, nil, nil,
-		nil, nil,
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
 	),
-	fieldKey2: schema.NewPropertySchema(
+	"field3": schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
-		nil, true, nil, nil, nil,
-		nil, nil,
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
 	),
 }
 
