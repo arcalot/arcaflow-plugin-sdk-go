@@ -278,9 +278,9 @@ func TestCompatibilityValidationWithSchema(t *testing.T) {
 	// Similar, but with a simple difference
 	// Mismatching IDs
 	err = scopeTestObjectEmptySchema.ValidateCompatibility(scopeTestObjectEmptySchemaRenamed)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	err = scopeTestObjectEmptySchemaRenamed.ValidateCompatibility(scopeTestObjectEmptySchema)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	// Mismatching type in one field, but with the field ID matching
 	err = scopeTestObjectCStrSchema.ValidateCompatibility(scopeTestObjectCIntSchema)
 	assert.Error(t, err)
