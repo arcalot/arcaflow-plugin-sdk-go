@@ -271,6 +271,7 @@ func (o *ObjectSchema) validateMap(data map[string]any) error {
 	}
 	return nil
 }
+
 func (o *ObjectSchema) validateMapTypesCompatibility(data map[string]any) error {
 	// Note: Interdependencies are not validated here yet.
 
@@ -366,13 +367,6 @@ func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
 
 func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
-	// Validate IDs. This is important because the IDs should match.
-	if schemaType.ID() != o.ID() {
-		return &ConstraintError{
-			Message: fmt.Sprintf("validation failed for object schema ID %s. ID %s does not match.",
-				o.ID(), schemaType.ID()),
-		}
-	}
 	// Copy all properties to the variable for validating later.
 	for key, value := range schemaType.Properties() {
 		fieldData[key] = value

@@ -13,28 +13,24 @@ type testStruct struct {
 	Field2 string `json:"field3"`
 }
 
-var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", map[string]*schema.PropertySchema{
-	"Field1": schema.NewPropertySchema(
+var fieldKey1 = "Field1"
+var fieldKey2 = "field3"
+
+var testSchemaProperties = map[string]*schema.PropertySchema{
+	fieldKey1: schema.NewPropertySchema(
 		schema.NewIntSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		nil, true, nil, nil, nil,
+		nil, nil,
 	),
-	"field3": schema.NewPropertySchema(
+	fieldKey2: schema.NewPropertySchema(
 		schema.NewStringSchema(nil, nil, nil),
-		nil,
-		true,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		nil, true, nil, nil, nil,
+		nil, nil,
 	),
-})
+}
+
+var testStructSchema = schema.NewTypedObject[testStruct](
+	"testStruct", testSchemaProperties)
 
 type testStructPtr struct {
 	Field1 *int64
@@ -580,6 +576,13 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	assert.NoError(t, testStructSchema.ValidateCompatibility(validDataAndSchema))
 	assert.Error(t, testStructSchema.ValidateCompatibility(invalidData))
 	assert.Error(t, testStructSchema.ValidateCompatibility(invalidDataAndSchema))
+
+	// Two objects with the same set of property schemas are compatible.
+	compatibleObjSchema := schema.NewObjectSchema(
+		"random_id_string",
+		testSchemaProperties,
+	)
+	assert.NoError(t, testStructSchema.ValidateCompatibility(compatibleObjSchema))
 
 	// Test non-object types
 	s1 := testStructSchema
