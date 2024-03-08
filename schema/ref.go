@@ -100,7 +100,7 @@ func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("Referenced object '%s' not found in scope", r.IDValue),
+			Message: fmt.Sprintf("Referenced object '%s' not found in scope with namespace %q", r.IDValue, namespace),
 		})
 	}
 	r.referencedObjectCache = referencedObject
