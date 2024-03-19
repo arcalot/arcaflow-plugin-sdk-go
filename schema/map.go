@@ -84,6 +84,7 @@ func (m MapSchema[K, V]) ApplyScope(scope Scope, namespace string) {
 	m.KeysValue.ApplyScope(scope, namespace)
 	m.ValuesValue.ApplyScope(scope, namespace)
 }
+
 func (m MapSchema[K, V]) ValidateReferences() error {
 	err := m.KeysValue.ValidateReferences()
 	if err != nil {

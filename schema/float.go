@@ -55,7 +55,7 @@ func (f FloatSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (f FloatSchema) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 

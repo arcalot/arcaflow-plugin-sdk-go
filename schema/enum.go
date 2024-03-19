@@ -30,7 +30,7 @@ func (e EnumSchema[T]) ApplyScope(scope Scope, namespace string) {
 }
 
 func (e EnumSchema[T]) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 

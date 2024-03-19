@@ -53,6 +53,7 @@ func (o OneOfSchema[KeyType]) ApplyScope(scope Scope, namespace string) {
 		panic(err)
 	}
 }
+
 func (o OneOfSchema[KeyType]) ValidateReferences() error {
 	for _, t := range o.TypesValue {
 		err := t.ValidateReferences()

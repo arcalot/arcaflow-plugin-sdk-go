@@ -107,17 +107,17 @@ func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (r *RefSchema) ValidateReferences() error {
-	if r.referencedObjectCache != nil {
-		return nil
+	if r.referencedObjectCache == nil {
+		return BadArgumentError{
+			Message: fmt.Sprintf(
+				"Ref object reference could not find an object with ID %q in namespace %q",
+				r.IDValue,
+				r.ObjectNamespace,
+			),
+		}
 	}
 
-	return BadArgumentError{
-		Message: fmt.Sprintf(
-			"Ref object reference could not find an object with ID %q in namespace %q",
-			r.IDValue,
-			r.ObjectNamespace,
-		),
-	}
+	return nil
 }
 
 func (r *RefSchema) Unserialize(data any) (any, error) {

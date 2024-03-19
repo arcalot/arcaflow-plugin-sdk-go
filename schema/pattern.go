@@ -29,7 +29,7 @@ func (p PatternSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (p PatternSchema) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 

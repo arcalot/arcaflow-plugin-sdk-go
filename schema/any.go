@@ -92,7 +92,7 @@ func (a *AnySchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (a *AnySchema) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 

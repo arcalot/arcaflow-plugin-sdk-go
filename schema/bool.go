@@ -125,8 +125,8 @@ func (b BoolSchema) ApplyScope(scope Scope, namespace string) {
 
 }
 
-func (a BoolSchema) ValidateReferences() error {
-	// Not applicable
+func (b BoolSchema) ValidateReferences() error {
+	// No references in this type. No work to do.
 	return nil
 }
 

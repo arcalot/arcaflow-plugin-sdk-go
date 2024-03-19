@@ -39,7 +39,7 @@ func (i IntSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (i IntSchema) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 

@@ -189,7 +189,7 @@ func TestUnserialization(t *testing.T) {
 	assert.NoError(t, err)
 	unserialized2, err := scopeTestObjectAType.Unserialize(serialized)
 	assert.NoError(t, err)
-	// test reversiblity
+	// test reversibility
 	assert.Equals(t, unserialized2, result)
 
 	// Now as a ptr
@@ -316,14 +316,15 @@ func TestSelfSerialization(t *testing.T) {
 
 //nolint:funlen
 func TestApplyingExternalNamespace(t *testing.T) {
-	// This test tests applying with scopes, properties, and objects, maps, and lists.
-	// It must be passed through all of those types. Validating this makes sure that
-	// it gets applied all the way down, and errors are propagated up.
+	// This test tests applying a scope to a schema that contains scopes,
+	// properties, objects, maps, and lists.
+	// The applied scope must be passed through all of those types, validating
+	// that the scope gets applied all the way down and that errors are propagated up.
 	var testScope = schema.NewScopeSchema(
 		schema.NewObjectSchema(
 			"scopeTestObjectA",
 			map[string]*schema.PropertySchema{
-				"b": schema.NewPropertySchema(
+				"ref-b": schema.NewPropertySchema(
 					schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
 					nil,
 					true,
@@ -383,7 +384,9 @@ func TestApplyingExternalNamespace(t *testing.T) {
 		),
 	)
 	// Not applied yet
-	assert.Error(t, testScope.ValidateReferences())
+	err := testScope.ValidateReferences()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "could not find an object")
 	testScope.ApplyScope(externalScope, "test-namespace")
 	// Now it's applied, so the error should be resolved.
 	assert.NoError(t, testScope.ValidateReferences())

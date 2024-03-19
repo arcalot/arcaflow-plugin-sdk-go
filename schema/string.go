@@ -57,7 +57,7 @@ func (s StringSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (s StringSchema) ValidateReferences() error {
-	// Not applicable
+	// No references in this type. No work to do.
 	return nil
 }
 
