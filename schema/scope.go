@@ -92,17 +92,16 @@ func (s *ScopeSchema) Serialize(data any) (any, error) {
 	return s.ObjectsValue[s.RootValue].Serialize(data)
 }
 
-func (s *ScopeSchema) ApplyScope(scope Scope, namespace string) {
+func (s *ScopeSchema) ApplyScope(externalScope Scope, namespace string) {
+	// When the namespace is the default namespace, each scope should pass itself down.
+	var scopeToApply Scope
 	if namespace == DEFAULT_NAMESPACE {
-		// Same namespace, so pass in self with default namespace.
-		for _, v := range s.ObjectsValue {
-			v.ApplyScope(s, DEFAULT_NAMESPACE)
-		}
+		scopeToApply = s
 	} else {
-		// Separate namespace. Pass in the other scope instead.
-		for _, v := range s.ObjectsValue {
-			v.ApplyScope(scope, namespace)
-		}
+		scopeToApply = externalScope
+	}
+	for _, v := range s.ObjectsValue {
+		v.ApplyScope(scopeToApply, namespace)
 	}
 }
 
