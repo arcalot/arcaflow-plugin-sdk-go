@@ -18,12 +18,7 @@ type Ref interface {
 
 // NewRefSchema creates a new reference to an object in a wrapping Scope by ID.
 func NewRefSchema(id string, display Display) *RefSchema {
-	return &RefSchema{
-		id,
-		display,
-		DEFAULT_NAMESPACE,
-		nil,
-	}
+	return NewNamespacedRefSchema(id, DEFAULT_NAMESPACE, display)
 }
 
 // NewNamespacedRefSchema creates a new reference to an object in a wrapping Scope by ID and namespace.
@@ -47,7 +42,9 @@ type RefSchema struct {
 func (r *RefSchema) Properties() map[string]*PropertySchema {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("Properties was called before ApplyScope with namespace %q", r.ObjectNamespace),
+			Message: fmt.Sprintf(
+				"ref type not linked to its object with ID %q in Properties; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.Properties()
@@ -56,7 +53,9 @@ func (r *RefSchema) Properties() map[string]*PropertySchema {
 func (r *RefSchema) GetDefaults() map[string]any {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("GetDefaults was called before ApplyScope with namespace %q", r.ObjectNamespace),
+			Message: fmt.Sprintf(
+				"ref type not linked to its object with ID %q in GetDefaults; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.GetDefaults()
@@ -69,7 +68,9 @@ func (r *RefSchema) TypeID() TypeID {
 func (r *RefSchema) GetObject() Object {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("GetObject was called before ApplyScope with namespace %q", r.ObjectNamespace),
+			Message: fmt.Sprintf(
+				"ref type not linked to its object with ID %q in GetObject; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache
@@ -78,7 +79,9 @@ func (r *RefSchema) GetObject() Object {
 func (r *RefSchema) ReflectedType() reflect.Type {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("ReflectedType was called before ApplyScope with namespace %q", r.ObjectNamespace),
+			Message: fmt.Sprintf(
+				"ref type not linked to its object with ID %q in ReflectedType; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace),
 		})
 	}
 	return r.referencedObjectCache.ReflectedType()
@@ -107,25 +110,27 @@ func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 }
 
 func (r *RefSchema) ValidateReferences() error {
-	if r.referencedObjectCache == nil {
-		return BadArgumentError{
-			Message: fmt.Sprintf(
-				"Ref object reference could not find an object with ID %q in namespace %q",
-				r.IDValue,
-				r.ObjectNamespace,
-			),
-		}
+	if r.referencedObjectCache != nil {
+		return nil // Success
 	}
-
-	return nil
+	// The only way, unless there is a bug, for it to get here is if ApplyScope was not called with the
+	// correct namespace, or if the code disregards the error returned by ApplyScope. ApplyScope should
+	// always set referencedObjectCache or return an error if the correct namespace is applied.
+	return BadArgumentError{
+		Message: fmt.Sprintf(
+			"Ref object reference missing its link to object with ID %q in namespace %q. Is that a valid namespace?",
+			r.IDValue,
+			r.ObjectNamespace,
+		),
+	}
 }
 
 func (r *RefSchema) Unserialize(data any) (any, error) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
-				"Unserialize called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
-				r.ObjectNamespace,
+				"ref type not linked to its object with ID %q in Unserialize; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace,
 			),
 		})
 	}
@@ -136,8 +141,8 @@ func (r *RefSchema) Validate(data any) error {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
-				"Validate called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
-				r.ObjectNamespace,
+				"ref type not linked to its object with ID %q in Validate; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace,
 			),
 		})
 	}
@@ -148,8 +153,8 @@ func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
-				"ValidateCompatibility called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
-				r.ObjectNamespace,
+				"ref type not linked to its object with ID %q in ValidateCompatibility; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace,
 			),
 		})
 	}
@@ -164,8 +169,8 @@ func (r *RefSchema) Serialize(data any) (any, error) {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
-				"Serialize called before ApplyScope. Did you add your RefType to a scope with the namespace %q?",
-				r.ObjectNamespace,
+				"ref type not linked to its object with ID %q in Serialize; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace,
 			),
 		})
 	}

@@ -121,9 +121,7 @@ func (b BoolSchema) SerializeType(data bool) (any, error) {
 	return b.Serialize(data)
 }
 
-func (b BoolSchema) ApplyScope(scope Scope, namespace string) {
-
-}
+func (b BoolSchema) ApplyScope(_ Scope, _ string) {}
 
 func (b BoolSchema) ValidateReferences() error {
 	// No references in this type. No work to do.

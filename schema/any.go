@@ -87,9 +87,7 @@ func (a *AnySchema) Serialize(data any) (any, error) {
 	return a.checkAndConvert(data)
 }
 
-func (a *AnySchema) ApplyScope(scope Scope, namespace string) {
-
-}
+func (a *AnySchema) ApplyScope(_ Scope, _ string) {}
 
 func (a *AnySchema) ValidateReferences() error {
 	// No references in this type. No work to do.

@@ -25,8 +25,7 @@ func (p PatternSchema) TypeID() TypeID {
 	return TypeIDPattern
 }
 
-func (p PatternSchema) ApplyScope(scope Scope, namespace string) {
-}
+func (p PatternSchema) ApplyScope(_ Scope, _ string) {}
 
 func (p PatternSchema) ValidateReferences() error {
 	// No references in this type. No work to do.

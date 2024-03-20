@@ -53,8 +53,7 @@ func (s StringSchema) Pattern() *regexp.Regexp {
 	return s.PatternValue
 }
 
-func (s StringSchema) ApplyScope(scope Scope, namespace string) {
-}
+func (s StringSchema) ApplyScope(_ Scope, _ string) {}
 
 func (s StringSchema) ValidateReferences() error {
 	// No references in this type. No work to do.

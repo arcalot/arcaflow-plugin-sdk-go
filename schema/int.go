@@ -35,8 +35,7 @@ func (i IntSchema) ReflectedType() reflect.Type {
 	return reflect.TypeOf(int64(0))
 }
 
-func (i IntSchema) ApplyScope(scope Scope, namespace string) {
-}
+func (i IntSchema) ApplyScope(_ Scope, _ string) {}
 
 func (i IntSchema) ValidateReferences() error {
 	// No references in this type. No work to do.

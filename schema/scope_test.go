@@ -318,54 +318,74 @@ func TestSelfSerialization(t *testing.T) {
 func TestApplyingExternalNamespace(t *testing.T) {
 	// This test tests applying a scope to a schema that contains scopes,
 	// properties, objects, maps, and lists.
-	// The applied scope must be passed through all of those types, validating
-	// that the scope gets applied all the way down and that errors are propagated up.
-	var testScope = schema.NewScopeSchema(
-		schema.NewObjectSchema(
-			"scopeTestObjectA",
-			map[string]*schema.PropertySchema{
-				"ref-b": schema.NewPropertySchema(
-					schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"list-type": schema.NewPropertySchema(
-					schema.NewListSchema(
-						schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
-						nil,
-						nil,
-					),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-				"map-type": schema.NewPropertySchema(
-					schema.NewMapSchema(
-						schema.NewIntSchema(nil, nil, nil),
-						schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
-						nil,
-						nil,
-					),
-					nil,
-					true,
-					nil,
-					nil,
-					nil,
-					nil,
-					nil,
-				),
-			},
-		),
+	// The applied scope must be passed down to all of those types, validating
+	// that the scope gets applied down and that errors are propagated up.
+	refProperty := schema.NewPropertySchema(
+		schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
 	)
+	listProperty := schema.NewPropertySchema(
+		schema.NewListSchema(
+			schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+			nil,
+			nil,
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	mapProperty := schema.NewPropertySchema(
+		schema.NewMapSchema(
+			schema.NewIntSchema(nil, nil, nil),
+			schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil),
+			nil,
+			nil,
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	testScopes := map[string]*schema.ScopeSchema{
+		"withRef": schema.NewScopeSchema(
+			schema.NewObjectSchema(
+				"scopeTestObjectA",
+				map[string]*schema.PropertySchema{
+					"ref-b": refProperty,
+				},
+			),
+		),
+		"withList": schema.NewScopeSchema(
+			schema.NewObjectSchema(
+				"scopeTestObjectA",
+				map[string]*schema.PropertySchema{
+					"list-type": listProperty,
+				},
+			),
+		),
+		"withMap": schema.NewScopeSchema(
+			schema.NewObjectSchema(
+				"scopeTestObjectA",
+				map[string]*schema.PropertySchema{
+					"map-type": mapProperty,
+				},
+			),
+		),
+	}
+
 	var externalScope = schema.NewScopeSchema(
 		schema.NewObjectSchema(
 			"scopeTestObjectB",
@@ -383,11 +403,16 @@ func TestApplyingExternalNamespace(t *testing.T) {
 			},
 		),
 	)
-	// Not applied yet
-	err := testScope.ValidateReferences()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "could not find an object")
-	testScope.ApplyScope(externalScope, "test-namespace")
-	// Now it's applied, so the error should be resolved.
-	assert.NoError(t, testScope.ValidateReferences())
+	for testName, tc := range testScopes {
+		testScope := tc
+		t.Run(testName, func(t *testing.T) {
+			// Not applied yet
+			err := testScope.ValidateReferences()
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "missing its link")
+			testScope.ApplyScope(externalScope, "test-namespace")
+			// Now it's applied, so the error should be resolved.
+			assert.NoError(t, testScope.ValidateReferences())
+		})
+	}
 }

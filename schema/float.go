@@ -51,8 +51,7 @@ func (f FloatSchema) Max() *float64 {
 func (f FloatSchema) Units() *UnitsDefinition {
 	return f.UnitsValue
 }
-func (f FloatSchema) ApplyScope(scope Scope, namespace string) {
-}
+func (f FloatSchema) ApplyScope(_ Scope, _ string) {}
 
 func (f FloatSchema) ValidateReferences() error {
 	// No references in this type. No work to do.
