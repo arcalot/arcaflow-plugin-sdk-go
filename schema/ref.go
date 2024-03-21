@@ -118,7 +118,7 @@ func (r *RefSchema) ValidateReferences() error {
 	// always set referencedObjectCache or return an error if the correct namespace is applied.
 	return BadArgumentError{
 		Message: fmt.Sprintf(
-			"Ref object reference missing its link to object with ID %q in namespace %q. Is that a valid namespace?",
+			"Ref object reference missing its link to object with ID %q in namespace %q. Namespace not valid (not applied).",
 			r.IDValue,
 			r.ObjectNamespace,
 		),
