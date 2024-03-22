@@ -189,7 +189,7 @@ func TestUnserialization(t *testing.T) {
 	assert.NoError(t, err)
 	unserialized2, err := scopeTestObjectAType.Unserialize(serialized)
 	assert.NoError(t, err)
-	// test reversiblity
+	// test reversibility
 	assert.Equals(t, unserialized2, result)
 
 	// Now as a ptr
@@ -311,5 +311,188 @@ func TestSelfSerialization(t *testing.T) {
 	serializedScopeMap := serializedScope.(map[string]any)
 	if serializedScopeMap["root"] != "scopeTestObjectA" {
 		t.Fatalf("Unexpected root object: %s", serializedScopeMap["root"])
+	}
+}
+
+//nolint:funlen
+func TestApplyingExternalNamespace(t *testing.T) {
+	// This test tests applying a scope to a schema that contains scopes,
+	// properties, objects, maps, and lists.
+	// The applied scope must be passed down to all of those types, validating
+	// that the scope gets applied down and that errors are propagated up.
+	refRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
+
+	refProperty := schema.NewPropertySchema(
+		refRefSchema,
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	withObjectRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
+	nestedObjectProperty := schema.NewPropertySchema(
+		schema.NewObjectSchema("level-2-object", map[string]*schema.PropertySchema{
+			"a": schema.NewPropertySchema(
+				withObjectRefSchema,
+				nil,
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		}),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	withListRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
+	listProperty := schema.NewPropertySchema(
+		schema.NewListSchema(
+			withListRefSchema,
+			nil,
+			nil,
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	withMapRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
+	mapProperty := schema.NewPropertySchema(
+		schema.NewMapSchema(
+			schema.NewIntSchema(nil, nil, nil),
+			withMapRefSchema,
+			nil,
+			nil,
+		),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	testScopes := map[string]struct {
+		scope *schema.ScopeSchema
+		ref   schema.Ref
+	}{
+		"withRef": {
+			schema.NewScopeSchema(
+				schema.NewObjectSchema(
+					"scopeTestObjectA",
+					map[string]*schema.PropertySchema{
+						"ref-b": refProperty,
+					},
+				),
+			),
+			refRefSchema,
+		},
+		"withObjectInObject": {
+			schema.NewScopeSchema(
+				schema.NewObjectSchema(
+					"scopeTestObjectA",
+					map[string]*schema.PropertySchema{
+						"ref-b": nestedObjectProperty,
+					},
+				),
+			),
+			withObjectRefSchema,
+		},
+		"withList": {
+			schema.NewScopeSchema(
+				schema.NewObjectSchema(
+					"scopeTestObjectA",
+					map[string]*schema.PropertySchema{
+						"list-type": listProperty,
+					},
+				),
+			),
+			withListRefSchema,
+		},
+		"withMap": {
+			schema.NewScopeSchema(
+				schema.NewObjectSchema(
+					"scopeTestObjectA",
+					map[string]*schema.PropertySchema{
+						"map-type": mapProperty,
+					},
+				),
+			),
+			withMapRefSchema,
+		},
+	}
+
+	var externalScope = schema.NewScopeSchema(
+		schema.NewObjectSchema(
+			"scopeTestObjectB",
+			map[string]*schema.PropertySchema{
+				"c": schema.NewPropertySchema(
+					schema.NewStringSchema(nil, nil, nil),
+					nil,
+					true,
+					nil,
+					nil,
+					nil,
+					nil,
+					nil,
+				),
+			},
+		),
+	)
+	for testName, td := range testScopes {
+		testData := td
+		t.Run(testName, func(t *testing.T) {
+			// Not applied yet
+			// Outermost
+			err := testData.scope.ValidateReferences()
+			assert.Error(t, err)
+			// Innermost
+			err = testData.ref.ValidateReferences()
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "missing its link")
+			testData.scope.ApplyScope(externalScope, "test-namespace")
+			// Now it's applied, so the error should be resolved.
+			// Outermost
+			assert.NoError(t, testData.scope.ValidateReferences())
+			// Innermost
+			assert.NoError(t, testData.ref.ValidateReferences())
+		})
+	}
+}
+
+func TestApplyingExternalNamespaceToNonRefTypes(t *testing.T) {
+	testCases := map[string]schema.Type{
+		"int":      schema.NewIntSchema(nil, nil, nil),
+		"float":    schema.NewFloatSchema(nil, nil, nil),
+		"bool":     schema.NewBoolSchema(),
+		"string":   schema.NewStringSchema(nil, nil, nil),
+		"any":      schema.NewAnySchema(),
+		"str_enum": schema.NewStringEnumSchema(map[string]*schema.DisplayValue{}),
+		"int_enum": schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil),
+		"pattern":  schema.NewPatternSchema(),
+	}
+	for testName, tt := range testCases {
+		testType := tt
+		t.Run(testName, func(t *testing.T) {
+			// Not applied yet
+			// Should be no error because none of the given types can contain references.
+			assert.NoError(t, testType.ValidateReferences())
+			testType.ApplyScope(scopeTestObjectEmptySchema, "test-namespace")
+			// Should still be no error.
+			assert.NoError(t, testType.ValidateReferences())
+		})
 	}
 }

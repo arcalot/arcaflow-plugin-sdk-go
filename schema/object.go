@@ -57,10 +57,20 @@ func (o *ObjectSchema) GetDefaults() map[string]any {
 	return o.defaultValues
 }
 
-func (o *ObjectSchema) ApplyScope(scope Scope) {
+func (o *ObjectSchema) ApplyScope(scope Scope, namespace string) {
 	for _, property := range o.PropertiesValue {
-		property.ApplyScope(scope)
+		property.ApplyScope(scope, namespace)
 	}
+}
+
+func (o *ObjectSchema) ValidateReferences() error {
+	for _, property := range o.PropertiesValue {
+		err := property.ValidateReferences()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (o *ObjectSchema) TypeID() TypeID {
@@ -341,7 +351,7 @@ func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
 	// Next, try ref schema
 	refSchemaType, ok := typeOrData.(*RefSchema)
 	if ok {
-		return refSchemaType.referencedObjectCache, true
+		return refSchemaType.GetObject(), true
 	}
 	// Next, try scope schema.
 	scopeSchemaType, ok := typeOrData.(*ScopeSchema)

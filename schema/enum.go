@@ -26,7 +26,11 @@ func (e EnumSchema[T]) ValidValues() map[T]*DisplayValue {
 	return e.ValidValuesMap
 }
 
-func (e EnumSchema[T]) ApplyScope(scope Scope) {
+func (e EnumSchema[T]) ApplyScope(_ Scope, _ string) {}
+
+func (e EnumSchema[T]) ValidateReferences() error {
+	// No references in this type. No work to do.
+	return nil
 }
 
 func (e EnumSchema[T]) ReflectedType() reflect.Type {
@@ -34,18 +38,18 @@ func (e EnumSchema[T]) ReflectedType() reflect.Type {
 	return reflect.TypeOf(defaultValue)
 }
 
-func (s EnumSchema[T]) ValidateCompatibility(typeOrData any) error {
+func (e EnumSchema[T]) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema type. If it is, verify it. If not, verify it as data.
 	value := reflect.ValueOf(typeOrData)
 	if reflect.Indirect(value).Kind() != reflect.Struct {
 		// Validate as data
-		return s.Validate(typeOrData)
+		return e.Validate(typeOrData)
 	}
 	field := reflect.Indirect(value).FieldByName("EnumSchema")
 
 	if !field.IsValid() {
 		// Validate as data
-		return s.Validate(typeOrData)
+		return e.Validate(typeOrData)
 	}
 
 	// Validate the type of EnumSchema
@@ -55,16 +59,16 @@ func (s EnumSchema[T]) ValidateCompatibility(typeOrData any) error {
 		return &ConstraintError{
 			Message: fmt.Sprintf(
 				"validation failed for enum. Found type (%T) does not match expected type (%T)",
-				fieldAsInterface, s),
+				fieldAsInterface, e),
 		}
 	}
 
 	// Validate the valid values
-	for key, display := range s.ValidValuesMap {
+	for key, display := range e.ValidValuesMap {
 		matchingInputDisplay := schemaType.ValidValuesMap[key]
 		if matchingInputDisplay == nil {
 			foundValues := reflect.ValueOf(schemaType.ValidValuesMap).MapKeys()
-			expectedValues := reflect.ValueOf(s.ValidValuesMap).MapKeys()
+			expectedValues := reflect.ValueOf(e.ValidValuesMap).MapKeys()
 			return &ConstraintError{
 				Message: fmt.Sprintf("invalid enum values for type '%T' for custom enum. Missing key %v (and potentially others). Expected values: %s, Has values: %s",
 					typeOrData, key, expectedValues, foundValues),

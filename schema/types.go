@@ -50,6 +50,8 @@ const (
 	TypeIDAny TypeID = "any"
 )
 
+const DEFAULT_NAMESPACE string = ""
+
 // Serializable describes the minimum feature set a part of the schema hierarchy must implement.
 type Serializable interface {
 	// ReflectedType returns the underlying unserialized type.
@@ -63,7 +65,10 @@ type Serializable interface {
 	// Serialize serializes the provided data.
 	Serialize(data any) (any, error)
 	// ApplyScope notifies the current schema being added to a scope.
-	ApplyScope(scope Scope)
+	ApplyScope(scope Scope, namespace string)
+	// ValidateReferences validates that all references had their referenced objects found.
+	// Useful to ensure the error is caught early rather than later when it's used.
+	ValidateReferences() error
 }
 
 // Type adds the type ID to Serializable as part of the Schema tree.

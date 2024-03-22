@@ -53,7 +53,11 @@ func (s StringSchema) Pattern() *regexp.Regexp {
 	return s.PatternValue
 }
 
-func (s StringSchema) ApplyScope(scope Scope) {
+func (s StringSchema) ApplyScope(_ Scope, _ string) {}
+
+func (s StringSchema) ValidateReferences() error {
+	// No references in this type. No work to do.
+	return nil
 }
 
 func (s StringSchema) Unserialize(data any) (any, error) {
@@ -85,7 +89,7 @@ func (s StringSchema) ValidateCompatibility(typeOrData any) error {
 	}
 
 	if schemaType.TypeID() == TypeIDStringEnum {
-		// Just accept the enums. It's possible to do more
+		// For now, just accept the enums. Consider more validations later.
 		return nil
 	} else if schemaType.TypeID() != TypeIDString {
 		return &ConstraintError{
