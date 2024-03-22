@@ -95,6 +95,8 @@ func (r *RefSchema) Display() Display {
 	return r.DisplayValue
 }
 
+// ApplyScope links the reference to the object if the given namespace
+// matches the ref's namespace. Other namespaces are skipped.
 func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 	if namespace != r.ObjectNamespace {
 		return // The scope does not apply to this reference.
