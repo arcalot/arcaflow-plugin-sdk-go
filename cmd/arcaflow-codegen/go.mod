@@ -1,9 +1,11 @@
 module codegen
 
-go 1.18
+go 1.21
+
+toolchain go1.22.1
 
 require (
-	go.arcalot.io/assert v1.6.0
+	go.arcalot.io/assert v1.8.0
 	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
