@@ -7,13 +7,15 @@ import (
 
 // Ref holds the definition of a reference to a scope-wide object. The ref must always be inside a scope,
 // either directly or indirectly. If several scopes are embedded within each other, the Ref references the object
-// in the current scope.
+// in the scope specified. DEFAULT_NAMESPACE for current scope.
 type Ref interface {
 	Object
 
 	ID() string
+	Namespace() string
 	Display() Display
 	GetObject() Object
+	ObjectReady() bool
 }
 
 // NewRefSchema creates a new reference to an object in a wrapping Scope by ID.
@@ -87,8 +89,16 @@ func (r *RefSchema) ReflectedType() reflect.Type {
 	return r.referencedObjectCache.ReflectedType()
 }
 
+func (r *RefSchema) ObjectReady() bool {
+	return r.referencedObjectCache != nil
+}
+
 func (r *RefSchema) ID() string {
 	return r.IDValue
+}
+
+func (r *RefSchema) Namespace() string {
+	return r.ObjectNamespace
 }
 
 func (r *RefSchema) Display() Display {
@@ -104,8 +114,12 @@ func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 	objects := scope.Objects()
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
+		availableObjects := ""
+		for objectID, _ := range objects {
+			availableObjects += objectID + "\n"
+		}
 		panic(BadArgumentError{
-			Message: fmt.Sprintf("Referenced object '%s' not found in scope with namespace %q", r.IDValue, namespace),
+			Message: fmt.Sprintf("Referenced object '%s' not found in scope with namespace %q; available:\n%s", r.IDValue, namespace, availableObjects),
 		})
 	}
 	r.referencedObjectCache = referencedObject

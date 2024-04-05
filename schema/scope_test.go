@@ -463,7 +463,9 @@ func TestApplyingExternalNamespace(t *testing.T) {
 			err = testData.ref.ValidateReferences()
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "missing its link")
+			assert.Equals(t, testData.ref.ObjectReady(), false)
 			testData.scope.ApplyScope(externalScope, "test-namespace")
+			assert.Equals(t, testData.ref.ObjectReady(), true)
 			// Now it's applied, so the error should be resolved.
 			// Outermost
 			assert.NoError(t, testData.scope.ValidateReferences())
