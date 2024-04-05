@@ -321,7 +321,7 @@ func TestApplyingExternalNamespace(t *testing.T) {
 	// The applied scope must be passed down to all of those types, validating
 	// that the scope gets applied down and that errors are propagated up.
 	refRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
-
+	assert.Equals(t, refRefSchema.Namespace(), "test-namespace")
 	refProperty := schema.NewPropertySchema(
 		refRefSchema,
 		nil,
