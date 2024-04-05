@@ -115,7 +115,7 @@ func (r *RefSchema) ApplyScope(scope Scope, namespace string) {
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
 		availableObjects := ""
-		for objectID, _ := range objects {
+		for objectID := range objects {
 			availableObjects += objectID + "\n"
 		}
 		panic(BadArgumentError{
