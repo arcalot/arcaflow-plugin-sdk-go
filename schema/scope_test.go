@@ -321,7 +321,7 @@ func TestApplyingExternalNamespace(t *testing.T) {
 	// The applied scope must be passed down to all of those types, validating
 	// that the scope gets applied down and that errors are propagated up.
 	refRefSchema := schema.NewNamespacedRefSchema("scopeTestObjectB", "test-namespace", nil)
-
+	assert.Equals(t, refRefSchema.Namespace(), "test-namespace")
 	refProperty := schema.NewPropertySchema(
 		refRefSchema,
 		nil,
@@ -463,7 +463,9 @@ func TestApplyingExternalNamespace(t *testing.T) {
 			err = testData.ref.ValidateReferences()
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "missing its link")
+			assert.Equals(t, testData.ref.ObjectReady(), false)
 			testData.scope.ApplyScope(externalScope, "test-namespace")
+			assert.Equals(t, testData.ref.ObjectReady(), true)
 			// Now it's applied, so the error should be resolved.
 			// Outermost
 			assert.NoError(t, testData.scope.ValidateReferences())
