@@ -342,38 +342,6 @@ func (o *ObjectSchema) validateStruct(data any) error {
 	return o.validateFieldInterdependencies(rawData)
 }
 
-func ConvertToObjectSchema(typeOrData any) (Object, bool) {
-	// Try plain object schema
-	objectSchemaType, ok := typeOrData.(*ObjectSchema)
-	if ok {
-		return objectSchemaType, true
-	}
-	// Next, try ref schema
-	refSchemaType, ok := typeOrData.(*RefSchema)
-	if ok {
-		return refSchemaType.GetObject(), true
-	}
-	// Next, try scope schema.
-	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
-	if ok {
-		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
-	}
-	// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
-	value := reflect.ValueOf(typeOrData)
-	if reflect.Indirect(value).Kind() == reflect.Struct {
-		field := reflect.Indirect(value).FieldByName("ObjectSchema")
-		if field.IsValid() {
-			fieldAsInterface := field.Interface()
-			objectType, ok2 := fieldAsInterface.(ObjectSchema)
-			if ok2 {
-				objectSchemaType = &objectType
-				ok = true
-			}
-		}
-	}
-	return objectSchemaType, ok
-}
-
 func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
 	// Validate IDs. This is important because the IDs should match.
@@ -682,6 +650,40 @@ func (a *AnyTypedObject[T]) SerializeType(data any) (any, error) {
 
 func (a *AnyTypedObject[T]) Any() TypedObject[any] {
 	return a
+}
+
+// ConvertToObjectSchema attempts to cast the given type or data to an
+// ObjectSchema. If successful it returns true, else it returns false.
+func ConvertToObjectSchema(typeOrData any) (Object, bool) {
+	// Try plain object schema
+	objectSchemaType, ok := typeOrData.(*ObjectSchema)
+	if ok {
+		return objectSchemaType, true
+	}
+	// Next, try ref schema
+	refSchemaType, ok := typeOrData.(*RefSchema)
+	if ok {
+		return refSchemaType.GetObject(), true
+	}
+	// Next, try scope schema.
+	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
+	if ok {
+		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
+	}
+	// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
+	value := reflect.ValueOf(typeOrData)
+	if reflect.Indirect(value).Kind() == reflect.Struct {
+		field := reflect.Indirect(value).FieldByName("ObjectSchema")
+		if field.IsValid() {
+			fieldAsInterface := field.Interface()
+			objectType, ok2 := fieldAsInterface.(ObjectSchema)
+			if ok2 {
+				objectSchemaType = &objectType
+				ok = true
+			}
+		}
+	}
+	return objectSchemaType, ok
 }
 
 func validateObjectIsStruct[T any]() {
