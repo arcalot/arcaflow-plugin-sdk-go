@@ -342,7 +342,7 @@ func (o *ObjectSchema) validateStruct(data any) error {
 	return o.validateFieldInterdependencies(rawData)
 }
 
-func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
+func ConvertToObjectSchema(typeOrData any) (Object, bool) {
 	// Try plain object schema
 	objectSchemaType, ok := typeOrData.(*ObjectSchema)
 	if ok {
@@ -412,7 +412,7 @@ func (o *ObjectSchema) validateRawCompatibility(typeOrData any) error {
 
 func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema. If it is, verify it. If not, verify it as data.
-	schemaType, ok := o.convertToObjectSchema(typeOrData)
+	schemaType, ok := ConvertToObjectSchema(typeOrData)
 	if ok {
 		// It's a schema, so see if the schema matches
 		return o.validateSchemaCompatibility(schemaType)
