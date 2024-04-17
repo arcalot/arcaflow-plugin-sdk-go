@@ -652,9 +652,12 @@ func (a *AnyTypedObject[T]) Any() TypedObject[any] {
 	return a
 }
 
-// ConvertToObjectSchema attempts to extract the given type or data from a
-// RefSchema or from the root of a ScopeSchema, and then cast it to an
-// ObjectSchema. If successful it returns true, else it returns false.
+// ConvertToObjectSchema attempts to extract an ObjectSchema from the input.
+//
+// If an ObjectSchema is found, it returns it.
+// If a RefSchema is found, it extracts the cached object schema the ref is referencing.
+// If a ScopeSchema is found, it extracts the root object schema.
+// Returns true if successful, false otherwise.
 func ConvertToObjectSchema(typeOrData any) (Object, bool) {
 	// Try plain object schema
 	objectSchemaType, ok := typeOrData.(*ObjectSchema)
