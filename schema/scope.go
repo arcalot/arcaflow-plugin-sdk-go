@@ -124,10 +124,10 @@ func (s *ScopeSchema) Objects() map[string]*ObjectSchema {
 	return s.ObjectsValue
 }
 
-func (s *ScopeSchema) objectIDList() string {
+func (s *ScopeSchema) objectIDList(separator string) string {
 	output := ""
 	for id := range s.ObjectsValue {
-		output += "\n" + id
+		output += separator + id
 	}
 	return output
 }
@@ -138,12 +138,12 @@ func (s *ScopeSchema) RootObject() *ObjectSchema {
 		panic(fmt.Sprintf(
 			"root object with ID %q not found; available objects:%s",
 			s.RootValue,
-			s.objectIDList(),
+			s.objectIDList("\n\t"),
 		))
 	}
 	if rootObject == nil {
 		panic(fmt.Sprintf(
-			"root object with ID %q is nil; this is a bug",
+			"root object with ID %q is nil",
 			s.RootValue,
 		))
 	}

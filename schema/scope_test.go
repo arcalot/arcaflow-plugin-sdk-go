@@ -499,8 +499,20 @@ func TestApplyingExternalNamespaceToNonRefTypes(t *testing.T) {
 	}
 }
 
+func TestGetRootObject(t *testing.T) {
+	rootObject := schema.NewObjectSchema("a", map[string]*schema.PropertySchema{})
+	correctSchema := schema.ScopeSchema{
+		ObjectsValue: map[string]*schema.ObjectSchema{
+			"a": rootObject,
+		},
+		RootValue: "a",
+	}
+	assert.Equals(t, correctSchema.RootObject(), rootObject)
+}
+
 func TestMismatchedRoot(t *testing.T) {
-	// This is a common user mistake: invalid root key
+	// This is a common user mistake: invalid RootValue in the scope.
+	// Panic when a Scope's RootValue is not a key in its ObjectsValue
 	brokenSchema := schema.ScopeSchema{
 		ObjectsValue: map[string]*schema.ObjectSchema{
 			"a": schema.NewObjectSchema("a", map[string]*schema.PropertySchema{}),
@@ -509,11 +521,11 @@ func TestMismatchedRoot(t *testing.T) {
 	}
 	assert.PanicsContains(t, func() {
 		brokenSchema.RootObject()
-	}, "root object with ID \"wrong\" not found; available objects:\na")
+	}, "root object with ID \"wrong\" not found; available objects:\n\ta")
 }
 
 func TestNilRoot(t *testing.T) {
-	// This is just a bug case
+	// This is just a bug case; nil object in the objects map.
 	brokenSchema := schema.ScopeSchema{
 		ObjectsValue: map[string]*schema.ObjectSchema{
 			"a": nil,
@@ -526,14 +538,14 @@ func TestNilRoot(t *testing.T) {
 }
 
 func TestMismatchedRootID(t *testing.T) {
-	// This is a common user mistake: valid key doesn't match object ID
+	// This is a common user mistake: valid scope map key doesn't match the object's ID
 	brokenSchema := schema.ScopeSchema{
 		ObjectsValue: map[string]*schema.ObjectSchema{
-			"a": schema.NewObjectSchema("wrong", map[string]*schema.PropertySchema{}),
+			"wrong": schema.NewObjectSchema("a", map[string]*schema.PropertySchema{}),
 		},
-		RootValue: "a",
+		RootValue: "wrong",
 	}
 	assert.PanicsContains(t, func() {
 		brokenSchema.RootObject()
-	}, "root object's ID \"wrong\" doesn't match its map key \"a\"")
+	}, "root object's ID \"a\" doesn't match its map key \"wrong\"")
 }
