@@ -657,7 +657,7 @@ func (a *AnyTypedObject[T]) Any() TypedObject[any] {
 // If an ObjectSchema is found, it returns it.
 // If a RefSchema is found, it extracts the cached object schema the ref is referencing.
 // If a ScopeSchema is found, it extracts the root object schema.
-// Returns true if successful, false otherwise.
+// Returns the ObjectSchema and true if successful, otherwise nil and false.
 func ConvertToObjectSchema(typeOrData any) (Object, bool) {
 	// Try plain object schema
 	objectSchemaType, ok := typeOrData.(*ObjectSchema)
