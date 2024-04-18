@@ -498,3 +498,42 @@ func TestApplyingExternalNamespaceToNonRefTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestMismatchedRoot(t *testing.T) {
+	// This is a common user mistake: invalid root key
+	brokenSchema := schema.ScopeSchema{
+		ObjectsValue: map[string]*schema.ObjectSchema{
+			"a": schema.NewObjectSchema("a", map[string]*schema.PropertySchema{}),
+		},
+		RootValue: "wrong",
+	}
+	assert.PanicsContains(t, func() {
+		brokenSchema.RootObject()
+	}, "root object with ID \"wrong\" not found; available objects:\na")
+}
+
+func TestNilRoot(t *testing.T) {
+	// This is just a bug case
+	brokenSchema := schema.ScopeSchema{
+		ObjectsValue: map[string]*schema.ObjectSchema{
+			"a": nil,
+		},
+		RootValue: "a",
+	}
+	assert.PanicsContains(t, func() {
+		brokenSchema.RootObject()
+	}, "root object with ID \"a\" is nil")
+}
+
+func TestMismatchedRootID(t *testing.T) {
+	// This is a common user mistake: valid key doesn't match object ID
+	brokenSchema := schema.ScopeSchema{
+		ObjectsValue: map[string]*schema.ObjectSchema{
+			"a": schema.NewObjectSchema("wrong", map[string]*schema.PropertySchema{}),
+		},
+		RootValue: "a",
+	}
+	assert.PanicsContains(t, func() {
+		brokenSchema.RootObject()
+	}, "root object's ID \"wrong\" doesn't match its map key \"a\"")
+}
