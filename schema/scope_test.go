@@ -524,6 +524,19 @@ func TestMismatchedRoot(t *testing.T) {
 	}, "root object with ID \"wrong\" not found; available objects:\n\ta")
 }
 
+func TestMismatchedRootKey(t *testing.T) {
+	// Tests when the Root value and ID value are correct, but the key of the object map is wrong.
+	brokenSchema := schema.ScopeSchema{
+		ObjectsValue: map[string]*schema.ObjectSchema{
+			"wrong": schema.NewObjectSchema("a", map[string]*schema.PropertySchema{}),
+		},
+		RootValue: "a",
+	}
+	assert.PanicsContains(t, func() {
+		brokenSchema.RootObject()
+	}, "root object with ID \"a\" not found; available objects:\n\twrong")
+}
+
 func TestNilRoot(t *testing.T) {
 	// This is just a bug case; nil object in the objects map.
 	brokenSchema := schema.ScopeSchema{
