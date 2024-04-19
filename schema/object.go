@@ -342,38 +342,6 @@ func (o *ObjectSchema) validateStruct(data any) error {
 	return o.validateFieldInterdependencies(rawData)
 }
 
-func (o *ObjectSchema) convertToObjectSchema(typeOrData any) (Object, bool) {
-	// Try plain object schema
-	objectSchemaType, ok := typeOrData.(*ObjectSchema)
-	if ok {
-		return objectSchemaType, true
-	}
-	// Next, try ref schema
-	refSchemaType, ok := typeOrData.(*RefSchema)
-	if ok {
-		return refSchemaType.GetObject(), true
-	}
-	// Next, try scope schema.
-	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
-	if ok {
-		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
-	}
-	// Try getting the inlined ObjectSchema for objects, like TypedObjectSchema, that do that.
-	value := reflect.ValueOf(typeOrData)
-	if reflect.Indirect(value).Kind() == reflect.Struct {
-		field := reflect.Indirect(value).FieldByName("ObjectSchema")
-		if field.IsValid() {
-			fieldAsInterface := field.Interface()
-			objectType, ok2 := fieldAsInterface.(ObjectSchema)
-			if ok2 {
-				objectSchemaType = &objectType
-				ok = true
-			}
-		}
-	}
-	return objectSchemaType, ok
-}
-
 func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
 	// Validate IDs. This is important because the IDs should match.
@@ -412,7 +380,7 @@ func (o *ObjectSchema) validateRawCompatibility(typeOrData any) error {
 
 func (o *ObjectSchema) ValidateCompatibility(typeOrData any) error {
 	// Check if it's a schema. If it is, verify it. If not, verify it as data.
-	schemaType, ok := o.convertToObjectSchema(typeOrData)
+	schemaType, ok := ConvertToObjectSchema(typeOrData)
 	if ok {
 		// It's a schema, so see if the schema matches
 		return o.validateSchemaCompatibility(schemaType)
@@ -682,6 +650,44 @@ func (a *AnyTypedObject[T]) SerializeType(data any) (any, error) {
 
 func (a *AnyTypedObject[T]) Any() TypedObject[any] {
 	return a
+}
+
+// ConvertToObjectSchema attempts to extract an ObjectSchema from the input.
+//
+// If an ObjectSchema is found, it returns it.
+// If a RefSchema is found, it extracts the cached object schema the ref is referencing.
+// If a ScopeSchema is found, it extracts the root object schema.
+// Returns the ObjectSchema and true if successful, otherwise nil and false.
+func ConvertToObjectSchema(typeOrData any) (Object, bool) {
+	// Try plain object schema
+	objectSchemaType, ok := typeOrData.(*ObjectSchema)
+	if ok {
+		return objectSchemaType, true
+	}
+	// Next, try ref schema
+	refSchemaType, ok := typeOrData.(*RefSchema)
+	if ok {
+		return refSchemaType.GetObject(), true
+	}
+	// Next, try scope schema.
+	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
+	if ok {
+		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
+	}
+	// Try extracting the inlined ObjectSchema for types that have an ObjectSchema, like TypedObjectSchema.
+	value := reflect.ValueOf(typeOrData)
+	if reflect.Indirect(value).Kind() == reflect.Struct {
+		field := reflect.Indirect(value).FieldByName("ObjectSchema")
+		if field.IsValid() {
+			fieldAsInterface := field.Interface()
+			objectType, ok2 := fieldAsInterface.(ObjectSchema)
+			if ok2 {
+				objectSchemaType = &objectType
+				ok = true
+			}
+		}
+	}
+	return objectSchemaType, ok
 }
 
 func validateObjectIsStruct[T any]() {
