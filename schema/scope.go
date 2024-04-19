@@ -149,7 +149,7 @@ func (s *ScopeSchema) RootObject() *ObjectSchema {
 	}
 	if rootObject.ID() != s.RootValue {
 		panic(fmt.Sprintf(
-			"root object's ID %q doesn't match its map key %q; please fix the input",
+			"root object's ID %q doesn't match its map key %q; please fix the schema definition",
 			rootObject.ID(), s.RootValue,
 		))
 	}
