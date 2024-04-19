@@ -13,6 +13,7 @@ type Scope interface {
 	Object
 	Objects() map[string]*ObjectSchema
 	Root() string
+	RootObject() *ObjectSchema
 
 	SelfSerialize() (any, error)
 }
@@ -56,40 +57,40 @@ func (s *ScopeSchema) SelfSerialize() (any, error) {
 }
 
 func (s *ScopeSchema) ID() string {
-	return s.ObjectsValue[s.RootValue].ID()
+	return s.RootObject().ID()
 }
 
 func (s *ScopeSchema) Properties() map[string]*PropertySchema {
-	return s.ObjectsValue[s.RootValue].PropertiesValue
+	return s.RootObject().PropertiesValue
 }
 
 func (s *ScopeSchema) GetDefaults() map[string]any {
-	return s.ObjectsValue[s.RootValue].GetDefaults()
+	return s.RootObject().GetDefaults()
 }
 
 func (s *ScopeSchema) ReflectedType() reflect.Type {
-	return s.ObjectsValue[s.RootValue].ReflectedType()
+	return s.RootObject().ReflectedType()
 }
 
 func (s *ScopeSchema) Unserialize(data any) (any, error) {
-	return s.ObjectsValue[s.RootValue].Unserialize(data)
+	return s.RootObject().Unserialize(data)
 }
 
 func (s *ScopeSchema) ValidateCompatibility(typeOrData any) error {
 	schemaType, ok := typeOrData.(*ScopeSchema)
 	if ok {
-		return s.ObjectsValue[s.RootValue].ValidateCompatibility(schemaType.ObjectsValue[schemaType.RootValue])
+		return s.RootObject().ValidateCompatibility(schemaType.ObjectsValue[schemaType.RootValue])
 	}
 
-	return s.ObjectsValue[s.RootValue].ValidateCompatibility(typeOrData)
+	return s.RootObject().ValidateCompatibility(typeOrData)
 }
 
 func (s *ScopeSchema) Validate(data any) error {
-	return s.ObjectsValue[s.RootValue].Validate(data)
+	return s.RootObject().Validate(data)
 }
 
 func (s *ScopeSchema) Serialize(data any) (any, error) {
-	return s.ObjectsValue[s.RootValue].Serialize(data)
+	return s.RootObject().Serialize(data)
 }
 
 func (s *ScopeSchema) ApplyScope(externalScope Scope, namespace string) {
@@ -121,6 +122,38 @@ func (s *ScopeSchema) TypeID() TypeID {
 
 func (s *ScopeSchema) Objects() map[string]*ObjectSchema {
 	return s.ObjectsValue
+}
+
+func (s *ScopeSchema) objectIDList(separator string) string {
+	output := ""
+	for id := range s.ObjectsValue {
+		output += separator + id
+	}
+	return output
+}
+
+func (s *ScopeSchema) RootObject() *ObjectSchema {
+	rootObject, rootObjectFound := s.ObjectsValue[s.RootValue]
+	if !rootObjectFound {
+		panic(fmt.Sprintf(
+			"root object with ID %q not found; available objects:%s",
+			s.RootValue,
+			s.objectIDList("\n\t"),
+		))
+	}
+	if rootObject == nil {
+		panic(fmt.Sprintf(
+			"root object with ID %q is nil",
+			s.RootValue,
+		))
+	}
+	if rootObject.ID() != s.RootValue {
+		panic(fmt.Sprintf(
+			"root object's ID %q doesn't match its map key %q; please fix the schema definition",
+			rootObject.ID(), s.RootValue,
+		))
+	}
+	return rootObject
 }
 
 func (s *ScopeSchema) Root() string {
