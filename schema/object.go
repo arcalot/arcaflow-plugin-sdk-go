@@ -672,7 +672,7 @@ func ConvertToObjectSchema(typeOrData any) (Object, bool) {
 	// Next, try scope schema.
 	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
 	if ok {
-		return scopeSchemaType.Objects()[scopeSchemaType.Root()], true
+		return scopeSchemaType.RootObject(), true
 	}
 	// Try extracting the inlined ObjectSchema for types that have an ObjectSchema, like TypedObjectSchema.
 	value := reflect.ValueOf(typeOrData)
