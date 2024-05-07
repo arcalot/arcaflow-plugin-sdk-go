@@ -187,12 +187,14 @@ func TestBoolSerializationCycle(t *testing.T) {
 
 func TestBoolJSONMarshal(t *testing.T) {
 	boolType := schema.NewBoolSchema()
-	j, err := json.Marshal(&boolType)
+	//nolint:staticcheck
+	j, err := json.Marshal(boolType)
 	assert.NoError(t, err)
 	if string(j) != "{}" {
 		t.Fatalf("Unexpected JSON output: %s", j)
 	}
-	assert.NoError(t, json.Unmarshal(j, &boolType))
+	//nolint:staticcheck
+	assert.NoError(t, json.Unmarshal(j, boolType))
 }
 
 func TestBoolSchema(t *testing.T) {

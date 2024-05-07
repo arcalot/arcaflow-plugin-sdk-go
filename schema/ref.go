@@ -128,8 +128,8 @@ func (r *RefSchema) ValidateReferences() error {
 	if r.referencedObjectCache != nil {
 		return nil // Success
 	}
-	// The only way, unless there is a bug, for it to get here is if ApplyScope was not called with the
-	// correct namespace, or if the code disregards the error returned by ApplyScope. ApplyScope should
+	// The only way, unless there is a bug, for it to get here is if ApplyNamespace was not called with the
+	// correct namespace, or if the code disregards the error returned by ApplyNamespace. ApplyNamespace should
 	// always set referencedObjectCache or return an error if the correct namespace is applied.
 	return BadArgumentError{
 		Message: fmt.Sprintf(
