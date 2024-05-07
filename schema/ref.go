@@ -7,7 +7,7 @@ import (
 
 // Ref holds the definition of a reference to a scope-wide object. The ref must always be inside a scope,
 // either directly or indirectly. If several scopes are embedded within each other, the Ref references the object
-// in the scope specified. SelfNamespace for current scope.
+// in the scope specified. SelfNamespace refers to the current scope.
 type Ref interface {
 	Object
 
@@ -109,7 +109,7 @@ func (r *RefSchema) Display() Display {
 // matches the ref's namespace. Other namespaces are skipped.
 func (r *RefSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
 	if namespace != r.ObjectNamespace {
-		return // The objects do not apply to this reference.
+		return // This reference does not refer to an object in the supplied namespace.
 	}
 	referencedObject, ok := objects[r.IDValue]
 	if !ok {
