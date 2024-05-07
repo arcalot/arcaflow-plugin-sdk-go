@@ -19,18 +19,12 @@ type Enum[T enumValue] interface {
 }
 
 type EnumSchema[T enumValue] struct {
+	ScalarType
 	ValidValuesMap map[T]*DisplayValue `json:"values"`
 }
 
 func (e EnumSchema[T]) ValidValues() map[T]*DisplayValue {
 	return e.ValidValuesMap
-}
-
-func (e EnumSchema[T]) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {}
-
-func (e EnumSchema[T]) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (e EnumSchema[T]) ReflectedType() reflect.Type {

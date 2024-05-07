@@ -6,7 +6,7 @@ import "fmt"
 func NewIntEnumSchema(validValues map[int64]*DisplayValue, units *UnitsDefinition) *IntEnumSchema {
 	return &IntEnumSchema{
 		EnumSchema[int64]{
-			validValues,
+			ValidValuesMap: validValues,
 		},
 		units,
 	}

@@ -122,13 +122,6 @@ func (b BoolSchema) SerializeType(data bool) (any, error) {
 	return b.Serialize(data)
 }
 
-func (b BoolSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {}
-
-func (b BoolSchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
-}
-
 func (b BoolSchema) TypeID() TypeID {
 	return TypeIDBool
 }
