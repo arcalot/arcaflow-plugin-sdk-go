@@ -26,7 +26,7 @@ func (e EnumSchema[T]) ValidValues() map[T]*DisplayValue {
 	return e.ValidValuesMap
 }
 
-func (e EnumSchema[T]) ApplyScope(_ Scope, _ string) {}
+func (e EnumSchema[T]) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {}
 
 func (e EnumSchema[T]) ValidateReferences() error {
 	// No references in this type. No work to do.

@@ -20,13 +20,14 @@ type Float interface {
 // NewFloatSchema creates a new float schema from the specified values.
 func NewFloatSchema(min *float64, max *float64, units *UnitsDefinition) *FloatSchema {
 	return &FloatSchema{
-		min,
-		max,
-		units,
+		MinValue:   min,
+		MaxValue:   max,
+		UnitsValue: units,
 	}
 }
 
 type FloatSchema struct {
+	ScalarType
 	MinValue   *float64         `json:"min"`
 	MaxValue   *float64         `json:"max"`
 	UnitsValue *UnitsDefinition `json:"units"`
@@ -50,12 +51,6 @@ func (f FloatSchema) Max() *float64 {
 
 func (f FloatSchema) Units() *UnitsDefinition {
 	return f.UnitsValue
-}
-func (f FloatSchema) ApplyScope(_ Scope, _ string) {}
-
-func (f FloatSchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (f FloatSchema) Unserialize(data any) (any, error) {

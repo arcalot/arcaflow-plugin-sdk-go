@@ -12,6 +12,7 @@ func NewAnySchema() *AnySchema {
 
 // AnySchema is a wildcard allowing maps, lists, integers, strings, bools. and floats.
 type AnySchema struct {
+	ScalarType
 }
 
 func (a *AnySchema) ReflectedType() reflect.Type {
@@ -85,13 +86,6 @@ func (a *AnySchema) Validate(data any) error {
 
 func (a *AnySchema) Serialize(data any) (any, error) {
 	return a.checkAndConvert(data)
-}
-
-func (a *AnySchema) ApplyScope(_ Scope, _ string) {}
-
-func (a *AnySchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (a *AnySchema) TypeID() TypeID {

@@ -11,6 +11,7 @@ import (
 // configuration but cannot serialize, unserialize or validate. For that functionality please use IntType.
 type Int interface {
 	TypedType[int64]
+	ScalarType
 	Min() *int64
 	Max() *int64
 	Units() *UnitsDefinition
@@ -19,13 +20,14 @@ type Int interface {
 // NewIntSchema creates a new integer schema with the specified values.
 func NewIntSchema(min *int64, max *int64, units *UnitsDefinition) *IntSchema {
 	return &IntSchema{
-		min,
-		max,
-		units,
+		MinValue:   min,
+		MaxValue:   max,
+		UnitsValue: units,
 	}
 }
 
 type IntSchema struct {
+	ScalarType
 	MinValue   *int64           `json:"min"`
 	MaxValue   *int64           `json:"max"`
 	UnitsValue *UnitsDefinition `json:"units"`
@@ -33,13 +35,6 @@ type IntSchema struct {
 
 func (i IntSchema) ReflectedType() reflect.Type {
 	return reflect.TypeOf(int64(0))
-}
-
-func (i IntSchema) ApplyScope(_ Scope, _ string) {}
-
-func (i IntSchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (i IntSchema) TypeID() TypeID {

@@ -18,6 +18,7 @@ func NewBoolSchema() *BoolSchema {
 
 // BoolSchema holds the schema information for boolean types.
 type BoolSchema struct {
+	ScalarType
 }
 
 func (b BoolSchema) Unserialize(data any) (any, error) {
@@ -121,7 +122,7 @@ func (b BoolSchema) SerializeType(data bool) (any, error) {
 	return b.Serialize(data)
 }
 
-func (b BoolSchema) ApplyScope(_ Scope, _ string) {}
+func (b BoolSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {}
 
 func (b BoolSchema) ValidateReferences() error {
 	// No references in this type. No work to do.

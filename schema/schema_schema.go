@@ -843,7 +843,7 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 				nil,
-				PointerTo(DEFAULT_NAMESPACE),
+				PointerTo(SelfNamespace),
 				nil,
 			),
 			"display": displayProperty,

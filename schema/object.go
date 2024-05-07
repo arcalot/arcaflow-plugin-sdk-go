@@ -57,9 +57,9 @@ func (o *ObjectSchema) GetDefaults() map[string]any {
 	return o.defaultValues
 }
 
-func (o *ObjectSchema) ApplyScope(scope Scope, namespace string) {
+func (o *ObjectSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
 	for _, property := range o.PropertiesValue {
-		property.ApplyScope(scope, namespace)
+		property.ApplyNamespace(objects, namespace)
 	}
 }
 

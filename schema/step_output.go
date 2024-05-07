@@ -55,8 +55,8 @@ func (s StepOutputSchema) Serialize(data any) (any, error) {
 	return s.SchemaValue.Serialize(data)
 }
 
-func (s StepOutputSchema) ApplyScope(scope Scope, namespace string) {
-	s.SchemaValue.ApplyScope(scope, namespace)
+func (s StepOutputSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
+	s.SchemaValue.ApplyNamespace(objects, namespace)
 }
 
 func (s StepOutputSchema) ValidateReferences() error {

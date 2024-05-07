@@ -19,13 +19,15 @@ type String interface {
 // NewStringSchema creates a new string schema.
 func NewStringSchema(minLen *int64, maxLen *int64, pattern *regexp.Regexp) *StringSchema {
 	return &StringSchema{
-		minLen,
-		maxLen,
-		pattern,
+		MinValue:     minLen,
+		MaxValue:     maxLen,
+		PatternValue: pattern,
 	}
 }
 
 type StringSchema struct {
+	ScalarType
+
 	MinValue     *int64         `json:"min"`
 	MaxValue     *int64         `json:"max"`
 	PatternValue *regexp.Regexp `json:"pattern"`
@@ -51,13 +53,6 @@ func (s StringSchema) Max() *int64 {
 
 func (s StringSchema) Pattern() *regexp.Regexp {
 	return s.PatternValue
-}
-
-func (s StringSchema) ApplyScope(_ Scope, _ string) {}
-
-func (s StringSchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (s StringSchema) Unserialize(data any) (any, error) {
