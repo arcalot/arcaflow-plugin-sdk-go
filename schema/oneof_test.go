@@ -199,7 +199,7 @@ func Test_OneOf_ConstructorBypass(t *testing.T) { //nolint:funlen
 
 	scopeAny := assert.NoErrorR[any](t)(schema.DescribeScope().Unserialize(input_schema))
 	scopeSchemaTyped := scopeAny.(*schema.ScopeSchema)
-	scopeSchemaTyped.ApplyNamespace(scopeSchemaTyped.Objects(), schema.SelfNamespace)
+	scopeSchemaTyped.ApplySelf()
 	assert.NoError(t, scopeSchemaTyped.Validate(input_data_fullname))
 	unserialized := assert.NoErrorR[any](t)(scopeSchemaTyped.Unserialize(input_data_fullname))
 	serialized := assert.NoErrorR[any](t)(scopeSchemaTyped.Serialize(unserialized))

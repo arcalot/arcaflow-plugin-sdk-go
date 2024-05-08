@@ -88,9 +88,9 @@ type TypedType[T any] interface {
 	SerializeType(data T) (any, error)
 }
 
-// ScalarType is a struct that provides default implementations for ApplyScope and
-// ValidateReferences for types that cannot contain references. Those two
-// functions do not do anything when there are no references.
+// ScalarType is a struct that provides default implementations for
+// ApplyNamespace and ValidateReferences for types that cannot contain
+// references.
 type ScalarType struct {
 }
 

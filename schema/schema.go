@@ -48,9 +48,9 @@ func (s SchemaSchema) Steps() map[string]Step {
 func (s SchemaSchema) applyNamespace() {
 	for _, step := range s.StepsValue {
 		// We can apply an empty scope because the scope does not need another scope.
-		step.InputValue.ApplyNamespace(nil, SelfNamespace)
+		step.InputValue.ApplySelf()
 		for _, output := range step.OutputsValue {
-			output.ApplyNamespace(nil, SelfNamespace)
+			output.Schema().ApplySelf()
 		}
 	}
 }
