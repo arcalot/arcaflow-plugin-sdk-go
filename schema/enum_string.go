@@ -6,7 +6,7 @@ import "fmt"
 func NewStringEnumSchema(validValues map[string]*DisplayValue) *StringEnumSchema {
 	return &StringEnumSchema{
 		EnumSchema[string]{
-			validValues,
+			ValidValuesMap: validValues,
 		},
 	}
 }

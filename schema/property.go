@@ -122,8 +122,8 @@ func (p *PropertySchema) Examples() []string {
 	return p.ExamplesValue
 }
 
-func (p *PropertySchema) ApplyScope(scope Scope, namespace string) {
-	p.TypeValue.ApplyScope(scope, namespace)
+func (p *PropertySchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
+	p.TypeValue.ApplyNamespace(objects, namespace)
 }
 
 func (p *PropertySchema) ValidateReferences() error {

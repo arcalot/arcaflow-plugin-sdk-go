@@ -50,7 +50,7 @@ const (
 	TypeIDAny TypeID = "any"
 )
 
-const DEFAULT_NAMESPACE string = ""
+const SelfNamespace string = ""
 
 // Serializable describes the minimum feature set a part of the schema hierarchy must implement.
 type Serializable interface {
@@ -64,8 +64,8 @@ type Serializable interface {
 	ValidateCompatibility(typeOrData any) error
 	// Serialize serializes the provided data.
 	Serialize(data any) (any, error)
-	// ApplyScope notifies the current schema being added to a scope.
-	ApplyScope(scope Scope, namespace string)
+	// ApplyNamespace makes namespace object available to resolve references.
+	ApplyNamespace(objects map[string]*ObjectSchema, namespace string)
 	// ValidateReferences validates that all references had their referenced objects found.
 	// Useful to ensure the error is caught early rather than later when it's used.
 	ValidateReferences() error
@@ -86,6 +86,20 @@ type TypedType[T any] interface {
 	UnserializeType(data any) (T, error)
 	ValidateType(data T) error
 	SerializeType(data T) (any, error)
+}
+
+// ScalarType is a struct that provides default implementations for
+// ApplyNamespace and ValidateReferences for types that cannot contain
+// references.
+type ScalarType struct {
+}
+
+func (s *ScalarType) ApplyNamespace(_ map[string]*ObjectSchema, _ string) {
+	// Scalar types have no references, so the namespace can be ignored.
+}
+
+func (s *ScalarType) ValidateReferences() error {
+	return nil // Scalar types have no references, so no work to do.
 }
 
 // MapKeyType are types that can be used as map keys.

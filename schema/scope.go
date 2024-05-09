@@ -15,6 +15,7 @@ type Scope interface {
 	Root() string
 	RootObject() *ObjectSchema
 
+	ApplySelf()
 	SelfSerialize() (any, error)
 }
 
@@ -32,9 +33,7 @@ func NewScopeSchema(rootObject *ObjectSchema, objects ...*ObjectSchema) *ScopeSc
 		root,
 	}
 
-	for _, v := range objectMap {
-		v.ApplyScope(schema, DEFAULT_NAMESPACE)
-	}
+	schema.ApplySelf()
 
 	return schema
 }
@@ -93,16 +92,21 @@ func (s *ScopeSchema) Serialize(data any) (any, error) {
 	return s.RootObject().Serialize(data)
 }
 
-func (s *ScopeSchema) ApplyScope(externalScope Scope, namespace string) {
+func (s *ScopeSchema) ApplySelf() {
+	// Currently ApplyNamespace ignores externalObjects when namespace is SelfNamespace.
+	s.ApplyNamespace(nil, SelfNamespace)
+}
+
+func (s *ScopeSchema) ApplyNamespace(externalObjects map[string]*ObjectSchema, namespace string) {
 	// When the namespace is the default namespace, each scope should pass itself down.
-	var scopeToApply Scope
-	if namespace == DEFAULT_NAMESPACE {
-		scopeToApply = s
+	var objectsToApply map[string]*ObjectSchema
+	if namespace == SelfNamespace {
+		objectsToApply = s.Objects()
 	} else {
-		scopeToApply = externalScope
+		objectsToApply = externalObjects
 	}
 	for _, v := range s.ObjectsValue {
-		v.ApplyScope(scopeToApply, namespace)
+		v.ApplyNamespace(objectsToApply, namespace)
 	}
 }
 

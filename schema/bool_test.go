@@ -186,17 +186,15 @@ func TestBoolSerializationCycle(t *testing.T) {
 }
 
 func TestBoolJSONMarshal(t *testing.T) {
-	j, err := json.Marshal(schema.NewBoolSchema())
-	if err != nil {
-		t.Fatal(err)
-	}
+	boolType := schema.NewBoolSchema()
+	//nolint:staticcheck
+	j, err := json.Marshal(boolType)
+	assert.NoError(t, err)
 	if string(j) != "{}" {
 		t.Fatalf("Unexpected JSON output: %s", j)
 	}
-	boolType := schema.NewBoolSchema()
-	if err := json.Unmarshal(j, &boolType); err != nil {
-		t.Fatal(err)
-	}
+	//nolint:staticcheck
+	assert.NoError(t, json.Unmarshal(j, boolType))
 }
 
 func TestBoolSchema(t *testing.T) {

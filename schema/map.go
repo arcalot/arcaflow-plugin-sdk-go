@@ -80,9 +80,9 @@ func (m MapSchema[K, V]) Max() *int64 {
 	return m.MaxValue
 }
 
-func (m MapSchema[K, V]) ApplyScope(scope Scope, namespace string) {
-	m.KeysValue.ApplyScope(scope, namespace)
-	m.ValuesValue.ApplyScope(scope, namespace)
+func (m MapSchema[K, V]) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
+	m.KeysValue.ApplyNamespace(objects, namespace)
+	m.ValuesValue.ApplyNamespace(objects, namespace)
 }
 
 func (m MapSchema[K, V]) ValidateReferences() error {

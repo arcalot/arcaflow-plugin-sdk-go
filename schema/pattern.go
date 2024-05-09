@@ -19,17 +19,11 @@ func NewPatternSchema() *PatternSchema {
 }
 
 type PatternSchema struct {
+	ScalarType
 }
 
 func (p PatternSchema) TypeID() TypeID {
 	return TypeIDPattern
-}
-
-func (p PatternSchema) ApplyScope(_ Scope, _ string) {}
-
-func (p PatternSchema) ValidateReferences() error {
-	// No references in this type. No work to do.
-	return nil
 }
 
 func (p PatternSchema) ReflectedType() reflect.Type {

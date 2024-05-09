@@ -843,7 +843,7 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 				nil,
-				PointerTo(DEFAULT_NAMESPACE),
+				PointerTo(SelfNamespace),
 				nil,
 			),
 			"display": displayProperty,
@@ -1313,6 +1313,6 @@ func UnserializeSchema(data any) (*SchemaSchema, error) {
 		return nil, err
 	}
 	result := s.(*SchemaSchema)
-	result.applyScope()
+	result.applyNamespace()
 	return result, nil
 }

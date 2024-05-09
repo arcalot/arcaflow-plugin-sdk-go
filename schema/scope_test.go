@@ -464,7 +464,7 @@ func TestApplyingExternalNamespace(t *testing.T) {
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "missing its link")
 			assert.Equals(t, testData.ref.ObjectReady(), false)
-			testData.scope.ApplyScope(externalScope, "test-namespace")
+			testData.scope.ApplyNamespace(externalScope.Objects(), "test-namespace")
 			assert.Equals(t, testData.ref.ObjectReady(), true)
 			// Now it's applied, so the error should be resolved.
 			// Outermost
@@ -492,7 +492,7 @@ func TestApplyingExternalNamespaceToNonRefTypes(t *testing.T) {
 			// Not applied yet
 			// Should be no error because none of the given types can contain references.
 			assert.NoError(t, testType.ValidateReferences())
-			testType.ApplyScope(scopeTestObjectEmptySchema, "test-namespace")
+			testType.ApplyNamespace(scopeTestObjectEmptySchema.Objects(), "test-namespace")
 			// Should still be no error.
 			assert.NoError(t, testType.ValidateReferences())
 		})

@@ -43,9 +43,9 @@ func (o OneOfSchema[KeyType]) DiscriminatorFieldName() string {
 	return o.DiscriminatorFieldNameValue
 }
 
-func (o OneOfSchema[KeyType]) ApplyScope(scope Scope, namespace string) {
+func (o OneOfSchema[KeyType]) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
 	for _, t := range o.TypesValue {
-		t.ApplyScope(scope, namespace)
+		t.ApplyNamespace(objects, namespace)
 	}
 	// scope must be applied before we can access the subtypes' properties
 	err := o.validateSubtypeDiscriminatorInlineFields()

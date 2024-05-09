@@ -81,8 +81,8 @@ func (l AbstractListSchema[ItemType]) Max() *int64 {
 	return l.MaxValue
 }
 
-func (l AbstractListSchema[ItemType]) ApplyScope(scope Scope, namespace string) {
-	l.ItemsValue.ApplyScope(scope, namespace)
+func (l AbstractListSchema[ItemType]) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
+	l.ItemsValue.ApplyNamespace(objects, namespace)
 }
 
 func (l AbstractListSchema[ItemType]) ValidateReferences() error {
