@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 )
 
 var supportedServerVersions = []int64{1, 3}
@@ -175,7 +176,9 @@ func (c *client) Execute(
 		workStartMsg = RuntimeMessage{RunID: stepData.RunID, MessageID: MessageTypeWorkStart, MessageData: workStartMsg}
 		// Handle signals to the step
 		if receivedSignals != nil {
+			c.wg.Add(1)
 			go func() {
+				defer c.wg.Done()
 				c.executeWriteLoop(stepData.RunID, receivedSignals)
 			}()
 		}
@@ -215,6 +218,7 @@ func (c *client) handleStepComplete(runID string, receivedSignals chan schema.In
 func (c *client) Close() error {
 	c.mutex.Lock()
 	if c.done {
+		c.mutex.Unlock()
 		return nil
 	}
 	c.done = true
@@ -235,12 +239,39 @@ func (c *client) Close() error {
 			clientDoneMessage{},
 		})
 		if err != nil {
-			return fmt.Errorf("client with steps '%s' failed to write client done message with error: %w",
-				c.getRunningStepIDs(), err)
+			// add a timeout to the wait to prevent it from causing a deadlock.
+			// 5 seconds is arbitrary, but gives it enough time to exit.
+			waitedGracefully := waitWithTimeout(time.Second*5, &c.wg)
+			if waitedGracefully {
+				return fmt.Errorf("client with step '%s' failed to write client done message with error: %w",
+					c.getRunningStepIDs(), err)
+			} else {
+				panic(fmt.Errorf("potential deadlock after client with step '%s' failed to write client done message with error: %w",
+					c.getRunningStepIDs(), err))
+			}
 		}
 	}
 	c.wg.Wait()
 	return nil
+}
+
+// Waits for the WaitGroup to finish, but with a timeout to
+// prevent a deadlock.
+// Returns true if the WaitGroup finished, and false if
+// it reached the end of the timeout.
+func waitWithTimeout(duration time.Duration, wg *sync.WaitGroup) bool {
+	// Run a goroutine to do the waiting
+	doneChannel := make(chan bool, 1)
+	go func() {
+		defer close(doneChannel)
+		wg.Wait()
+	}()
+	select {
+	case <-doneChannel:
+		return true
+	case <-time.After(duration):
+		return false
+	}
 }
 
 func (c *client) getRunningStepIDs() string {
@@ -261,6 +292,13 @@ func (c *client) executeWriteLoop(
 ) {
 	// Add the channel to the client so that it can be kept track of
 	c.mutex.Lock()
+	if c.done {
+		c.mutex.Unlock()
+		// You need to abort to allow proper closure, since the channel would otherwise
+		// be left open.
+		c.logger.Warningf("aborting write loop for run ID %q due to done client", runID)
+		return
+	}
 	c.runningSignalReceiveLoops[runID] = receivedSignals
 	c.mutex.Unlock()
 	defer func() {
@@ -295,28 +333,23 @@ func (c *client) executeWriteLoop(
 	}
 }
 
-// sendExecutionResult sends the results to the channel, and closes then removes the channels for the
+// sendExecutionResult sends the results to the result channel, and closes then removes the channels for the
 // step results and the signals.
+// The caller should have the mutex locked while calling this function.
 func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
-	c.logger.Debugf("Providing input for run ID '%s'", runID)
-	c.mutex.Lock()
+	c.logger.Debugf("Sending results for run ID '%s'", runID)
 	resultChannel, found := c.runningStepResultChannels[runID]
-	c.mutex.Unlock()
 	if found {
 		// Send the result
+		// TODO: Consider replacing the channel with a condition variable.
 		resultChannel <- result
-		// Close the channel and remove it to detect incorrectly duplicate results.
+		// Close the channel and remove it to detect incorrectly duplicated results.
 		close(resultChannel)
-		c.mutex.Lock()
-		delete(c.runningStepResultChannels, runID)
-		c.mutex.Unlock()
 	} else {
 		c.logger.Errorf("Step result channel not found for run ID '%s'. This is either a bug in the ATP "+
 			"client, or the plugin erroneously sent a second result.", runID)
 	}
 	// Now close the signal channel, since it's invalid to send a signal after the step is complete.
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	signalChannel, found := c.runningStepEmittedSignalChannels[runID]
 	if !found {
 		c.logger.Debugf("Could not find signal output channel for run ID '%s'", runID)
@@ -328,9 +361,11 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 
 func (c *client) sendErrorToAll(err error) {
 	result := NewErrorExecutionResult(err)
+	c.mutex.Lock()
 	for runID := range c.runningStepResultChannels {
 		c.sendExecutionResult(runID, result)
 	}
+	c.mutex.Unlock()
 }
 
 //nolint:funlen
@@ -356,17 +391,23 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 			var doneMessage WorkDoneMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
 				c.logger.Errorf("Failed to decode work done message (%v) for run ID '%s' ", err, runtimeMessage.RunID)
+				c.mutex.Lock()
 				c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
 					fmt.Errorf("failed to decode work done message (%w)", err)))
+				c.mutex.Unlock()
 			}
+			c.mutex.Lock()
 			c.sendExecutionResult(runtimeMessage.RunID, c.processWorkDone(runtimeMessage.RunID, doneMessage))
+			c.mutex.Unlock()
 		case MessageTypeSignal:
 			var signalMessage SignalMessage
 			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 				c.logger.Errorf("ATP client for run ID '%s' failed to decode signal message: %v",
 					runtimeMessage.RunID, err)
 			}
+			c.mutex.Lock()
 			signalChannel, found := c.runningStepEmittedSignalChannels[runtimeMessage.RunID]
+			c.mutex.Unlock()
 			if !found {
 				c.logger.Warningf(
 					"Step with run ID '%s' sent signal '%s'. Ignoring; signal handling is not implemented "+
@@ -401,6 +442,8 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 				runtimeMessage.MessageID)
 		}
 		c.mutex.Lock()
+		// TODO: This is likely the cause of the deadlock. The recent reordering of the removal from the
+		// channel is resulting in the value being left in here.
 		if len(c.runningStepResultChannels) == 0 {
 			c.mutex.Unlock()
 			return // Done
@@ -441,6 +484,7 @@ func (c *client) prepareResultChannels(
 	stepData schema.Input,
 	emittedSignals chan<- schema.Input,
 ) error {
+	c.logger.Debugf("Preparing result channels for step with run ID %q", stepData.RunID)
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	_, existing := c.runningStepResultChannels[stepData.RunID]
@@ -448,7 +492,7 @@ func (c *client) prepareResultChannels(
 		return fmt.Errorf("duplicate run ID given '%s'", stepData.RunID)
 	}
 	// Set up the signal and step results channels
-	resultChannel := make(chan ExecutionResult)
+	resultChannel := make(chan ExecutionResult, 5) // Arbitrary buffer size to prevent deadlocks.
 	c.runningStepResultChannels[stepData.RunID] = resultChannel
 	if emittedSignals != nil {
 		c.runningStepEmittedSignalChannels[stepData.RunID] = emittedSignals
@@ -472,10 +516,11 @@ func (c *client) getResultV2(
 	c.mutex.Lock()
 	resultChannel, found := c.runningStepResultChannels[stepData.RunID]
 	c.mutex.Unlock()
+	c.logger.Debugf("Got result channel for run ID %q", stepData.RunID)
 	if !found {
 		return NewErrorExecutionResult(
-			fmt.Errorf("could not find result channel for step with run ID '%s'",
-				stepData.RunID),
+			fmt.Errorf("could not find result channel for step with run ID '%s'. Existing channels: %v",
+				stepData.RunID, c.runningStepResultChannels),
 		)
 	}
 	// Wait for the result
@@ -486,6 +531,11 @@ func (c *client) getResultV2(
 				stepData.RunID),
 		)
 	}
+	// This needs to be done after receiving the value, or else the sender will
+	// not be able to get the channel.
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	delete(c.runningStepResultChannels, stepData.RunID)
 	return result
 }
 
