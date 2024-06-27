@@ -338,8 +338,8 @@ func (c *client) executeWriteLoop(
 	}
 }
 
-// sendExecutionResult sends the results to the result channel, and closes then removes the channels for the
-// step results and the signals.
+// sendExecutionResult finalizes the result entry for processing by the client's caller, and
+// closes then removes the channels for the signals.
 // The caller should have the mutex locked while calling this function.
 func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 	c.logger.Debugf("Sending results for run ID '%s'", runID)
@@ -349,7 +349,7 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 		resultEntry.result = &result
 		resultEntry.condition.Signal()
 	} else {
-		c.logger.Errorf("Step result channel not found for run ID '%s'. This is either a bug in the ATP "+
+		c.logger.Errorf("Step result entry not found for run ID '%s'. This is either a bug in the ATP "+
 			"client, or the plugin erroneously sent a second result.", runID)
 	}
 	// Now close the signal channel, since it's invalid to send a signal after the step is complete.
@@ -520,34 +520,34 @@ func (c *client) prepareResultChannels(
 	return nil
 }
 
-// getResultV2 works with the channels that communicate with the RuntimeMessage loop.
+// getResultV2 communicates with the RuntimeMessage loop to get the .
 func (c *client) getResultV2(
 	stepData schema.Input,
 ) ExecutionResult {
 	c.mutex.Lock()
-	resultChannel, found := c.runningStepResultEntries[stepData.RunID]
-	c.logger.Debugf("Got result channel for run ID %q", stepData.RunID)
+	resultEntry, found := c.runningStepResultEntries[stepData.RunID]
+	c.logger.Debugf("Got result entry for run ID %q", stepData.RunID)
 	if !found {
 		return NewErrorExecutionResult(
-			fmt.Errorf("could not find result channel for step with run ID '%s'. Existing channels: %v",
+			fmt.Errorf("could not find result entry for step with run ID '%s'. Existing entries: %v",
 				stepData.RunID, c.runningStepResultEntries),
 		)
 	}
-	if resultChannel.result == nil {
+	if resultEntry.result == nil {
 		// Wait for the result
-		resultChannel.condition.Wait()
+		resultEntry.condition.Wait()
 	}
-	if resultChannel.result == nil {
+	if resultEntry.result == nil {
 		return NewErrorExecutionResult(
-			fmt.Errorf("did not receive result from results channel in ATP client for step with run ID '%s'",
+			fmt.Errorf("did not receive result from results entry in ATP client for step with run ID '%s'",
 				stepData.RunID),
 		)
 	}
-	// This needs to be done after receiving the value, or else the sender will
-	// not be able to get the channel.
 	defer c.mutex.Unlock()
+	// This needs to be done after receiving the value, or else the sender will
+	// not be able to get the entry.
 	delete(c.runningStepResultEntries, stepData.RunID)
-	return *resultChannel.result
+	return *resultEntry.result
 }
 
 func (c *client) processWorkDone(
