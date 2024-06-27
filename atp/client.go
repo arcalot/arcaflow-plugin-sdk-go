@@ -73,7 +73,7 @@ func NewClientWithLogger(
 		make(chan bool, 5), // Buffer to prevent deadlocks
 		make([]schema.Input, 0),
 		make(map[string]chan schema.Input),
-		make(map[string]chan ExecutionResult),
+		make(map[string]*executionEntry),
 		make(map[string]chan<- schema.Input),
 		sync.Mutex{},
 		false,
@@ -90,6 +90,11 @@ func (c *client) Encoder() *cbor.Encoder {
 	return c.encoder
 }
 
+type executionEntry struct {
+	result    *ExecutionResult
+	condition sync.Cond
+}
+
 type client struct {
 	atpVersion                       int64
 	channel                          ClientChannel
@@ -99,9 +104,9 @@ type client struct {
 	encoder                          *cbor.Encoder
 	doneChannel                      chan bool
 	runningSteps                     []schema.Input
-	runningSignalReceiveLoops        map[string]chan schema.Input    // Run ID to channel of signals to steps
-	runningStepResultChannels        map[string]chan ExecutionResult // Run ID to channel of results
-	runningStepEmittedSignalChannels map[string]chan<- schema.Input  // Run ID to channel of signals emitted from steps
+	runningSignalReceiveLoops        map[string]chan schema.Input   // Run ID to channel of signals to steps
+	runningStepResultEntries         map[string]*executionEntry     // Run ID to results
+	runningStepEmittedSignalChannels map[string]chan<- schema.Input // Run ID to channel of signals emitted from steps
 	mutex                            sync.Mutex
 	readLoopRunning                  bool
 	done                             bool
@@ -338,13 +343,11 @@ func (c *client) executeWriteLoop(
 // The caller should have the mutex locked while calling this function.
 func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 	c.logger.Debugf("Sending results for run ID '%s'", runID)
-	resultChannel, found := c.runningStepResultChannels[runID]
+	resultEntry, found := c.runningStepResultEntries[runID]
 	if found {
 		// Send the result
-		// TODO: Consider replacing the channel with a condition variable.
-		resultChannel <- result
-		// Close the channel and remove it to detect incorrectly duplicated results.
-		close(resultChannel)
+		resultEntry.result = &result
+		resultEntry.condition.Signal()
 	} else {
 		c.logger.Errorf("Step result channel not found for run ID '%s'. This is either a bug in the ATP "+
 			"client, or the plugin erroneously sent a second result.", runID)
@@ -352,7 +355,6 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 	// Now close the signal channel, since it's invalid to send a signal after the step is complete.
 	signalChannel, found := c.runningStepEmittedSignalChannels[runID]
 	if !found {
-		c.logger.Debugf("Could not find signal output channel for run ID '%s'", runID)
 		return
 	}
 	close(signalChannel)
@@ -362,7 +364,7 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 func (c *client) sendErrorToAll(err error) {
 	result := NewErrorExecutionResult(err)
 	c.mutex.Lock()
-	for runID := range c.runningStepResultChannels {
+	for runID := range c.runningStepResultEntries {
 		c.sendExecutionResult(runID, result)
 	}
 	c.mutex.Unlock()
@@ -442,9 +444,15 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 				runtimeMessage.MessageID)
 		}
 		c.mutex.Lock()
-		// TODO: This is likely the cause of the deadlock. The recent reordering of the removal from the
-		// channel is resulting in the value being left in here.
-		if len(c.runningStepResultChannels) == 0 {
+		remainingSteps := 0
+		for _, resultEntry := range c.runningStepResultEntries {
+			// The result is the reliable way to determine if it's done. There is a fraction of
+			// time when the entry is still in the map, but it's done.
+			if resultEntry.result == nil {
+				remainingSteps++
+			}
+		}
+		if remainingSteps == 0 {
 			c.mutex.Unlock()
 			return // Done
 		}
@@ -487,13 +495,16 @@ func (c *client) prepareResultChannels(
 	c.logger.Debugf("Preparing result channels for step with run ID %q", stepData.RunID)
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	_, existing := c.runningStepResultChannels[stepData.RunID]
+	_, existing := c.runningStepResultEntries[stepData.RunID]
 	if existing {
 		return fmt.Errorf("duplicate run ID given '%s'", stepData.RunID)
 	}
 	// Set up the signal and step results channels
-	resultChannel := make(chan ExecutionResult, 5) // Arbitrary buffer size to prevent deadlocks.
-	c.runningStepResultChannels[stepData.RunID] = resultChannel
+	resultEntry := executionEntry{
+		result:    nil,
+		condition: sync.Cond{L: &c.mutex},
+	}
+	c.runningStepResultEntries[stepData.RunID] = &resultEntry
 	if emittedSignals != nil {
 		c.runningStepEmittedSignalChannels[stepData.RunID] = emittedSignals
 	}
@@ -514,18 +525,19 @@ func (c *client) getResultV2(
 	stepData schema.Input,
 ) ExecutionResult {
 	c.mutex.Lock()
-	resultChannel, found := c.runningStepResultChannels[stepData.RunID]
-	c.mutex.Unlock()
+	resultChannel, found := c.runningStepResultEntries[stepData.RunID]
 	c.logger.Debugf("Got result channel for run ID %q", stepData.RunID)
 	if !found {
 		return NewErrorExecutionResult(
 			fmt.Errorf("could not find result channel for step with run ID '%s'. Existing channels: %v",
-				stepData.RunID, c.runningStepResultChannels),
+				stepData.RunID, c.runningStepResultEntries),
 		)
 	}
-	// Wait for the result
-	result, received := <-resultChannel
-	if !received {
+	if resultChannel.result == nil {
+		// Wait for the result
+		resultChannel.condition.Wait()
+	}
+	if resultChannel.result == nil {
 		return NewErrorExecutionResult(
 			fmt.Errorf("did not receive result from results channel in ATP client for step with run ID '%s'",
 				stepData.RunID),
@@ -533,10 +545,9 @@ func (c *client) getResultV2(
 	}
 	// This needs to be done after receiving the value, or else the sender will
 	// not be able to get the channel.
-	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	delete(c.runningStepResultChannels, stepData.RunID)
-	return result
+	delete(c.runningStepResultEntries, stepData.RunID)
+	return *resultChannel.result
 }
 
 func (c *client) processWorkDone(
