@@ -260,8 +260,8 @@ func (c *client) Close() error {
 	return nil
 }
 
-// Waits for the WaitGroup to finish, but with a timeout to
-// prevent a deadlock.
+// waitWithTimeout waits for the provided wait group, aborting the wait if
+// the provided timeout expires.
 // Returns true if the WaitGroup finished, and false if
 // it reached the end of the timeout.
 func waitWithTimeout(duration time.Duration, wg *sync.WaitGroup) bool {
@@ -295,15 +295,16 @@ func (c *client) executeWriteLoop(
 	runID string,
 	receivedSignals chan schema.Input,
 ) {
-	// Add the channel to the client so that it can be kept track of
 	c.mutex.Lock()
 	if c.done {
 		c.mutex.Unlock()
-		// You need to abort to allow proper closure, since the channel would otherwise
-		// be left open.
-		c.logger.Warningf("aborting write loop for run ID %q due to done client", runID)
+		// It is important to abort now since Close() was called. This is to prevent the channel
+		// from being added to the channel, since Close() uses that map to determine the exit
+		// condition. Adding to the map would cause it to never exit.
+		c.logger.Warningf("write called loop for run ID %q on done client; aborting", runID)
 		return
 	}
+	// Add the channel to the client so that it can be kept track of
 	c.runningSignalReceiveLoops[runID] = receivedSignals
 	c.mutex.Unlock()
 	defer func() {
@@ -340,7 +341,7 @@ func (c *client) executeWriteLoop(
 
 // sendExecutionResult finalizes the result entry for processing by the client's caller, and
 // closes then removes the channels for the signals.
-// The caller should have the mutex locked while calling this function.
+// The caller must have the mutex locked while calling this function.
 func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 	c.logger.Debugf("Sending results for run ID '%s'", runID)
 	resultEntry, found := c.runningStepResultEntries[runID]
@@ -370,6 +371,79 @@ func (c *client) sendErrorToAll(err error) {
 	c.mutex.Unlock()
 }
 
+func (c *client) handleWorkDoneMessage(runtimeMessage DecodedRuntimeMessage) {
+	var doneMessage WorkDoneMessage
+	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
+		c.logger.Errorf("Failed to decode work done message (%v) for run ID '%s' ", err, runtimeMessage.RunID)
+		c.mutex.Lock()
+		c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
+			fmt.Errorf("failed to decode work done message (%w)", err)))
+		c.mutex.Unlock()
+		return
+	}
+	c.mutex.Lock()
+	c.sendExecutionResult(runtimeMessage.RunID, c.processWorkDone(runtimeMessage.RunID, doneMessage))
+	c.mutex.Unlock()
+}
+
+func (c *client) handleSignalMessage(runtimeMessage DecodedRuntimeMessage) {
+	var signalMessage SignalMessage
+	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
+		c.logger.Errorf("ATP client for run ID '%s' failed to decode signal message: %v",
+			runtimeMessage.RunID, err)
+	}
+	c.mutex.Lock()
+	signalChannel, found := c.runningStepEmittedSignalChannels[runtimeMessage.RunID]
+	c.mutex.Unlock()
+	if !found {
+		c.logger.Warningf(
+			"Step with run ID '%s' sent signal '%s'. Ignoring; signal handling is not implemented "+
+				"(emittedSignals is nil).",
+			runtimeMessage.RunID, signalMessage.SignalID)
+	} else {
+		c.logger.Debugf("Got signal from step with run ID '%s' with ID '%s'", runtimeMessage.RunID,
+			signalMessage.SignalID)
+		signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
+	}
+}
+
+// Returns true if fatal, requiring aborting the read loop.
+func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
+	var errMessage ErrorMessage
+	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &errMessage); err != nil {
+		c.logger.Errorf("Step with run ID '%s' failed to decode error message: %v",
+			runtimeMessage.RunID, err)
+	}
+	c.logger.Errorf("Step with run ID '%s' sent error message: %v", runtimeMessage.RunID, errMessage)
+	resultMsg := fmt.Errorf("step '%s' sent error message: %s", runtimeMessage.RunID,
+		errMessage.ToString(runtimeMessage.RunID))
+	if errMessage.ServerFatal {
+		c.sendErrorToAll(resultMsg)
+		return true // It's server fatal, so this is the last message from the server.
+	} else if errMessage.StepFatal {
+		if runtimeMessage.RunID == "" {
+			c.sendErrorToAll(fmt.Errorf("step fatal error missing run id (%w)", resultMsg))
+		} else {
+			c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(resultMsg))
+		}
+	}
+	return false
+}
+
+func (c *client) hasEntriesRemaining() bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	remainingSteps := 0
+	for _, resultEntry := range c.runningStepResultEntries {
+		// The result is the reliable way to determine if it's done. There is a fraction of
+		// time when the entry is still in the map, but it is done.
+		if resultEntry.result == nil {
+			remainingSteps++
+		}
+	}
+	return remainingSteps != 0
+}
+
 //nolint:funlen
 func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 	defer func() {
@@ -390,73 +464,22 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 		}
 		switch runtimeMessage.MessageID {
 		case MessageTypeWorkDone:
-			var doneMessage WorkDoneMessage
-			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
-				c.logger.Errorf("Failed to decode work done message (%v) for run ID '%s' ", err, runtimeMessage.RunID)
-				c.mutex.Lock()
-				c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
-					fmt.Errorf("failed to decode work done message (%w)", err)))
-				c.mutex.Unlock()
-			}
-			c.mutex.Lock()
-			c.sendExecutionResult(runtimeMessage.RunID, c.processWorkDone(runtimeMessage.RunID, doneMessage))
-			c.mutex.Unlock()
+			c.handleWorkDoneMessage(runtimeMessage)
 		case MessageTypeSignal:
-			var signalMessage SignalMessage
-			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
-				c.logger.Errorf("ATP client for run ID '%s' failed to decode signal message: %v",
-					runtimeMessage.RunID, err)
-			}
-			c.mutex.Lock()
-			signalChannel, found := c.runningStepEmittedSignalChannels[runtimeMessage.RunID]
-			c.mutex.Unlock()
-			if !found {
-				c.logger.Warningf(
-					"Step with run ID '%s' sent signal '%s'. Ignoring; signal handling is not implemented "+
-						"(emittedSignals is nil).",
-					runtimeMessage.RunID, signalMessage.SignalID)
-			} else {
-				c.logger.Debugf("Got signal from step with run ID '%s' with ID '%s'", runtimeMessage.RunID,
-					signalMessage.SignalID)
-				signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
-			}
+			c.handleSignalMessage(runtimeMessage)
 		case MessageTypeError:
-			var errMessage ErrorMessage
-			if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &errMessage); err != nil {
-				c.logger.Errorf("Step with run ID '%s' failed to decode error message: %v",
-					runtimeMessage.RunID, err)
-			}
-			c.logger.Errorf("Step with run ID '%s' sent error message: %v", runtimeMessage.RunID, errMessage)
-			resultMsg := fmt.Errorf("step '%s' sent error message: %s", runtimeMessage.RunID,
-				errMessage.ToString(runtimeMessage.RunID))
-			if errMessage.ServerFatal {
-				c.sendErrorToAll(resultMsg)
-				return // It's server fatal, so this is the last message from the server.
-			} else if errMessage.StepFatal {
-				if runtimeMessage.RunID == "" {
-					c.sendErrorToAll(fmt.Errorf("step fatal error missing run id (%w)", resultMsg))
-				} else {
-					c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(resultMsg))
-				}
+			fatal := c.handleErrorMessage(runtimeMessage)
+			if fatal {
+				return
 			}
 		default:
 			c.logger.Warningf("Step with run ID '%s' sent unknown message type: %s", runtimeMessage.RunID,
 				runtimeMessage.MessageID)
 		}
-		c.mutex.Lock()
-		remainingSteps := 0
-		for _, resultEntry := range c.runningStepResultEntries {
-			// The result is the reliable way to determine if it's done. There is a fraction of
-			// time when the entry is still in the map, but it's done.
-			if resultEntry.result == nil {
-				remainingSteps++
-			}
+		// The non-error exit condition is having no more entries remaining.
+		if !c.hasEntriesRemaining() {
+			return
 		}
-		if remainingSteps == 0 {
-			c.mutex.Unlock()
-			return // Done
-		}
-		c.mutex.Unlock()
 	}
 }
 
@@ -520,7 +543,7 @@ func (c *client) prepareResultChannels(
 	return nil
 }
 
-// getResultV2 communicates with the RuntimeMessage loop to get the .
+// getResultV2 communicates with the RuntimeMessage loop to get the ExecutionResult.
 func (c *client) getResultV2(
 	stepData schema.Input,
 ) ExecutionResult {
