@@ -316,3 +316,11 @@ func (m TypedMapSchema[KeyType, ValueType]) ValidateType(data map[KeyType]ValueT
 func (m TypedMapSchema[KeyType, ValueType]) SerializeType(data map[KeyType]ValueType) (any, error) {
 	return m.Serialize(data)
 }
+
+func (m TypedMapSchema[KeyType, ValueType]) SerializeForHuman(args map[string]any) map[string]any {
+	return m.SerializeForHuman(args)
+}
+
+func (m MapSchema[K, V]) SerializeForHuman(args map[string]any) any {
+	return map[string]any{"{}": map[string]any{"key": m.KeysValue.TypeID()}, "value": m.ValuesValue.TypeID()}
+}

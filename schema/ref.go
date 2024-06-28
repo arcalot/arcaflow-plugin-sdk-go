@@ -38,29 +38,29 @@ type RefSchema struct {
 	DisplayValue    Display `json:"display"`
 	ObjectNamespace string  `json:"namespace"`
 
-	referencedObjectCache Object
+	ReferencedObjectCache Object
 }
 
 func (r *RefSchema) Properties() map[string]*PropertySchema {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in Properties; scope with namespace %q was not applied successfully",
 				r.IDValue, r.ObjectNamespace),
 		})
 	}
-	return r.referencedObjectCache.Properties()
+	return r.ReferencedObjectCache.Properties()
 }
 
 func (r *RefSchema) GetDefaults() map[string]any {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in GetDefaults; scope with namespace %q was not applied successfully",
 				r.IDValue, r.ObjectNamespace),
 		})
 	}
-	return r.referencedObjectCache.GetDefaults()
+	return r.ReferencedObjectCache.GetDefaults()
 }
 
 func (r *RefSchema) TypeID() TypeID {
@@ -68,29 +68,29 @@ func (r *RefSchema) TypeID() TypeID {
 }
 
 func (r *RefSchema) GetObject() Object {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in GetObject; scope with namespace %q was not applied successfully",
 				r.IDValue, r.ObjectNamespace),
 		})
 	}
-	return r.referencedObjectCache
+	return r.ReferencedObjectCache
 }
 
 func (r *RefSchema) ReflectedType() reflect.Type {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in ReflectedType; scope with namespace %q was not applied successfully",
 				r.IDValue, r.ObjectNamespace),
 		})
 	}
-	return r.referencedObjectCache.ReflectedType()
+	return r.ReferencedObjectCache.ReflectedType()
 }
 
 func (r *RefSchema) ObjectReady() bool {
-	return r.referencedObjectCache != nil
+	return r.ReferencedObjectCache != nil
 }
 
 func (r *RefSchema) ID() string {
@@ -121,16 +121,16 @@ func (r *RefSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace s
 			Message: fmt.Sprintf("Referenced object '%s' not found in scope with namespace %q; available:\n%s", r.IDValue, namespace, availableObjects),
 		})
 	}
-	r.referencedObjectCache = referencedObject
+	r.ReferencedObjectCache = referencedObject
 }
 
 func (r *RefSchema) ValidateReferences() error {
-	if r.referencedObjectCache != nil {
+	if r.ReferencedObjectCache != nil {
 		return nil // Success
 	}
 	// The only way, unless there is a bug, for it to get here is if ApplyNamespace was not called with the
 	// correct namespace, or if the code disregards the error returned by ApplyNamespace. ApplyNamespace should
-	// always set referencedObjectCache or return an error if the correct namespace is applied.
+	// always set ReferencedObjectCache or return an error if the correct namespace is applied.
 	return BadArgumentError{
 		Message: fmt.Sprintf(
 			"Ref object reference missing its link to object with ID %q in namespace %q. Namespace not valid (not applied).",
@@ -141,7 +141,7 @@ func (r *RefSchema) ValidateReferences() error {
 }
 
 func (r *RefSchema) Unserialize(data any) (any, error) {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in Unserialize; scope with namespace %q was not applied successfully",
@@ -149,11 +149,11 @@ func (r *RefSchema) Unserialize(data any) (any, error) {
 			),
 		})
 	}
-	return r.referencedObjectCache.Unserialize(data)
+	return r.ReferencedObjectCache.Unserialize(data)
 }
 
 func (r *RefSchema) Validate(data any) error {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in Validate; scope with namespace %q was not applied successfully",
@@ -161,11 +161,11 @@ func (r *RefSchema) Validate(data any) error {
 			),
 		})
 	}
-	return r.referencedObjectCache.Validate(data)
+	return r.ReferencedObjectCache.Validate(data)
 }
 
 func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in ValidateCompatibility; scope with namespace %q was not applied successfully",
@@ -175,13 +175,13 @@ func (r *RefSchema) ValidateCompatibility(typeOrData any) error {
 	}
 	schemaType, ok := typeOrData.(*RefSchema)
 	if ok {
-		return r.referencedObjectCache.ValidateCompatibility(schemaType.referencedObjectCache)
+		return r.ReferencedObjectCache.ValidateCompatibility(schemaType.ReferencedObjectCache)
 	}
-	return r.referencedObjectCache.ValidateCompatibility(typeOrData)
+	return r.ReferencedObjectCache.ValidateCompatibility(typeOrData)
 }
 
 func (r *RefSchema) Serialize(data any) (any, error) {
-	if r.referencedObjectCache == nil {
+	if r.ReferencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
 				"ref type not linked to its object with ID %q in Serialize; scope with namespace %q was not applied successfully",
@@ -189,5 +189,9 @@ func (r *RefSchema) Serialize(data any) (any, error) {
 			),
 		})
 	}
-	return r.referencedObjectCache.Serialize(data)
+	return r.ReferencedObjectCache.Serialize(data)
+}
+
+func (r *RefSchema) SerializeForHuman(args map[string]any) any {
+	return r.ReferencedObjectCache.SerializeForHuman(args)
 }

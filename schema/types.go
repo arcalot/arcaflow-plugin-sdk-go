@@ -69,6 +69,7 @@ type Serializable interface {
 	// ValidateReferences validates that all references had their referenced objects found.
 	// Useful to ensure the error is caught early rather than later when it's used.
 	ValidateReferences() error
+	SerializeForHuman(args map[string]any) any
 }
 
 // Type adds the type ID to Serializable as part of the Schema tree.
@@ -140,3 +141,7 @@ func saveConvertTo(value any, to reflect.Type) (any, error) {
 	}
 	return result, nil
 }
+
+//func (s Serializable) SerializeForHuman(args map[string]any) map[string]any {
+//
+//}

@@ -204,3 +204,7 @@ func intInputMapper(data any, u *UnitsDefinition) (int64, error) {
 		return 0, fmt.Errorf("%T cannot be converted to an int64", data)
 	}
 }
+
+func (i IntSchema) SerializeForHuman(args map[string]any) any {
+	return i.TypeID()
+}

@@ -35,8 +35,7 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 type ObjectSchema struct {
 	IDValue         string                     `json:"id"`
 	PropertiesValue map[string]*PropertySchema `json:"properties"`
-
-	defaultValues map[string]any // Key: Object field name, value: The default value
+	defaultValues   map[string]any             // Key: Object field name, value: The default value
 
 	defaultValue     any
 	defaultValueType reflect.Type
@@ -629,6 +628,22 @@ func (t TypedObjectSchema[T]) Any() TypedObject[any] {
 	return &AnyTypedObject[T]{
 		t.ObjectSchema,
 	}
+}
+
+func (t TypedObjectSchema[T]) SerializeForHuman(args map[string]any) any {
+	return t.ObjectSchema.SerializeForHuman(args)
+}
+
+func (a *AnyTypedObject[T]) SerializeForHuman(args map[string]any) any {
+	return a.ObjectSchema.SerializeForHuman(args)
+}
+
+func (o *ObjectSchema) SerializeForHuman(args map[string]any) any {
+	properties := make(map[string]any)
+	for key, property := range o.Properties() {
+		properties[key] = property.SerializeForHuman(args)
+	}
+	return properties
 }
 
 // AnyTypedObject is an object that pretends to be typed, but accepts any type.

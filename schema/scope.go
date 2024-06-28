@@ -206,3 +206,15 @@ func (t TypedScopeSchema[T]) ValidateType(data T) error {
 func (t TypedScopeSchema[T]) SerializeType(data T) (any, error) {
 	return t.Serialize(data)
 }
+
+func (t TypedScopeSchema[T]) SerializeForHuman(args map[string]any) any {
+	return t.SerializeForHuman(args)
+}
+
+func (s *ScopeSchema) SerializeForHuman(args map[string]any) any {
+	objects := make(map[string]any)
+	for key, obj := range s.Objects() {
+		objects[key] = obj.SerializeForHuman(args)
+	}
+	return objects
+}

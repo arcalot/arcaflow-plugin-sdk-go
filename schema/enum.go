@@ -138,3 +138,11 @@ func (e EnumSchema[T]) asType(d any) (T, error) {
 	}
 	return data, nil
 }
+
+func (e EnumSchema[T]) SerializeForHuman(args map[string]any) any {
+	validValues := make([]string, 0)
+	for _, v := range e.ValidValues() {
+		validValues = append(validValues, *v.Name())
+	}
+	return validValues
+}

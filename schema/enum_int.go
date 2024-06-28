@@ -49,3 +49,7 @@ func (e IntEnumSchema) UnserializeType(data any) (int64, error) {
 	}
 	return unserialized.(int64), nil
 }
+
+func (e IntEnumSchema) SerializeForHuman(args map[string]any) any {
+	return map[string]any{string(e.TypeID()): e.EnumSchema.SerializeForHuman(args)}
+}

@@ -74,3 +74,7 @@ func (s StepOutputSchema) Display() *DisplayValue {
 func (s StepOutputSchema) Error() bool {
 	return s.ErrorValue
 }
+
+func (s StepOutputSchema) SerializeForHuman(args map[string]any) any {
+	return s.SchemaValue.SerializeForHuman(args)
+}

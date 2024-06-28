@@ -146,3 +146,7 @@ var boolStringValues = map[string]bool{
 	"disable":  false,
 	"disabled": false,
 }
+
+func (b BoolSchema) SerializeForHuman(args map[string]any) any {
+	return b.TypeID()
+}

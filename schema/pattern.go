@@ -99,3 +99,7 @@ func (p PatternSchema) ValidateType(data *regexp.Regexp) error {
 func (p PatternSchema) SerializeType(data *regexp.Regexp) (any, error) {
 	return p.Serialize(data)
 }
+
+func (p PatternSchema) SerializeForHuman(args map[string]any) any {
+	return p.TypeID()
+}

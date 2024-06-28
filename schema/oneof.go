@@ -35,6 +35,14 @@ func (o OneOfSchema[KeyType]) TypeID() TypeID {
 	}
 }
 
+func (o OneOfSchema[KeyType]) SerializeForHuman(args map[string]any) any {
+	objects := make(map[KeyType]any, len(o.Types()))
+	for key, obj := range o.Types() {
+		objects[key] = obj.SerializeForHuman(args)
+	}
+	return objects
+}
+
 func (o OneOfSchema[KeyType]) Types() map[KeyType]Object {
 	return o.TypesValue
 }

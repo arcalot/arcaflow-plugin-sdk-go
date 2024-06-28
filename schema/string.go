@@ -209,3 +209,7 @@ func stringInputMapper(data any) (string, error) {
 		return "", fmt.Errorf("%T cannot be converted to a string", data)
 	}
 }
+
+func (s StringSchema) SerializeForHuman(args map[string]any) any {
+	return s.TypeID()
+}

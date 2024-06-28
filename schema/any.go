@@ -155,3 +155,7 @@ func (a *AnySchema) checkAndConvert(data any) (any, error) {
 		}
 	}
 }
+
+func (a *AnySchema) SerializeForHuman(args map[string]any) any {
+	return a.TypeID()
+}

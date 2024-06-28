@@ -189,3 +189,7 @@ func (p *PropertySchema) Validate(data any) error {
 func (p *PropertySchema) Serialize(data any) (any, error) {
 	return p.TypeValue.Serialize(data)
 }
+
+func (p *PropertySchema) SerializeForHuman(args map[string]any) any {
+	return p.TypeValue.SerializeForHuman(args)
+}

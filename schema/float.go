@@ -187,3 +187,7 @@ func floatInputMapper(data any, u *UnitsDefinition) (float64, error) {
 		return float64(0), fmt.Errorf("%T cannot be converted to a float64", data)
 	}
 }
+
+func (f FloatSchema) SerializeForHuman(args map[string]any) any {
+	return f.TypeID()
+}

@@ -237,3 +237,11 @@ func (t TypedListSchema[UnserializedType, ItemType]) ValidateType(data []Unseria
 func (t TypedListSchema[UnserializedType, ItemType]) SerializeType(data []UnserializedType) (any, error) {
 	return t.Serialize(data)
 }
+
+func (t TypedListSchema[UnserializedType, ItemType]) SerializeForHuman(args map[string]any) any {
+	return t.SerializeForHuman(args)
+}
+
+func (a AbstractListSchema[ItemType]) SerializeForHuman(args map[string]any) any {
+	return map[string]any{"[]": a.ItemsValue.SerializeForHuman(args)}
+}
