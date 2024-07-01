@@ -444,7 +444,6 @@ func (c *client) hasEntriesRemaining() bool {
 	return remainingSteps != 0
 }
 
-//nolint:funlen
 func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 	defer func() {
 		c.mutex.Lock()
