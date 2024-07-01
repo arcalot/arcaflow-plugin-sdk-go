@@ -548,8 +548,8 @@ func (c *client) getResultV2(
 	stepData schema.Input,
 ) ExecutionResult {
 	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	resultEntry, found := c.runningStepResultEntries[stepData.RunID]
-	c.logger.Debugf("Got result entry for run ID %q", stepData.RunID)
 	if !found {
 		return NewErrorExecutionResult(
 			fmt.Errorf("could not find result entry for step with run ID '%s'. Existing entries: %v",
@@ -566,9 +566,9 @@ func (c *client) getResultV2(
 				stepData.RunID),
 		)
 	}
-	defer c.mutex.Unlock()
-	// This needs to be done after receiving the value, or else the sender will
-	// not be able to get the entry.
+	// Deletion of the entry needs to be done in this function after waiting for
+	// the value to ensure the value's lifetime is long enough in the map.
+	// It cannot be removed on the sender's side, since that would cause a race.
 	delete(c.runningStepResultEntries, stepData.RunID)
 	return *resultEntry.result
 }
