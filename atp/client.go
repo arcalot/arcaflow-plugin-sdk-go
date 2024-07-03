@@ -298,10 +298,13 @@ func (c *client) executeWriteLoop(
 	c.mutex.Lock()
 	if c.done {
 		c.mutex.Unlock()
-		// It is important to abort now since Close() was called. This is to prevent the channel
-		// from being added to the channel, since Close() uses that map to determine the exit
-		// condition. Adding to the map would cause it to never exit.
-		c.logger.Warningf("write called loop for run ID %q on done client; aborting", runID)
+		// Close() was called, so exit now to prevent the channel from being added to
+		// the map, since Close() uses that map to determine the exit condition.
+		// Adding to the map would cause it to never exit.
+		c.logger.Warningf(
+			"write called loop for run ID %q on done client; skipping receive loop",
+			runID,
+		)
 		return
 	}
 	// Add the channel to the client so that it can be kept track of
@@ -373,16 +376,15 @@ func (c *client) sendErrorToAll(err error) {
 
 func (c *client) handleWorkDoneMessage(runtimeMessage DecodedRuntimeMessage) {
 	var doneMessage WorkDoneMessage
+	var result ExecutionResult
 	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &doneMessage); err != nil {
 		c.logger.Errorf("Failed to decode work done message (%v) for run ID '%s' ", err, runtimeMessage.RunID)
-		c.mutex.Lock()
-		c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(
-			fmt.Errorf("failed to decode work done message (%w)", err)))
-		c.mutex.Unlock()
-		return
+		result = NewErrorExecutionResult(fmt.Errorf("failed to decode work done message (%w)", err))
+	} else {
+		result = c.processWorkDone(runtimeMessage.RunID, doneMessage)
 	}
 	c.mutex.Lock()
-	c.sendExecutionResult(runtimeMessage.RunID, c.processWorkDone(runtimeMessage.RunID, doneMessage))
+	c.sendExecutionResult(runtimeMessage.RunID, result)
 	c.mutex.Unlock()
 }
 
@@ -391,6 +393,7 @@ func (c *client) handleSignalMessage(runtimeMessage DecodedRuntimeMessage) {
 	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &signalMessage); err != nil {
 		c.logger.Errorf("ATP client for run ID '%s' failed to decode signal message: %v",
 			runtimeMessage.RunID, err)
+		return
 	}
 	c.mutex.Lock()
 	signalChannel, found := c.runningStepEmittedSignalChannels[runtimeMessage.RunID]
@@ -400,23 +403,23 @@ func (c *client) handleSignalMessage(runtimeMessage DecodedRuntimeMessage) {
 			"Step with run ID '%s' sent signal '%s'. Ignoring; signal handling is not implemented "+
 				"(emittedSignals is nil).",
 			runtimeMessage.RunID, signalMessage.SignalID)
-	} else {
-		c.logger.Debugf("Got signal from step with run ID '%s' with ID '%s'", runtimeMessage.RunID,
-			signalMessage.SignalID)
-		signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
+		return
 	}
+	c.logger.Debugf("Got signal from step with run ID '%s' with ID '%s'", runtimeMessage.RunID,
+		signalMessage.SignalID)
+	signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
 }
 
-// Returns true if fatal, requiring aborting the read loop.
+// Returns true if the error is fatal
 func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
 	var errMessage ErrorMessage
 	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &errMessage); err != nil {
 		c.logger.Errorf("Step with run ID '%s' failed to decode error message: %v",
 			runtimeMessage.RunID, err)
 	}
-	c.logger.Errorf("Step with run ID '%s' sent error message: %v", runtimeMessage.RunID, errMessage)
-	resultMsg := fmt.Errorf("step '%s' sent error message: %s", runtimeMessage.RunID,
-		errMessage.ToString(runtimeMessage.RunID))
+	errorMessageStr := errMessage.ToString(runtimeMessage.RunID)
+	c.logger.Errorf("Step with run ID %q sent error message: %s", runtimeMessage.RunID, errorMessageStr)
+	resultMsg := fmt.Errorf("step with run ID %q sent error message: %s", runtimeMessage.RunID, errorMessageStr)
 	if errMessage.ServerFatal {
 		c.sendErrorToAll(resultMsg)
 		return true // It's server fatal, so this is the last message from the server.
@@ -456,7 +459,11 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 	var runtimeMessage DecodedRuntimeMessage
 	for {
 		if err := cborReader.Decode(&runtimeMessage); err != nil {
-			c.logger.Errorf("ATP client for steps '%s' failed to read or decode runtime message: %v", c.getRunningStepIDs(), err)
+			c.logger.Errorf(
+				"ATP client for steps '%s' failed to read or decode runtime message: %v",
+				c.getRunningStepIDs(),
+				err,
+			)
 			// This is fatal since the entire structure of the runtime message is invalid.
 			c.sendErrorToAll(fmt.Errorf("failed to read or decode runtime message (%w)", err))
 			return
@@ -467,13 +474,15 @@ func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
 		case MessageTypeSignal:
 			c.handleSignalMessage(runtimeMessage)
 		case MessageTypeError:
-			fatal := c.handleErrorMessage(runtimeMessage)
-			if fatal {
-				return
+			if c.handleErrorMessage(runtimeMessage) {
+				return // Fatal
 			}
 		default:
-			c.logger.Warningf("Step with run ID '%s' sent unknown message type: %s", runtimeMessage.RunID,
-				runtimeMessage.MessageID)
+			c.logger.Warningf(
+				"Step with run ID '%s' sent unknown message type: %d",
+				runtimeMessage.RunID,
+				runtimeMessage.MessageID,
+			)
 		}
 		// The non-error exit condition is having no more entries remaining.
 		if !c.hasEntriesRemaining() {
@@ -543,9 +552,7 @@ func (c *client) prepareResultChannels(
 }
 
 // getResultV2 communicates with the RuntimeMessage loop to get the ExecutionResult.
-func (c *client) getResultV2(
-	stepData schema.Input,
-) ExecutionResult {
+func (c *client) getResultV2(stepData schema.Input) ExecutionResult {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	resultEntry, found := c.runningStepResultEntries[stepData.RunID]
@@ -565,8 +572,8 @@ func (c *client) getResultV2(
 				stepData.RunID),
 		)
 	}
-	// Deletion of the entry needs to be done in this function after waiting for
-	// the value to ensure the value's lifetime is long enough in the map.
+	// Now that we've received the result for this step, remove it from the list
+	// of running steps so that we won't see it as running anymore.
 	// It cannot be removed on the sender's side, since that would cause a race.
 	delete(c.runningStepResultEntries, stepData.RunID)
 	return *resultEntry.result
