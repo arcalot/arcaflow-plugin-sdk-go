@@ -410,7 +410,7 @@ func (c *client) handleSignalMessage(runtimeMessage DecodedRuntimeMessage) {
 	signalChannel <- signalMessage.ToInput(runtimeMessage.RunID)
 }
 
-// Returns true if the error is fatal
+// Returns true if the error is fatal.
 func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
 	var errMessage ErrorMessage
 	if err := cbor.Unmarshal(runtimeMessage.RawMessageData, &errMessage); err != nil {
