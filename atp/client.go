@@ -427,7 +427,9 @@ func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
 		if runtimeMessage.RunID == "" {
 			c.sendErrorToAll(fmt.Errorf("step fatal error missing run id (%w)", resultMsg))
 		} else {
+			c.mutex.Lock()
 			c.sendExecutionResult(runtimeMessage.RunID, NewErrorExecutionResult(resultMsg))
+			c.mutex.Unlock()
 		}
 	}
 	return false
@@ -567,10 +569,8 @@ func (c *client) getResultV2(stepData schema.Input) ExecutionResult {
 		resultEntry.condition.Wait()
 	}
 	if resultEntry.result == nil {
-		return NewErrorExecutionResult(
-			fmt.Errorf("did not receive result from results entry in ATP client for step with run ID '%s'",
-				stepData.RunID),
-		)
+		panic(fmt.Errorf("did not receive result from results entry in ATP client for step with run ID '%s'",
+			stepData.RunID))
 	}
 	// Now that we've received the result for this step, remove it from the list
 	// of running steps so that we won't see it as running anymore.

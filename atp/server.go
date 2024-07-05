@@ -93,12 +93,11 @@ func (s *atpServerSession) sendRuntimeMessage(msgID uint32, runID string, messag
 			MessageData: message,
 		})
 	}()
+	defer s.encoderMutex.Unlock()
 	select {
 	case err := <-doneChannel:
-		s.encoderMutex.Unlock()
 		return err
 	case <-time.After(time.Second * 60):
-		s.encoderMutex.Unlock()
 		return fmt.Errorf("send timeout exceeded while sending message ID %q for run id %q", msgID, runID)
 	}
 }
