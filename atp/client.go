@@ -298,9 +298,9 @@ func (c *client) executeWriteLoop(
 	c.mutex.Lock()
 	if c.done {
 		c.mutex.Unlock()
-		// Close() was called, so exit now to prevent the channel from being added to
-		// the map, since Close() uses that map to determine the exit condition.
-		// Adding to the map would cause it to never exit.
+		// Close() was called, so exit now.
+		// Failure to exit now may result in this receivedSignals channel not getting
+		// closed, resulting in this function hanging.
 		c.logger.Warningf(
 			"write called loop for run ID %q on done client; skipping receive loop",
 			runID,
@@ -361,8 +361,8 @@ func (c *client) sendExecutionResult(runID string, result ExecutionResult) {
 	if !found {
 		return
 	}
-	close(signalChannel)
 	delete(c.runningStepEmittedSignalChannels, runID)
+	close(signalChannel)
 }
 
 func (c *client) sendErrorToAll(err error) {
@@ -396,8 +396,8 @@ func (c *client) handleSignalMessage(runtimeMessage DecodedRuntimeMessage) {
 		return
 	}
 	c.mutex.Lock()
+	defer c.mutex.Unlock() // Hold lock until we send to the channel to prevent premature closing of the channel.
 	signalChannel, found := c.runningStepEmittedSignalChannels[runtimeMessage.RunID]
-	c.mutex.Unlock()
 	if !found {
 		c.logger.Warningf(
 			"Step with run ID '%s' sent signal '%s'. Ignoring; signal handling is not implemented "+
@@ -418,8 +418,8 @@ func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
 			runtimeMessage.RunID, err)
 	}
 	errorMessageStr := errMessage.ToString(runtimeMessage.RunID)
-	c.logger.Errorf("Step with run ID %q sent error message: %s", runtimeMessage.RunID, errorMessageStr)
 	resultMsg := fmt.Errorf("step with run ID %q sent error message: %s", runtimeMessage.RunID, errorMessageStr)
+	c.logger.Errorf(resultMsg.Error())
 	if errMessage.ServerFatal {
 		c.sendErrorToAll(resultMsg)
 		return true // It's server fatal, so this is the last message from the server.
@@ -438,15 +438,15 @@ func (c *client) handleErrorMessage(runtimeMessage DecodedRuntimeMessage) bool {
 func (c *client) hasEntriesRemaining() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	remainingSteps := 0
 	for _, resultEntry := range c.runningStepResultEntries {
-		// The result is the reliable way to determine if it's done. There is a fraction of
-		// time when the entry is still in the map, but it is done.
+		// If any result is nil then we're not done.
+		// Context: There is a fraction of time when the entry is still in the map
+		// following completion. It is set to a non-nil value when done.
 		if resultEntry.result == nil {
-			remainingSteps++
+			return true
 		}
 	}
-	return remainingSteps != 0
+	return false
 }
 
 func (c *client) executeReadLoop(cborReader *cbor.Decoder) {
