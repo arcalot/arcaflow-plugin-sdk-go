@@ -572,9 +572,9 @@ func (c *client) getResultV2(stepData schema.Input) ExecutionResult {
 		panic(fmt.Errorf("did not receive result from results entry in ATP client for step with run ID '%s'",
 			stepData.RunID))
 	}
-	// Now that we've received the result for this step, remove it from the list
-	// of running steps so that we won't see it as running anymore.
-	// It cannot be removed on the sender's side, since that would cause a race.
+	// Now that we've received the result for this step, remove it from the list of running steps.
+	// We do this here because the sender cannot tell when the message has been received, and so
+	// it cannot tell when it is safe to remove the entry from the map.
 	delete(c.runningStepResultEntries, stepData.RunID)
 	return *resultEntry.result
 }
