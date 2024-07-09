@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 )
 
 // RunATPServer runs an ArcaflowTransportProtocol server with a given schema.
@@ -83,12 +84,22 @@ func initializeATPServerSession(
 
 func (s *atpServerSession) sendRuntimeMessage(msgID uint32, runID string, message any) error {
 	s.encoderMutex.Lock()
+	doneChannel := make(chan error, 1)
+	go func() {
+		defer close(doneChannel)
+		doneChannel <- s.cborStdout.Encode(RuntimeMessage{
+			MessageID:   msgID,
+			RunID:       runID,
+			MessageData: message,
+		})
+	}()
 	defer s.encoderMutex.Unlock()
-	return s.cborStdout.Encode(RuntimeMessage{
-		MessageID:   msgID,
-		RunID:       runID,
-		MessageData: message,
-	})
+	select {
+	case err := <-doneChannel:
+		return err
+	case <-time.After(time.Second * 60):
+		return fmt.Errorf("send timeout exceeded while sending message ID %q for run id %q", msgID, runID)
+	}
 }
 
 func (s *atpServerSession) handleClosure() []*ServerError {
