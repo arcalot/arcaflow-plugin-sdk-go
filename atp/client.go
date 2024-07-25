@@ -213,7 +213,6 @@ func (c *client) handleStepComplete(runID string, receivedSignals chan schema.In
 		_, exists := c.runningSignalReceiveLoops[runID]
 		if exists {
 			delete(c.runningSignalReceiveLoops, runID)
-			close(receivedSignals)
 		}
 		c.mutex.Unlock()
 	}
@@ -227,13 +226,6 @@ func (c *client) Close() error {
 		return nil
 	}
 	c.done = true
-	// First, close channels that could send signals to the clients
-	// This ends the loop
-	for runID, signalChannel := range c.runningSignalReceiveLoops {
-		c.logger.Infof("Closing signal channel for run ID '%s'", runID)
-		delete(c.runningSignalReceiveLoops, runID)
-		close(signalChannel)
-	}
 	c.mutex.Unlock()
 	// Now tell the server we're done.
 	// Send the client done message
