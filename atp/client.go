@@ -203,20 +203,20 @@ func (c *client) Execute(
 	}
 	c.logger.Debugf("Step '%s' started, waiting for response...", stepData.ID)
 
-	defer c.handleStepComplete(stepData.RunID, receivedSignals)
+	if receivedSignals != nil {
+		defer c.handleStepComplete(stepData.RunID)
+	}
 	return c.getResult(stepData, cborReader)
 }
 
 // handleStepComplete is the deferred function that will handle closing of the received channel.
-func (c *client) handleStepComplete(runID string, receivedSignals chan schema.Input) {
-	if receivedSignals != nil {
-		c.logger.Infof("Closing signal channel for finished step")
-		// Remove from the map to ensure that the client.Close() method doesn't double-close it
-		c.mutex.Lock()
-		// Validate that it exists, since Close() could have been called early.
-		delete(c.runningSignalReceiveLoops, runID)
-		c.mutex.Unlock()
-	}
+func (c *client) handleStepComplete(runID string) {
+	c.logger.Infof("Closing signal channel for finished step")
+	// Remove from the map to ensure that the client.Close() method doesn't double-close it
+	c.mutex.Lock()
+	// Validate that it exists, since Close() could have been called early.
+	delete(c.runningSignalReceiveLoops, runID)
+	c.mutex.Unlock()
 }
 
 // Close Tells the client that it's done, and can stop listening for more requests.
