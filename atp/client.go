@@ -214,10 +214,7 @@ func (c *client) handleStepComplete(runID string, receivedSignals chan schema.In
 		// Remove from the map to ensure that the client.Close() method doesn't double-close it
 		c.mutex.Lock()
 		// Validate that it exists, since Close() could have been called early.
-		_, exists := c.runningSignalReceiveLoops[runID]
-		if exists {
-			delete(c.runningSignalReceiveLoops, runID)
-		}
+		delete(c.runningSignalReceiveLoops, runID)
 		c.mutex.Unlock()
 	}
 }
