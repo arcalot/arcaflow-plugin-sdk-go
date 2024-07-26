@@ -3,7 +3,7 @@ package atp
 import (
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
-	log "go.arcalot.io/log/v2"
+	"go.arcalot.io/log/v2"
 	"go.flow.arcalot.io/pluginsdk/schema"
 	"io"
 	"strings"
@@ -43,6 +43,9 @@ type Client interface {
 }
 
 // NewClient creates a new ATP client (part of the engine code).
+// Currently used only by tests in the Python- and Test-deployers.
+//
+//goland:noinspection GoUnusedExportedFunction
 func NewClient(
 	channel ClientChannel,
 ) Client {
@@ -137,8 +140,9 @@ func (c *client) ReadSchema() (*schema.SchemaSchema, error) {
 	err := c.validateVersion(hello.Version)
 
 	if err != nil {
-		c.logger.Errorf("Unsupported plugin version. %w", err)
-		return nil, fmt.Errorf("unsupported plugin version: %w", err)
+		err = fmt.Errorf("unsupported plugin version: %w", err)
+		c.logger.Errorf(err.Error())
+		return nil, err
 	}
 	c.atpVersion = hello.Version
 
@@ -326,8 +330,13 @@ func (c *client) executeWriteLoop(
 				SignalID: signal.ID,
 				Data:     signal.InputData,
 			}}); err != nil {
-			c.logger.Errorf("Client with steps '%s' failed to write signal (%s) with run id '&s' with error: %w",
-				c.getRunningStepIDs(), signal.ID, signal.RunID, err)
+			c.logger.Errorf(
+				"Client with steps '%s' failed to write signal (%s) with run id %q with error: %v",
+				c.getRunningStepIDs(),
+				signal.ID,
+				signal.RunID,
+				err,
+			)
 			return
 		}
 		c.logger.Debugf("Successfully sent signal with ID '%s' to step with run ID '%s'", signal.ID, signal.RunID)
@@ -505,9 +514,9 @@ func (c *client) getResultV1(
 ) ExecutionResult {
 	var doneMessage WorkDoneMessage
 	if err := cborReader.Decode(&doneMessage); err != nil {
-		c.logger.Errorf("Failed to read or decode work done message: (%w) for step %s", err, stepData.ID)
-		return NewErrorExecutionResult(
-			fmt.Errorf("failed to read or decode work done message (%w) for step %s", err, stepData.ID))
+		err = fmt.Errorf("failed to read or decode work done message (%w) for step %s", err, stepData.ID)
+		c.logger.Errorf(err.Error())
+		return NewErrorExecutionResult(err)
 	}
 	return c.processWorkDone(stepData.RunID, doneMessage)
 }
