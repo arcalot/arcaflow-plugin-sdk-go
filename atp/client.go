@@ -75,7 +75,7 @@ func NewClientWithLogger(
 		cbor.NewEncoder(channel),
 		make(chan bool, 5), // Buffer to prevent deadlocks
 		make([]schema.Input, 0),
-		make(map[string]chan schema.Input),
+		make(map[string]chan<- schema.Input),
 		make(map[string]*executionEntry),
 		make(map[string]chan<- schema.Input),
 		sync.Mutex{},
@@ -107,7 +107,7 @@ type client struct {
 	encoder                          *cbor.Encoder
 	doneChannel                      chan bool
 	runningSteps                     []schema.Input
-	runningSignalReceiveLoops        map[string]chan schema.Input   // Run ID to channel of signals to steps
+	runningSignalReceiveLoops        map[string]chan<- schema.Input // Run ID to channel of signals to steps
 	runningStepResultEntries         map[string]*executionEntry     // Run ID to results
 	runningStepEmittedSignalChannels map[string]chan<- schema.Input // Run ID to channel of signals emitted from steps
 	mutex                            sync.Mutex
