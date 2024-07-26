@@ -209,12 +209,12 @@ func (c *client) Execute(
 	return c.getResult(stepData, cborReader)
 }
 
-// handleStepComplete is the deferred function that will handle closing of the received channel.
+// handleStepComplete performs cleanup actions for a step when its execution is
+// complete.  Currently, this consists solely of removing its entry from the
+// map of channels used to send it signals.
 func (c *client) handleStepComplete(runID string) {
 	c.logger.Infof("Closing signal channel for finished step")
-	// Remove from the map to ensure that the client.Close() method doesn't double-close it
 	c.mutex.Lock()
-	// Validate that it exists, since Close() could have been called early.
 	delete(c.runningSignalReceiveLoops, runID)
 	c.mutex.Unlock()
 }
