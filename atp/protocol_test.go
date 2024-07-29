@@ -197,6 +197,66 @@ func TestProtocol_Client_Execute(t *testing.T) {
 	wg.Wait()
 }
 
+func TestProtocol_Client_Execute_With_Signals(t *testing.T) {
+	testExecuteWithChannels(true, t)
+}
+
+func TestProtocol_Client_Execute_With_Signals_Unclosed(t *testing.T) {
+	testExecuteWithChannels(false, t)
+}
+
+func testExecuteWithChannels(closeChannel bool, t *testing.T) {
+	// Client ReadSchema and Execute happy path with signal handlers passed
+	// into the Execute call.
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+
+	go func() {
+		defer wg.Done()
+		errors := atp.RunATPServer(
+			ctx,
+			stdinReader,
+			stdoutWriter,
+			helloWorldSchema,
+		)
+		assert.Equals(t, len(errors), 0)
+	}()
+
+	go func() {
+		defer wg.Done()
+		cli := atp.NewClientWithLogger(channel{
+			Reader:  stdoutReader,
+			Writer:  stdinWriter,
+			Context: nil,
+			cancel:  cancel,
+		}, log.NewTestLogger(t))
+
+		_, err := cli.ReadSchema()
+		assert.NoError(t, err)
+		toStepChan := make(chan schema.Input)
+		fromStepChan := make(chan schema.Input)
+
+		result := cli.Execute(
+			schema.Input{
+				RunID:     t.Name(),
+				ID:        "hello-world",
+				InputData: map[string]any{"name": "Arca Lot"},
+			}, toStepChan, fromStepChan)
+		if closeChannel {
+			close(toStepChan)
+		}
+		assert.NoError(t, cli.Close())
+		assert.NoError(t, result.Error)
+		assert.Equals(t, result.OutputID, "success")
+		assert.Equals(t, result.OutputData.(map[any]any)["message"].(string), "Hello, Arca Lot!")
+	}()
+
+	wg.Wait()
+}
+
 //nolint:funlen
 func TestProtocol_Client_ATP_v1(t *testing.T) {
 	// Client ReadSchema and Execute atp v1 happy path.
