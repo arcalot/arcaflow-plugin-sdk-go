@@ -186,6 +186,7 @@ func (c *client) Execute(
 		// Handle signals to the step
 		if receivedSignals != nil {
 			c.wg.Add(1)
+			defer c.handleStepComplete(stepData.RunID)
 			go func() {
 				defer c.wg.Done()
 				c.executeWriteLoop(stepData.RunID, receivedSignals)
@@ -203,9 +204,6 @@ func (c *client) Execute(
 	}
 	c.logger.Debugf("Step '%s' started, waiting for response...", stepData.ID)
 
-	if receivedSignals != nil {
-		defer c.handleStepComplete(stepData.RunID)
-	}
 	return c.getResult(stepData, cborReader)
 }
 
