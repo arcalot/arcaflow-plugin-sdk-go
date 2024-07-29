@@ -36,7 +36,7 @@ type Client interface {
 	// ReadSchema reads the schema from the ATP server.
 	ReadSchema() (*schema.SchemaSchema, error)
 	// Execute executes a step with a given context and returns the resulting output. Assumes you called ReadSchema first.
-	Execute(input schema.Input, receivedSignals chan schema.Input, emittedSignals chan<- schema.Input) ExecutionResult
+	Execute(input schema.Input, receivedSignals <-chan schema.Input, emittedSignals chan<- schema.Input) ExecutionResult
 	Close() error
 	Encoder() *cbor.Encoder
 	Decoder() *cbor.Decoder
@@ -165,7 +165,7 @@ func (c *client) validateVersion(serverVersion int64) error {
 
 func (c *client) Execute(
 	stepData schema.Input,
-	receivedSignals chan schema.Input,
+	receivedSignals <-chan schema.Input,
 	emittedSignals chan<- schema.Input,
 ) ExecutionResult {
 	c.logger.Debugf("Executing plugin step %s/%s...", stepData.RunID, stepData.ID)
@@ -271,7 +271,7 @@ func (c *client) getRunningStepIDs() string {
 // Listen for received signals, and send them over ATP if available.
 func (c *client) executeWriteLoop(
 	runID string,
-	receivedSignals chan schema.Input,
+	receivedSignals <-chan schema.Input,
 ) {
 	c.mutex.Lock()
 	if c.done {
