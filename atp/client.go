@@ -187,7 +187,7 @@ func (c *client) Execute(
 		StepID: stepData.ID,
 		Config: stepData.InputData,
 	}
-	cborReader := c.decMode.NewDecoder(c.rawChannels)
+	cborReader := c.decMode.NewDecoder(c.rawAtpChannels)
 	if c.atpVersion > 1 {
 		// Wrap it in a runtime message.
 		workStartMsg = RuntimeMessage{RunID: stepData.RunID, MessageID: MessageTypeWorkStart, MessageData: workStartMsg}
