@@ -108,7 +108,7 @@ type executionEntry struct {
 
 type client struct {
 	atpVersion                       int64
-	rawChannels                      ClientChannel
+	rawAtpChannels                   ClientChannel
 	decMode                          cbor.DecMode
 	logger                           log.Logger
 	decoder                          *cbor.Decoder
