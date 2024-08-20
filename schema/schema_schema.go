@@ -531,7 +531,7 @@ var basicObjects = []*ObjectSchema{
 				NewBoolSchema(),
 				NewDisplayValue(
 					PointerTo("Loose ID Matching"),
-					PointerTo("If true the ID does not need to match another object for "+
+					PointerTo("If true, the ID does not need to match another object for "+
 						"them to be considered compatible."),
 					nil,
 				),
