@@ -191,3 +191,15 @@ func (r *RefSchema) Serialize(data any) (any, error) {
 	}
 	return r.referencedObjectCache.Serialize(data)
 }
+
+func (r *RefSchema) HasLooseIDMatching() bool {
+	if r.referencedObjectCache == nil {
+		panic(BadArgumentError{
+			Message: fmt.Sprintf(
+				"ref type not linked to its object with ID %q in Serialize; scope with namespace %q was not applied successfully",
+				r.IDValue, r.ObjectNamespace,
+			),
+		})
+	}
+	return r.referencedObjectCache.HasLooseIDMatching()
+}

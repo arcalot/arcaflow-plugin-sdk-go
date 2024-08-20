@@ -13,7 +13,7 @@ type testStruct struct {
 	Field2 string `json:"field3"`
 }
 
-var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", map[string]*schema.PropertySchema{
+var testStructProperties = map[string]*schema.PropertySchema{
 	"Field1": schema.NewPropertySchema(
 		schema.NewIntSchema(nil, nil, nil),
 		nil,
@@ -34,7 +34,11 @@ var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", map[strin
 		nil,
 		nil,
 	),
-})
+}
+var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", testStructProperties)
+
+var testStructSchemaStrictDifferentID = schema.NewTypedObject[testStruct]("differentIDTestStruct", testStructProperties)
+var testStructSchemaLooseDifferentID = schema.NewLooseObjectSchema("differentIDTestStruct", testStructProperties)
 
 type testStructPtr struct {
 	Field1 *int64
@@ -549,7 +553,10 @@ var testStructScope = schema.NewScopeSchema(&testStructSchema.ObjectSchema)
 func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	// Schema validation
 	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchema))
-	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same
+	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same ID or fields
+	// Not the same ID; same fields. Strict ID check.
+	assert.Error(t, testStructSchema.ValidateCompatibility(testStructSchemaStrictDifferentID))
+	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchemaLooseDifferentID))
 	// Schema validation with ref
 	objectTestRef := schema.NewRefSchema("testStruct", nil)
 	objectTestRef.ApplyNamespace(testStructScope.Objects(), schema.SelfNamespace)

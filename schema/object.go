@@ -11,6 +11,9 @@ import (
 type Object interface {
 	Type
 	ID() string
+	// HasLooseIDMatching indicates whether the ID must match when validating schema compatibility.
+	// If true, the IDs do not need to match between compared object, but fields must still match.
+	HasLooseIDMatching() bool
 	Properties() map[string]*PropertySchema
 	// GetDefaults returns the defaults in a serialized form.
 	GetDefaults() map[string]any
@@ -19,11 +22,21 @@ type Object interface {
 // NewObjectSchema creates a new object definition.
 // If you need it tied to a struct, use NewStructMappedObjectSchema instead.
 func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
+	return newObjectSchema(id, properties, false)
+}
+
+// NewLooseObjectSchema creates a new object definition with loose ID checking.
+// The loose ID checking is useful for generated schemas, where the ID doesn't mean as much.
+func NewLooseObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
+	return newObjectSchema(id, properties, true)
+}
+
+func newObjectSchema(id string, properties map[string]*PropertySchema, looseIDMatch bool) *ObjectSchema {
 	var anyValue any
 	return &ObjectSchema{
 		id,
+		looseIDMatch,
 		properties,
-
 		extractObjectDefaultValues(properties),
 		nil,
 		reflect.TypeOf(anyValue),
@@ -34,6 +47,7 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 // ObjectSchema is the implementation of the object schema type.
 type ObjectSchema struct {
 	IDValue         string                     `json:"id"`
+	LooseIDMatch    bool                       `json:"loose_id"`
 	PropertiesValue map[string]*PropertySchema `json:"properties"`
 
 	defaultValues map[string]any // Key: Object field name, value: The default value
@@ -55,6 +69,10 @@ func (o *ObjectSchema) GetDefaults() map[string]any {
 		o.defaultValues = extractObjectDefaultValues(o.PropertiesValue)
 	}
 	return o.defaultValues
+}
+
+func (o *ObjectSchema) HasLooseIDMatching() bool {
+	return o.LooseIDMatch
 }
 
 func (o *ObjectSchema) ApplyNamespace(objects map[string]*ObjectSchema, namespace string) {
@@ -345,7 +363,7 @@ func (o *ObjectSchema) validateStruct(data any) error {
 func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
 	// Validate IDs. This is important because the IDs should match.
-	if schemaType.ID() != o.ID() {
+	if !schemaType.HasLooseIDMatching() && schemaType.ID() != o.ID() {
 		return &ConstraintError{
 			Message: fmt.Sprintf("validation failed for object schema ID %s. ID %s does not match.",
 				o.ID(), schemaType.ID()),
@@ -650,6 +668,10 @@ func (a *AnyTypedObject[T]) SerializeType(data any) (any, error) {
 
 func (a *AnyTypedObject[T]) Any() TypedObject[any] {
 	return a
+}
+
+func (a *AnyTypedObject[T]) HasLooseIDMatching() bool {
+	return a.LooseIDMatch
 }
 
 // ConvertToObjectSchema attempts to extract an ObjectSchema from the input.

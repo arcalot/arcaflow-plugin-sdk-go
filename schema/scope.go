@@ -59,6 +59,10 @@ func (s *ScopeSchema) ID() string {
 	return s.RootObject().ID()
 }
 
+func (s *ScopeSchema) HasLooseIDMatching() bool {
+	return s.RootObject().HasLooseIDMatching()
+}
+
 func (s *ScopeSchema) Properties() map[string]*PropertySchema {
 	return s.RootObject().PropertiesValue
 }

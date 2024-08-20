@@ -527,6 +527,21 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 			),
+			"loose_id": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("Loose ID Matching"),
+					PointerTo("If true the ID does not need to match another object for "+
+						"them to be considered compatible."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				PointerTo("false"),
+				nil,
+			),
 		},
 	),
 	NewStructMappedObjectSchema[*OneOfSchema[int64]](
