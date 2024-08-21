@@ -192,7 +192,7 @@ func (r *RefSchema) Serialize(data any) (any, error) {
 	return r.referencedObjectCache.Serialize(data)
 }
 
-func (r *RefSchema) HasLooseIDMatching() bool {
+func (r *RefSchema) IDUnenforced() bool {
 	if r.referencedObjectCache == nil {
 		panic(BadArgumentError{
 			Message: fmt.Sprintf(
@@ -201,5 +201,5 @@ func (r *RefSchema) HasLooseIDMatching() bool {
 			),
 		})
 	}
-	return r.referencedObjectCache.HasLooseIDMatching()
+	return r.referencedObjectCache.IDUnenforced()
 }

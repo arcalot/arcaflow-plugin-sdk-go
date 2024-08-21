@@ -527,10 +527,10 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 			),
-			"loose_id": NewPropertySchema(
+			"id_unenforced": NewPropertySchema(
 				NewBoolSchema(),
 				NewDisplayValue(
-					PointerTo("Loose ID Matching"),
+					PointerTo("ID Unenforced"),
 					PointerTo("If true, the ID does not need to match another object for "+
 						"them to be considered compatible."),
 					nil,
