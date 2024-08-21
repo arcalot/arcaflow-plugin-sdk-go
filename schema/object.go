@@ -26,7 +26,8 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 }
 
 // NewLooseObjectSchema creates a new object definition with loose ID checking.
-// The loose ID checking is useful for generated schemas, where the ID doesn't mean as much.
+// The loose ID checking is useful for generated schemas, where the ID may be insignificant,
+// or could burden workflow development.
 func NewLooseObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
 	return newObjectSchema(id, properties, true)
 }
@@ -35,8 +36,8 @@ func newObjectSchema(id string, properties map[string]*PropertySchema, looseIDMa
 	var anyValue any
 	return &ObjectSchema{
 		id,
-		looseIDMatch,
 		properties,
+		looseIDMatch,
 		extractObjectDefaultValues(properties),
 		nil,
 		reflect.TypeOf(anyValue),
@@ -47,8 +48,8 @@ func newObjectSchema(id string, properties map[string]*PropertySchema, looseIDMa
 // ObjectSchema is the implementation of the object schema type.
 type ObjectSchema struct {
 	IDValue         string                     `json:"id"`
-	LooseIDMatch    bool                       `json:"loose_id"`
 	PropertiesValue map[string]*PropertySchema `json:"properties"`
+	LooseIDMatch    bool                       `json:"loose_id"`
 
 	defaultValues map[string]any // Key: Object field name, value: The default value
 
@@ -363,7 +364,7 @@ func (o *ObjectSchema) validateStruct(data any) error {
 func (o *ObjectSchema) validateSchemaCompatibility(schemaType Object) error {
 	fieldData := map[string]any{}
 	// Validate IDs. This is important because the IDs should match.
-	if !schemaType.HasLooseIDMatching() && schemaType.ID() != o.ID() {
+	if !schemaType.HasLooseIDMatching() && !o.HasLooseIDMatching() && schemaType.ID() != o.ID() {
 		return &ConstraintError{
 			Message: fmt.Sprintf("validation failed for object schema ID %s. ID %s does not match.",
 				o.ID(), schemaType.ID()),

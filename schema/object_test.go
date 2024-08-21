@@ -557,6 +557,7 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	// Not the same ID; same fields. Strict ID check.
 	assert.Error(t, testStructSchema.ValidateCompatibility(testStructSchemaStrictDifferentID))
 	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchemaLooseDifferentID))
+	assert.NoError(t, testStructSchemaLooseDifferentID.ValidateCompatibility(testStructSchema))
 	// Schema validation with ref
 	objectTestRef := schema.NewRefSchema("testStruct", nil)
 	objectTestRef.ApplyNamespace(testStructScope.Objects(), schema.SelfNamespace)
