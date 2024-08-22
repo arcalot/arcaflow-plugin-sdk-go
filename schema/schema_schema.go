@@ -527,6 +527,21 @@ var basicObjects = []*ObjectSchema{
 				nil,
 				nil,
 			),
+			"id_unenforced": NewPropertySchema(
+				NewBoolSchema(),
+				NewDisplayValue(
+					PointerTo("ID Unenforced"),
+					PointerTo("If true, the ID does not need to match another object for "+
+						"them to be considered compatible."),
+					nil,
+				),
+				false,
+				nil,
+				nil,
+				nil,
+				PointerTo("false"),
+				nil,
+			),
 		},
 	),
 	NewStructMappedObjectSchema[*OneOfSchema[int64]](

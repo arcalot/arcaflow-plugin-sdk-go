@@ -59,6 +59,10 @@ func (s *ScopeSchema) ID() string {
 	return s.RootObject().ID()
 }
 
+func (s *ScopeSchema) IDUnenforced() bool {
+	return s.RootObject().IDUnenforced()
+}
+
 func (s *ScopeSchema) Properties() map[string]*PropertySchema {
 	return s.RootObject().PropertiesValue
 }
