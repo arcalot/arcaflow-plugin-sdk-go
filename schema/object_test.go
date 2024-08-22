@@ -38,7 +38,7 @@ var testStructProperties = map[string]*schema.PropertySchema{
 var testStructSchema = schema.NewTypedObject[testStruct]("testStruct", testStructProperties)
 
 var testStructSchemaStrictDifferentID = schema.NewTypedObject[testStruct]("differentIDTestStruct", testStructProperties)
-var testStructSchemaLooseDifferentID = schema.NewLooseObjectSchema("differentIDTestStruct", testStructProperties)
+var testStructSchemaUnenforcedDifferentID = schema.NewUnenforcedIDObjectSchema("differentIDTestStruct", testStructProperties)
 
 type testStructPtr struct {
 	Field1 *int64
@@ -556,8 +556,8 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	assert.Error(t, testStructSchema.ValidateCompatibility(testOptionalFieldSchema)) // Not the same ID or fields
 	// Not the same ID; same fields. Strict ID check.
 	assert.Error(t, testStructSchema.ValidateCompatibility(testStructSchemaStrictDifferentID))
-	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchemaLooseDifferentID))
-	assert.NoError(t, testStructSchemaLooseDifferentID.ValidateCompatibility(testStructSchema))
+	assert.NoError(t, testStructSchema.ValidateCompatibility(testStructSchemaUnenforcedDifferentID))
+	assert.NoError(t, testStructSchemaUnenforcedDifferentID.ValidateCompatibility(testStructSchema))
 	// Schema validation with ref
 	objectTestRef := schema.NewRefSchema("testStruct", nil)
 	objectTestRef.ApplyNamespace(testStructScope.Objects(), schema.SelfNamespace)

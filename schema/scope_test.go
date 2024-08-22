@@ -35,9 +35,9 @@ var scopeTestObjectEmptySchemaRenamed = schema.NewScopeSchema(
 		map[string]*schema.PropertySchema{},
 	),
 )
-var scopeTestObjectEmptySchemaRenamedLoose = schema.NewScopeSchema(
-	schema.NewLooseObjectSchema(
-		"scopeTestObjectEmptyRenamedLoose",
+var scopeTestObjectEmptySchemaRenamedUnenforcedID = schema.NewScopeSchema(
+	schema.NewUnenforcedIDObjectSchema(
+		"scopeTestObjectEmptyRenamedUnenforced",
 		map[string]*schema.PropertySchema{},
 	),
 )
@@ -287,9 +287,9 @@ func TestCompatibilityValidationWithSchema(t *testing.T) {
 	assert.Error(t, err)
 	err = scopeTestObjectEmptySchemaRenamed.ValidateCompatibility(scopeTestObjectEmptySchema)
 	assert.Error(t, err)
-	err = scopeTestObjectEmptySchemaRenamedLoose.ValidateCompatibility(scopeTestObjectEmptySchema)
+	err = scopeTestObjectEmptySchemaRenamedUnenforcedID.ValidateCompatibility(scopeTestObjectEmptySchema)
 	assert.NoError(t, err)
-	err = scopeTestObjectEmptySchema.ValidateCompatibility(scopeTestObjectEmptySchemaRenamedLoose)
+	err = scopeTestObjectEmptySchema.ValidateCompatibility(scopeTestObjectEmptySchemaRenamedUnenforcedID)
 	assert.NoError(t, err)
 	// Mismatching type in one field, but with the field ID matching
 	err = scopeTestObjectCStrSchema.ValidateCompatibility(scopeTestObjectCIntSchema)

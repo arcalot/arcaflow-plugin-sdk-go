@@ -12,7 +12,7 @@ type Object interface {
 	Type
 	ID() string
 	// IDUnenforced indicates whether the ID must match when validating schema compatibility.
-	// If true, the IDs do not need to match between compared object, but fields must still match.
+	// If true, the IDs do not need to match between compared objects, but fields must still match.
 	// Only one object schema needs to not enforce the ID to skip the ID check.
 	IDUnenforced() bool
 	Properties() map[string]*PropertySchema
@@ -26,19 +26,19 @@ func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSc
 	return newObjectSchema(id, properties, false)
 }
 
-// NewLooseObjectSchema creates a new object definition with loose ID checking.
-// The loose ID checking is useful for generated schemas, where the ID may be insignificant,
+// NewUnenforcedIDObjectSchema creates a new object definition with the ID not enforced.
+// The unenforced ID checking is useful for generated schemas, where the ID may be insignificant,
 // or could burden workflow development.
-func NewLooseObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
+func NewUnenforcedIDObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
 	return newObjectSchema(id, properties, true)
 }
 
-func newObjectSchema(id string, properties map[string]*PropertySchema, looseIDMatch bool) *ObjectSchema {
+func newObjectSchema(id string, properties map[string]*PropertySchema, unenforcedIDMatch bool) *ObjectSchema {
 	var anyValue any
 	return &ObjectSchema{
 		id,
 		properties,
-		looseIDMatch,
+		unenforcedIDMatch,
 		extractObjectDefaultValues(properties),
 		nil,
 		reflect.TypeOf(anyValue),
