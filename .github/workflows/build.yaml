@@ -17,3 +17,4 @@ jobs:
     uses: arcalot/arcaflow-reusable-workflows/.github/workflows/go_generate.yaml@debug
     with:
       go_version: ${{ vars.ARCALOT_GO_VERSION }}
+
