@@ -683,20 +683,13 @@ func (a *AnyTypedObject[T]) IDEnforced() bool {
 // If a ScopeSchema is found, it extracts the root object schema.
 // Returns the ObjectSchema and true if successful, otherwise nil and false.
 func ConvertToObjectSchema(typeOrData any) (Object, bool) {
-	// Try plain object schema
-	objectSchemaType, ok := typeOrData.(*ObjectSchema)
-	if ok {
-		return objectSchemaType, true
-	}
-	// Next, try ref schema
-	refSchemaType, ok := typeOrData.(*RefSchema)
-	if ok {
-		return refSchemaType.GetObject(), true
-	}
-	// Next, try scope schema.
-	scopeSchemaType, ok := typeOrData.(*ScopeSchema)
-	if ok {
-		return scopeSchemaType.RootObject(), true
+	switch i := typeOrData.(type) {
+	case *ObjectSchema:
+		return i, true
+	case *RefSchema:
+		return i.GetObject(), true
+	case *ScopeSchema:
+		return i.RootObject(), true
 	}
 	// Try extracting the inlined ObjectSchema for types that have an ObjectSchema, like TypedObjectSchema.
 	value := reflect.ValueOf(typeOrData)
@@ -704,14 +697,12 @@ func ConvertToObjectSchema(typeOrData any) (Object, bool) {
 		field := reflect.Indirect(value).FieldByName("ObjectSchema")
 		if field.IsValid() {
 			fieldAsInterface := field.Interface()
-			objectType, ok2 := fieldAsInterface.(ObjectSchema)
-			if ok2 {
-				objectSchemaType = &objectType
-				ok = true
+			if objectType, ok := fieldAsInterface.(ObjectSchema); ok {
+				return &objectType, true
 			}
 		}
 	}
-	return objectSchemaType, ok
+	return nil, false
 }
 
 func validateObjectIsStruct[T any]() {
