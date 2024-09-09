@@ -1,6 +1,6 @@
 module go.flow.arcalot.io/pluginsdk
 
-go 1.21
+go 1.22.0
 
 require (
 	github.com/fxamacker/cbor/v2 v2.7.0
