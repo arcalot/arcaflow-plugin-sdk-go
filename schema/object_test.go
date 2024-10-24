@@ -607,3 +607,46 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
 	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
 }
+
+type testStructWithSingleField struct {
+	Field1 string `json:"field1"`
+}
+
+var testStructWithSingleFieldSchema = schema.NewStructMappedObjectSchema[testStructWithSingleField]("testStructWithSingleField", map[string]*schema.PropertySchema{
+	"field1": schema.NewPropertySchema(schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("field1"), nil, nil),
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+})
+
+func TestUnserializeSingleFieldObject(t *testing.T) {
+	withoutInlineSerialized := map[string]any{
+		"field1": "hello",
+	}
+	expectedOutput := testStructWithSingleField{
+		"hello",
+	}
+
+	unserializedData, err := testStructWithSingleFieldSchema.Unserialize(withoutInlineSerialized)
+	assert.NoError(t, err)
+	assert.InstanceOf[testStructWithSingleField](t, unserializedData)
+	assert.Equals(t, unserializedData.(testStructWithSingleField), expectedOutput)
+}
+
+func TestUnserializeSingleFieldObjectInlined(t *testing.T) {
+	withoutInlineSerialized := "hello"
+
+	expectedOutput := testStructWithSingleField{
+		"hello",
+	}
+
+	unserializedData, err := testStructWithSingleFieldSchema.Unserialize(withoutInlineSerialized)
+	assert.NoError(t, err)
+	assert.InstanceOf[testStructWithSingleField](t, unserializedData)
+	assert.Equals(t, unserializedData.(testStructWithSingleField), expectedOutput)
+}
