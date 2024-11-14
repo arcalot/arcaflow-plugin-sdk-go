@@ -17,6 +17,9 @@ type String interface {
 }
 
 // NewStringSchema creates a new string schema.
+// If the corresponding Golang type is not a string, but a type
+// defined from a string (example `type NameOfType string`), use
+// `NewTypedStringEnumSchema` instead.
 func NewStringSchema(minLen *int64, maxLen *int64, pattern *regexp.Regexp) *StringSchema {
 	return &StringSchema{
 		MinValue:     minLen,

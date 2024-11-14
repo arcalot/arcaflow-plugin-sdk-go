@@ -82,7 +82,7 @@ func TestStringEnumSerialization(t *testing.T) {
 
 func TestStringEnumTypedSerialization(t *testing.T) {
 	// In this test a typed enum is being inputted into Serialize, but
-	// it is not using a typed
+	// it is not using a typed enum schema.
 	type Size string
 	s := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
 		"small": {NameValue: schema.PointerTo("Small")},
