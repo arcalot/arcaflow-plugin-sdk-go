@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"go.arcalot.io/assert"
+	"go.flow.arcalot.io/pluginsdk/schema/testdata"
 	"strconv"
 	"testing"
 
@@ -649,4 +650,41 @@ func TestUnserializeSingleFieldObjectInlined(t *testing.T) {
 	assert.NoError(t, err)
 	assert.InstanceOf[testStructWithSingleField](t, unserializedData)
 	assert.Equals(t, unserializedData.(testStructWithSingleField), expectedOutput)
+}
+
+func TestStructWithPrivateFields(t *testing.T) {
+	schemaForPrivateFieldStruct := schema.NewStructMappedObjectSchema[testdata.TestStructWithPrivateField](
+		"structWithPrivateField",
+		map[string]*schema.PropertySchema{
+			"field1": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo("\"Hello world!\""),
+				nil,
+			),
+		},
+	)
+
+	inputWithOnlyPublicField := testdata.TestStructWithPrivateField{
+		Field1: "test",
+	}
+	serializedData, err := schemaForPrivateFieldStruct.Serialize(inputWithOnlyPublicField)
+	assert.NoError(t, err)
+	unserializedData, err := schemaForPrivateFieldStruct.Unserialize(serializedData)
+	assert.NoError(t, err)
+	assert.InstanceOf[testdata.TestStructWithPrivateField](t, unserializedData)
+	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
+
+	inputWithPrivateField := testdata.GetTestStructWithPrivateFieldPresent()
+	serializedData, err = schemaForPrivateFieldStruct.Serialize(inputWithPrivateField)
+	assert.NoError(t, err)
+	unserializedData, err = schemaForPrivateFieldStruct.Unserialize(serializedData)
+	assert.NoError(t, err)
+	assert.InstanceOf[testdata.TestStructWithPrivateField](t, unserializedData)
+	// The unserialization will only be able to fill in the public fields.
+	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
 }
