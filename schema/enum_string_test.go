@@ -81,6 +81,8 @@ func TestStringEnumSerialization(t *testing.T) {
 }
 
 func TestStringEnumTypedSerialization(t *testing.T) {
+	// In this test a typed enum is being inputted into Serialize, but
+	// it is not using a typed
 	type Size string
 	s := schema.NewStringEnumSchema(map[string]*schema.DisplayValue{
 		"small": {NameValue: schema.PointerTo("Small")},
@@ -89,6 +91,22 @@ func TestStringEnumTypedSerialization(t *testing.T) {
 	serializedData, err := s.Serialize(Size("small"))
 	assert.NoError(t, err)
 	assert.Equals(t, serializedData.(string), "small")
+}
+
+func TestTypedStringEnum(t *testing.T) {
+	type TypedString string
+	s := schema.NewTypedStringEnumSchema[TypedString](map[TypedString]*schema.DisplayValue{
+		"a": {NameValue: schema.PointerTo("a")},
+		"b": {NameValue: schema.PointerTo("b")},
+	})
+	serializedData, err := s.Serialize(TypedString("a"))
+	assert.NoError(t, err)
+	assert.Equals(t, serializedData.(string), "a")
+
+	unserialiedData, err := s.Unserialize(serializedData)
+	assert.NoError(t, err)
+	assert.InstanceOf[TypedString](t, unserialiedData)
+	assert.Equals(t, unserialiedData.(TypedString), "a")
 }
 
 func TestStringEnumJSONMarshal(t *testing.T) {
@@ -142,13 +160,23 @@ func TestStringEnumSchemaCompatibilityValidation(t *testing.T) {
 		"b": {NameValue: schema.PointerTo("B")},
 		"c": {NameValue: schema.PointerTo("C")},
 	})
+	type TypedString string
+	s1Typed := schema.NewTypedStringEnumSchema[TypedString](map[TypedString]*schema.DisplayValue{
+		"a": {NameValue: schema.PointerTo("a")},
+		"b": {NameValue: schema.PointerTo("b")},
+		"c": {NameValue: schema.PointerTo("c")},
+	})
 
 	assert.NoError(t, s1.ValidateCompatibility(s1))
 	assert.NoError(t, s2.ValidateCompatibility(s2))
+	assert.NoError(t, s1Typed.ValidateCompatibility(s1Typed))
 	// Mismatched keys
 	assert.Error(t, s1.ValidateCompatibility(s2))
 	assert.Error(t, s2.ValidateCompatibility(s1))
 	// Mismatched names
 	assert.Error(t, s1.ValidateCompatibility(S1))
 	assert.Error(t, S1.ValidateCompatibility(s1))
+	// Different types but same schema.
+	assert.NoError(t, s1.ValidateCompatibility(s1Typed))
+	assert.NoError(t, s1Typed.ValidateCompatibility(s1))
 }

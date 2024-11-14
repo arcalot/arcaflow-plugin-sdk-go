@@ -5,7 +5,7 @@ import "fmt"
 // NewIntEnumSchema creates a new enum of integer values.
 func NewIntEnumSchema(validValues map[int64]*DisplayValue, units *UnitsDefinition) *IntEnumSchema {
 	return &IntEnumSchema{
-		EnumSchema[int64]{
+		EnumSchema[int64, int64]{
 			ValidValuesMap: validValues,
 		},
 		units,
@@ -20,8 +20,8 @@ type IntEnum interface {
 
 // IntEnumSchema is an enum type with integer values.
 type IntEnumSchema struct {
-	EnumSchema[int64] `json:",inline"`
-	IntUnits          *UnitsDefinition `json:"units"`
+	EnumSchema[int64, int64] `json:",inline"`
+	IntUnits                 *UnitsDefinition `json:"units"`
 }
 
 func (i IntEnumSchema) TypeID() TypeID {
