@@ -133,6 +133,10 @@ func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 }
 
 func (o *ObjectSchema) unserializeInlinedDataToMap(data any) (map[string]any, error) {
+	if len(o.Properties()) != 1 {
+		panic(fmt.Errorf("unserializeInlinedDataToMap called on ObjectSchema with %d"+
+			" properties; only 1 allowed", len(o.Properties())))
+	}
 	for fieldName, property := range o.Properties() {
 		unserializedProperty, err := property.Unserialize(data)
 		if err != nil {
