@@ -133,7 +133,7 @@ func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 }
 
 func (o *ObjectSchema) unserializeInlinedDataToMap(data any) (map[string]any, error) {
-	if len(o.Properties()) != 1 {
+	if len(o.Properties()) > 1 {
 		panic(fmt.Errorf("unserializeInlinedDataToMap called on ObjectSchema with %d"+
 			" properties; only 1 allowed", len(o.Properties())))
 	}
@@ -149,6 +149,7 @@ func (o *ObjectSchema) unserializeInlinedDataToMap(data any) (map[string]any, er
 			fieldName: unserializedProperty,
 		}, nil
 	}
+	panic("convertInlinedData called on object with zero properties")
 }
 
 func (o *ObjectSchema) unserializeToStruct(rawData map[string]any) (any, error) {
