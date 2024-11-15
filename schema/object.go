@@ -149,7 +149,6 @@ func (o *ObjectSchema) unserializeInlinedDataToMap(data any) (map[string]any, er
 			fieldName: unserializedProperty,
 		}, nil
 	}
-	panic("convertInlinedData called on object with zero properties")
 }
 
 func (o *ObjectSchema) unserializeToStruct(rawData map[string]any) (any, error) {
