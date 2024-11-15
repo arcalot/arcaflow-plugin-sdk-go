@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"go.arcalot.io/assert"
+	"go.flow.arcalot.io/pluginsdk/schema/testdata"
 	"strconv"
 	"testing"
 
@@ -606,4 +607,84 @@ func TestObjectSchema_ValidateCompatibility(t *testing.T) {
 	assert.Error(t, s1.ValidateCompatibility(map[string]any{}))
 	assert.Error(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
 	assert.Error(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
+}
+
+type testStructWithSingleField struct {
+	Field1 string `json:"field1"`
+}
+
+var testStructWithSingleFieldSchema = schema.NewStructMappedObjectSchema[testStructWithSingleField]("testStructWithSingleField", map[string]*schema.PropertySchema{
+	"field1": schema.NewPropertySchema(schema.NewStringSchema(nil, nil, nil),
+		schema.NewDisplayValue(schema.PointerTo("field1"), nil, nil),
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+})
+
+func TestUnserializeSingleFieldObject(t *testing.T) {
+	withoutInlineSerialized := map[string]any{
+		"field1": "hello",
+	}
+	expectedOutput := testStructWithSingleField{
+		"hello",
+	}
+
+	unserializedData, err := testStructWithSingleFieldSchema.Unserialize(withoutInlineSerialized)
+	assert.NoError(t, err)
+	assert.InstanceOf[testStructWithSingleField](t, unserializedData)
+	assert.Equals(t, unserializedData.(testStructWithSingleField), expectedOutput)
+}
+
+func TestUnserializeSingleFieldObjectInlined(t *testing.T) {
+	withoutInlineSerialized := "hello"
+
+	expectedOutput := testStructWithSingleField{
+		"hello",
+	}
+
+	unserializedData, err := testStructWithSingleFieldSchema.Unserialize(withoutInlineSerialized)
+	assert.NoError(t, err)
+	assert.InstanceOf[testStructWithSingleField](t, unserializedData)
+	assert.Equals(t, unserializedData.(testStructWithSingleField), expectedOutput)
+}
+
+func TestStructWithPrivateFields(t *testing.T) {
+	schemaForPrivateFieldStruct := schema.NewStructMappedObjectSchema[testdata.TestStructWithPrivateField](
+		"structWithPrivateField",
+		map[string]*schema.PropertySchema{
+			"field1": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo("\"Hello world!\""),
+				nil,
+			),
+		},
+	)
+
+	inputWithOnlyPublicField := testdata.TestStructWithPrivateField{
+		Field1: "test",
+	}
+	serializedData, err := schemaForPrivateFieldStruct.Serialize(inputWithOnlyPublicField)
+	assert.NoError(t, err)
+	unserializedData, err := schemaForPrivateFieldStruct.Unserialize(serializedData)
+	assert.NoError(t, err)
+	assert.InstanceOf[testdata.TestStructWithPrivateField](t, unserializedData)
+	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
+
+	inputWithPrivateField := testdata.GetTestStructWithPrivateFieldPresent()
+	serializedData, err = schemaForPrivateFieldStruct.Serialize(inputWithPrivateField)
+	assert.NoError(t, err)
+	unserializedData, err = schemaForPrivateFieldStruct.Unserialize(serializedData)
+	assert.NoError(t, err)
+	assert.InstanceOf[testdata.TestStructWithPrivateField](t, unserializedData)
+	// The unserialization will only be able to fill in the public fields.
+	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
 }

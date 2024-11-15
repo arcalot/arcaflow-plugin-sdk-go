@@ -107,12 +107,18 @@ func (o *ObjectSchema) Properties() map[string]*PropertySchema {
 
 func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 	v := reflect.ValueOf(data)
+	var rawData map[string]any
 	if v.Kind() != reflect.Map {
-		return nil, &ConstraintError{
-			Message: fmt.Sprintf("Must be a map, %T given", data),
+		if len(o.Properties()) == 1 {
+			rawData, err = o.unserializeInlinedDataToMap(data)
+		} else {
+			return nil, &ConstraintError{
+				Message: fmt.Sprintf("Must be a map to convert to object, %T given", data),
+			}
 		}
+	} else {
+		rawData, err = o.convertData(v)
 	}
-	rawData, err := o.convertData(v)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +130,26 @@ func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 		return o.unserializeToStruct(rawData)
 	}
 	return rawData, nil
+}
+
+func (o *ObjectSchema) unserializeInlinedDataToMap(data any) (map[string]any, error) {
+	if len(o.Properties()) > 1 {
+		panic(fmt.Errorf("unserializeInlinedDataToMap called on ObjectSchema with %d"+
+			" properties; only 1 allowed", len(o.Properties())))
+	}
+	for fieldName, property := range o.Properties() {
+		unserializedProperty, err := property.Unserialize(data)
+		if err != nil {
+			return nil,
+				fmt.Errorf("error while unserializing single inlined property %s for object %s (%q);"+
+					"fix the property or specify the object as a map",
+					fieldName, o.ID(), err)
+		}
+		return map[string]any{
+			fieldName: unserializedProperty,
+		}, nil
+	}
+	panic("convertInlinedData called on object with zero properties")
 }
 
 func (o *ObjectSchema) unserializeToStruct(rawData map[string]any) (any, error) {
