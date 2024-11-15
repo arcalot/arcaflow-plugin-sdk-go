@@ -398,14 +398,20 @@ func TestMap_AliasedTypes(t *testing.T) {
 		nil,
 		nil,
 	)
-
-	unserializedData, err := mapType.Unserialize(map[string]any{
+	serializedInput := map[any]any{
 		string(testA): map[string]any{
 			"field1": "test_field_value",
 		},
-	})
+	}
+	// Unserialize and validate
+	unserializedData, err := mapType.Unserialize(serializedInput)
 	assert.NoError(t, err)
 	assert.InstanceOf[map[TypedStringEnumTestType]testdata.TestStructWithPrivateField](t, unserializedData)
-	_, err = mapType.Serialize(unserializedData)
+	typedUnserializedData := unserializedData.(map[TypedStringEnumTestType]testdata.TestStructWithPrivateField)
+	assert.MapContainsKey(t, testA, typedUnserializedData)
+	assert.Equals(t, typedUnserializedData[testA], testdata.TestStructWithPrivateField{Field1: "test_field_value"})
+	// Re-serialize and validate
+	serializedOutput, err := mapType.Serialize(unserializedData)
 	assert.NoError(t, err)
+	assert.Equals[map[any]any](t, serializedOutput.(map[any]any), serializedInput)
 }
