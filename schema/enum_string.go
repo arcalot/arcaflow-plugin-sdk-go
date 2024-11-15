@@ -5,7 +5,19 @@ import "fmt"
 // NewStringEnumSchema creates a new enum of string values.
 func NewStringEnumSchema(validValues map[string]*DisplayValue) *StringEnumSchema {
 	return &StringEnumSchema{
-		EnumSchema[string]{
+		TypedStringEnumSchema[string]{
+			EnumSchema[string, string]{
+				ValidValuesMap: validValues,
+			},
+		},
+	}
+}
+
+// NewTypedStringEnumSchema allows the use of a type with string as an underlying type.
+// Useful for external APIs that are being mapped to a schema that use string enums.
+func NewTypedStringEnumSchema[T ~string](validValues map[T]*DisplayValue) *TypedStringEnumSchema[T] {
+	return &TypedStringEnumSchema[T]{
+		EnumSchema[string, T]{
 			ValidValuesMap: validValues,
 		},
 	}
@@ -18,15 +30,22 @@ type StringEnum interface {
 
 // StringEnumSchema is an enum type with string values.
 type StringEnumSchema struct {
-	EnumSchema[string] `json:",inline"`
+	TypedStringEnumSchema[string] `json:",inline"`
 }
 
-func (s StringEnumSchema) TypeID() TypeID {
+// TypedStringEnumSchema is an enum type with string values, but with a generic
+// element for golang enums that have an underlying string type.
+type TypedStringEnumSchema[T ~string] struct {
+	EnumSchema[string, T] `json:",inline"`
+}
+
+func (s TypedStringEnumSchema[T]) TypeID() TypeID {
 	return TypeIDStringEnum
 }
 
-func (s StringEnumSchema) Unserialize(data any) (any, error) {
-	typedData, err := stringInputMapper(data)
+func (s TypedStringEnumSchema[T]) Unserialize(data any) (any, error) {
+	strData, err := stringInputMapper(data)
+	typedData := T(strData)
 	if err != nil {
 		return "", &ConstraintError{
 			Message: fmt.Sprintf("'%v' (type %T) is not a valid type for a '%T' enum", data, data, typedData),
@@ -35,7 +54,7 @@ func (s StringEnumSchema) Unserialize(data any) (any, error) {
 	return typedData, s.Validate(typedData)
 }
 
-func (s StringEnumSchema) UnserializeType(data any) (string, error) {
+func (s TypedStringEnumSchema[T]) UnserializeType(data any) (string, error) {
 	unserialized, err := s.Unserialize(data)
 	if err != nil {
 		return "", err

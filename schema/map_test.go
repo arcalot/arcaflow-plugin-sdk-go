@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"go.arcalot.io/assert"
+	"go.flow.arcalot.io/pluginsdk/schema/testdata"
 	"testing"
 
 	"go.flow.arcalot.io/pluginsdk/schema"
@@ -361,4 +362,56 @@ func TestMap_UnSerialize_Reversible(t *testing.T) {
 	assert.NoError(t, err)
 	// test reversiblity
 	assert.Equals(t, unserialized2, unserialized)
+}
+
+// Test type aliased map of type aliased string to a struct.
+type TypedStringEnumTestType string
+
+const (
+	testA TypedStringEnumTestType = "testA"
+	testB TypedStringEnumTestType = "testB"
+)
+
+func TestMap_AliasedTypes(t *testing.T) {
+	schemaForPrivateFieldStruct := schema.NewStructMappedObjectSchema[testdata.TestStructWithPrivateField](
+		"structWithPrivateField",
+		map[string]*schema.PropertySchema{
+			"field1": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, nil),
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				schema.PointerTo("\"Hello world!\""),
+				nil,
+			),
+		},
+	)
+	schemaForEnum := schema.NewTypedStringEnumSchema[TypedStringEnumTestType](map[TypedStringEnumTestType]*schema.DisplayValue{
+		testA: nil,
+		testB: nil,
+	})
+	mapType := schema.NewMapSchema(
+		schemaForEnum,
+		schemaForPrivateFieldStruct,
+		nil,
+		nil,
+	)
+	serializedInput := map[any]any{
+		string(testA): map[string]any{
+			"field1": "test_field_value",
+		},
+	}
+	// Unserialize and validate
+	unserializedData, err := mapType.Unserialize(serializedInput)
+	assert.NoError(t, err)
+	assert.InstanceOf[map[TypedStringEnumTestType]testdata.TestStructWithPrivateField](t, unserializedData)
+	typedUnserializedData := unserializedData.(map[TypedStringEnumTestType]testdata.TestStructWithPrivateField)
+	assert.MapContainsKey(t, testA, typedUnserializedData)
+	assert.Equals(t, typedUnserializedData[testA], testdata.TestStructWithPrivateField{Field1: "test_field_value"})
+	// Re-serialize and validate
+	serializedOutput, err := mapType.Serialize(unserializedData)
+	assert.NoError(t, err)
+	assert.Equals[map[any]any](t, serializedOutput.(map[any]any), serializedInput)
 }
