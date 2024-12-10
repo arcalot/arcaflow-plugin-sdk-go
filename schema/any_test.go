@@ -167,6 +167,7 @@ func TestAnyValidateCompatibility(t *testing.T) {
 		),
 	}
 	type someStruct struct {
+		//nolint:unused  // This is just for test purposes.
 		field1 int
 	}
 	objectSchema := schema.NewObjectSchema("some-id", properties)
