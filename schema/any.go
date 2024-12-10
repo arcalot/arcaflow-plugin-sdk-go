@@ -75,7 +75,7 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 		default:
 			// It's not an any schema or a type compatible with an any schema, so error
 			return &ConstraintError{
-				Message: fmt.Sprintf("unsupported schema type for 'any' type: %T", typeOrData),
+				Message: fmt.Sprintf("schema type `%T` cannot be used as an input for an 'any' type", typeOrData),
 			}
 		}
 		return nil
