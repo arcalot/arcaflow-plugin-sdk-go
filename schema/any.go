@@ -67,10 +67,13 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 	case reflect.Map:
 		return nil
 	default:
+		// Schema is not a primitive, slice, or map type, so check the complex types
+		// Explicitly allow object schemas since their reflected type can be a struct if they are struct mapped.
 		switch typeOrData.(type) {
-		case *AnySchema, *OneOfSchema[int64], *OneOfSchema[string]:
+		case *AnySchema, *OneOfSchema[int64], *OneOfSchema[string], *ObjectSchema:
+			// These are the allowed values.
 		default:
-			// It's not an any schema, so error
+			// It's not an any schema or a type compatible with an any schema, so error
 			return &ConstraintError{
 				Message: fmt.Sprintf("unsupported schema type for 'any' type: %T", typeOrData),
 			}

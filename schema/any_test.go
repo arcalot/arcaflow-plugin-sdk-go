@@ -154,6 +154,23 @@ func TestAnyTypeReflectedType(t *testing.T) {
 
 func TestAnyValidateCompatibility(t *testing.T) {
 	s1 := schema.NewAnySchema()
+	properties := map[string]*schema.PropertySchema{
+		"field1": schema.NewPropertySchema(
+			schema.NewIntSchema(nil, nil, nil),
+			nil,
+			true,
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		),
+	}
+	type someStruct struct {
+		field1 int
+	}
+	objectSchema := schema.NewObjectSchema("some-id", properties)
+	structMappedObjectSchema := schema.NewStructMappedObjectSchema[someStruct]("some-id", properties)
 
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewAnySchema()))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
@@ -170,5 +187,13 @@ func TestAnyValidateCompatibility(t *testing.T) {
 	assert.NoError(t, s1.ValidateCompatibility(map[string]any{}))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
-
+	assert.NoError(t, s1.ValidateCompatibility(objectSchema))
+	// Test struct mapped since it may have a different reflected type.
+	assert.NoError(t, s1.ValidateCompatibility(structMappedObjectSchema))
+	assert.NoError(t, s1.ValidateCompatibility(
+		schema.NewOneOfStringSchema[string](map[string]schema.Object{}, "id", false),
+	))
+	assert.NoError(t, s1.ValidateCompatibility(
+		schema.NewOneOfIntSchema[int64](map[int64]schema.Object{}, "id", false),
+	))
 }
