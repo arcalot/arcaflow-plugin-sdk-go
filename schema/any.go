@@ -93,13 +93,11 @@ func (a *AnySchema) validateAnyMap(data map[any]any) error {
 		}
 		if firstReflectKind == reflect.Invalid { // First item
 			firstReflectKind = reflectKind
-		} else {
-			if firstReflectKind != reflectKind {
-				return &ConstraintError{
-					Message: fmt.Sprintf(
-						"mismatched key types in map passed into 'any' type: %s != %s",
-						firstReflectKind, reflectKind),
-				}
+		} else if firstReflectKind != reflectKind {
+			return &ConstraintError{
+				Message: fmt.Sprintf(
+					"mismatched key types in map passed into 'any' type: %s != %s",
+					firstReflectKind, reflectKind),
 			}
 		}
 
@@ -114,7 +112,11 @@ func (a *AnySchema) validateAnyMap(data map[any]any) error {
 	return nil
 }
 
+//nolint:nestif
 func (a *AnySchema) validateAnyList(data []any) error {
+	if len(data) == 0 {
+		return nil // No items to check, and following code assumes non-empty list
+	}
 	// Test list items
 	for _, item := range data {
 		err := a.ValidateCompatibility(item)
@@ -125,47 +127,44 @@ func (a *AnySchema) validateAnyList(data []any) error {
 		}
 	}
 	// validate that all list items are compatible with the first to make the list homogeneous.
-	if len(data) > 1 {
-		firstItem := data[0]
-		firstItemType, firstValIsSchema := firstItem.(Type)
-		if firstValIsSchema {
-			for i := 1; i < len(data); i++ {
-				valToTest := data[i]
-				err := firstItemType.ValidateCompatibility(valToTest)
-				if err != nil {
-					return &ConstraintError{
-						Message: fmt.Sprintf(
-							"validation error while validating for homogeneous list item `%T` in any type %s",
-							valToTest, err.Error()),
-					}
+	firstItem := data[0]
+	firstItemType, firstValIsSchema := firstItem.(Type)
+	if firstValIsSchema {
+		for i := 1; i < len(data); i++ {
+			valToTest := data[i]
+			err := firstItemType.ValidateCompatibility(valToTest)
+			if err != nil {
+				return &ConstraintError{
+					Message: fmt.Sprintf(
+						"validation error while validating for homogeneous list item `%T` in any type %s",
+						valToTest, err.Error()),
 				}
 			}
-		} else {
-			// Loop through all items. Ensure they have the same type.
-			// If the non-first value is a schema type, use that for validation.
-			firstItemType := reflect.ValueOf(firstItem).Kind()
-			for i := 1; i < len(data); i++ {
-				valToTest := data[i]
-				typeToTest := reflect.ValueOf(valToTest).Kind()
-				if firstItemType != typeToTest {
-					// Not compatible or is a schema
-					schemaType, valIsSchema := valToTest.(Type)
-					if !valIsSchema {
+		}
+	} else {
+		// Loop through all items. Ensure they have the same type.
+		firstItemType := reflect.ValueOf(firstItem).Kind()
+		for i := 1; i < len(data); i++ {
+			valToTest := data[i]
+			typeToTest := reflect.ValueOf(valToTest).Kind()
+			if firstItemType != typeToTest {
+				// Not compatible or is a schema
+				schemaType, valIsSchema := valToTest.(Type)
+				if !valIsSchema {
+					return &ConstraintError{
+						Message: fmt.Sprintf(
+							"types do not match between list items passed for any type %T != %T; "+
+								"lists should have homogeneous types",
+							firstItem, valToTest),
+					}
+				} else {
+					err := schemaType.ValidateCompatibility(valToTest)
+					if err != nil {
 						return &ConstraintError{
 							Message: fmt.Sprintf(
-								"types do not match between list items passed for any type %T != %T; "+
+								"types do not match between list items passed for any type %s; "+
 									"lists should have homogeneous types",
-								firstItem, valToTest),
-						}
-					} else {
-						err := schemaType.ValidateCompatibility(valToTest)
-						if err != nil {
-							return &ConstraintError{
-								Message: fmt.Sprintf(
-									"types do not match between list items passed for any type %s; "+
-										"lists should have homogeneous types",
-									err),
-							}
+								err),
 						}
 					}
 				}
@@ -175,7 +174,6 @@ func (a *AnySchema) validateAnyList(data []any) error {
 	return nil
 }
 
-//nolint:funlen
 func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 	switch typeOrData := typeOrData.(type) {
 	case Type:
