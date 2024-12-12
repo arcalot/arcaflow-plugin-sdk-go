@@ -24,16 +24,8 @@ func (a *AnySchema) Unserialize(data any) (any, error) {
 	return a.checkAndConvert(data)
 }
 
-//nolint:funlen
-func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
-	// Check if it's a schema.Type. If it is, verify it. If not, verify it as data.
-	schemaType, ok := typeOrData.(Type)
-	if !ok {
-		_, err := a.Unserialize(typeOrData)
-		return err
-	}
-
-	switch schemaType.ReflectedType().Kind() {
+func (a *AnySchema) validateSchemaCompatibility(schema Type) error {
+	switch schema.ReflectedType().Kind() {
 	case reflect.Int:
 		fallthrough
 	case reflect.Uint:
@@ -69,16 +61,152 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 	default:
 		// Schema is not a primitive, slice, or map type, so check the complex types
 		// Explicitly allow object schemas since their reflected type can be a struct if they are struct mapped.
-		switch typeOrData.(type) {
+		switch schema.(type) {
 		case *AnySchema, *OneOfSchema[int64], *OneOfSchema[string], *ObjectSchema:
 			// These are the allowed values.
 		default:
 			// It's not an any schema or a type compatible with an any schema, so error
 			return &ConstraintError{
-				Message: fmt.Sprintf("schema type `%T` cannot be used as an input for an 'any' type", typeOrData),
+				Message: fmt.Sprintf("schema type `%T` cannot be used as an input for an 'any' type", schema),
 			}
 		}
 		return nil
+	}
+}
+
+func (a *AnySchema) validateAnyMap(data map[any]any) error {
+	// Test individual values
+	var firstReflectKind reflect.Kind
+	for key, value := range data {
+		// Validate key
+		reflectKind := reflect.ValueOf(key).Kind()
+		switch reflectKind {
+		// While it is possible to add more types of ints, it's likely better to keep it consistent with i64
+		case reflect.Int64:
+			fallthrough
+		case reflect.String:
+			// Valid type
+		default:
+			return &ConstraintError{
+				Message: fmt.Sprintf("invalid key type for map passed into 'any' type (%s); should be string or i64", reflectKind),
+			}
+		}
+		if firstReflectKind == reflect.Invalid { // First item
+			firstReflectKind = reflectKind
+		} else if firstReflectKind != reflectKind {
+			return &ConstraintError{
+				Message: fmt.Sprintf(
+					"mismatched key types in map passed into 'any' type: %s != %s",
+					firstReflectKind, reflectKind),
+			}
+		}
+
+		// Validate value
+		err := a.ValidateCompatibility(value)
+		if err != nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf("validation error while validating any-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
+			}
+		}
+	}
+	return nil
+}
+
+//nolint:nestif
+func (a *AnySchema) validateAnyList(data []any) error {
+	if len(data) == 0 {
+		return nil // No items to check, and following code assumes non-empty list
+	}
+	// Test list items
+	for _, item := range data {
+		err := a.ValidateCompatibility(item)
+		if err != nil {
+			return &ConstraintError{
+				Message: fmt.Sprintf("validation error while validating list item of type `%T` in any type (%s)", item, err.Error()),
+			}
+		}
+	}
+	// validate that all list items are compatible with the first to make the list homogeneous.
+	firstItem := data[0]
+	firstItemType, firstValIsSchema := firstItem.(Type)
+	if firstValIsSchema {
+		for i := 1; i < len(data); i++ {
+			valToTest := data[i]
+			err := firstItemType.ValidateCompatibility(valToTest)
+			if err != nil {
+				return &ConstraintError{
+					Message: fmt.Sprintf(
+						"validation error while validating for homogeneous list item of type `%T` in any type (%s)",
+						valToTest, err.Error()),
+				}
+			}
+		}
+	} else {
+		// Loop through all items. Ensure they have the same type.
+		firstItemType := reflect.ValueOf(firstItem).Kind()
+		for i := 1; i < len(data); i++ {
+			valToTest := data[i]
+			typeToTest := reflect.ValueOf(valToTest).Kind()
+			if firstItemType != typeToTest {
+				// Not compatible or is a schema
+				schemaType, valIsSchema := valToTest.(Type)
+				if !valIsSchema {
+					return &ConstraintError{
+						Message: fmt.Sprintf(
+							"types do not match between list items passed for any type %T != %T; "+
+								"lists should have homogeneous types",
+							firstItem, valToTest),
+					}
+				} else {
+					err := schemaType.ValidateCompatibility(valToTest)
+					if err != nil {
+						return &ConstraintError{
+							Message: fmt.Sprintf(
+								"types do not match between list items passed for any type %s; "+
+									"lists should have homogeneous types",
+								err),
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
+	switch typeOrData := typeOrData.(type) {
+	case Type:
+		return a.validateSchemaCompatibility(typeOrData)
+	case map[string]any:
+		// Test individual values
+		for key, value := range typeOrData {
+			err := a.ValidateCompatibility(value)
+			if err != nil {
+				return &ConstraintError{
+					Message: fmt.Sprintf("validation error while validating string-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
+				}
+			}
+		}
+		return nil
+	case map[int64]any:
+		// Test individual values
+		for key, value := range typeOrData {
+			err := a.ValidateCompatibility(value)
+			if err != nil {
+				return &ConstraintError{
+					Message: fmt.Sprintf("validation error while validating int-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
+				}
+			}
+		}
+		return nil
+	case map[any]any:
+		return a.validateAnyMap(typeOrData)
+	case []interface{}:
+		return a.validateAnyList(typeOrData)
+	default:
+		_, err := a.Unserialize(typeOrData)
+		return err
 	}
 }
 

@@ -152,40 +152,38 @@ func TestAnyTypeReflectedType(t *testing.T) {
 	assert.NotNil(t, a.ReflectedType())
 }
 
-func TestAnyValidateCompatibility(t *testing.T) {
-	s1 := schema.NewAnySchema()
-	properties := map[string]*schema.PropertySchema{
-		"field1": schema.NewPropertySchema(
-			schema.NewIntSchema(nil, nil, nil),
-			nil,
-			true,
-			nil,
-			nil,
-			nil,
-			nil,
-			nil,
-		),
-	}
-	type someStruct struct {
-		//nolint:unused  // This is just for test purposes.
-		field1 int
-	}
-	objectSchema := schema.NewObjectSchema("some-id", properties)
-	structMappedObjectSchema := schema.NewStructMappedObjectSchema[someStruct]("some-id", properties)
+var properties = map[string]*schema.PropertySchema{
+	"field1": schema.NewPropertySchema(
+		schema.NewIntSchema(nil, nil, nil),
+		nil,
+		true,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	),
+}
 
+type someStruct struct {
+	field1 int
+}
+
+var objectSchema = schema.NewObjectSchema("some-id", properties)
+var structMappedObjectSchema = schema.NewStructMappedObjectSchema[someStruct]("some-id", properties)
+
+func TestAnyValidateCompatibilitySimple(t *testing.T) {
+	s1 := schema.NewAnySchema()
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewAnySchema()))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringSchema(nil, nil, nil)))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntSchema(nil, nil, nil)))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewBoolSchema()))
-	assert.NoError(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewFloatSchema(nil, nil, nil)))
 	assert.Error(t, s1.ValidateCompatibility(schema.NewDisplayValue(nil, nil, nil)))
 	assert.NoError(t, s1.ValidateCompatibility("test"))
 	assert.NoError(t, s1.ValidateCompatibility(1))
 	assert.NoError(t, s1.ValidateCompatibility(1.5))
 	assert.NoError(t, s1.ValidateCompatibility(true))
-	assert.NoError(t, s1.ValidateCompatibility([]string{}))
-	assert.NoError(t, s1.ValidateCompatibility(map[string]any{}))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewStringEnumSchema(map[string]*schema.DisplayValue{})))
 	assert.NoError(t, s1.ValidateCompatibility(schema.NewIntEnumSchema(map[int64]*schema.DisplayValue{}, nil)))
 	assert.NoError(t, s1.ValidateCompatibility(objectSchema))
@@ -197,4 +195,96 @@ func TestAnyValidateCompatibility(t *testing.T) {
 	assert.NoError(t, s1.ValidateCompatibility(
 		schema.NewOneOfIntSchema[int64](map[int64]schema.Object{}, "id", false),
 	))
+
+}
+
+func TestAnyValidateCompatibilityLists(t *testing.T) {
+	s1 := schema.NewAnySchema()
+	assert.NoError(t, s1.ValidateCompatibility(schema.NewListSchema(schema.NewBoolSchema(), nil, nil)))
+	assert.NoError(t, s1.ValidateCompatibility([]string{}))
+
+	// Test non-homogeneous list
+	err := s1.ValidateCompatibility([]any{
+		int64(5),
+		"5",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "homogeneous")
+	// Test a list of object schemas
+	assert.NoError(t, s1.ValidateCompatibility([]any{
+		structMappedObjectSchema,
+	}))
+}
+
+//nolint:funlen
+func TestAnyValidateCompatibilityMaps(t *testing.T) {
+	// Test custom maps with schemas and data
+	s1 := schema.NewAnySchema()
+	assert.NoError(t, s1.ValidateCompatibility(map[string]any{}))
+	// Include invalid item within an any map
+	err := s1.ValidateCompatibility(map[any]any{
+		"b": someStruct{field1: 1},
+	})
+	assert.Error(t, err)
+	// Include invalid item within a string map
+	err = s1.ValidateCompatibility(map[string]any{
+		"b": someStruct{field1: 1},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `"b"`)        // Identifies the problematic key
+	assert.Contains(t, err.Error(), "someStruct") // Identifies the problematic type
+	// String key type
+	assert.NoError(t, s1.ValidateCompatibility(map[string]any{
+		"a": true,
+		"b": "test",
+		"c": []any{
+			structMappedObjectSchema,
+		},
+		"d": structMappedObjectSchema,
+		"e": schema.NewStringSchema(nil, nil, nil),
+	}))
+	// int key type
+	assert.NoError(t, s1.ValidateCompatibility(map[int64]any{
+		1: true,
+		2: "test",
+		3: []any{
+			structMappedObjectSchema,
+		},
+		4: structMappedObjectSchema,
+		5: schema.NewStringSchema(nil, nil, nil),
+	}))
+	// any key type with string key values
+	assert.NoError(t, s1.ValidateCompatibility(map[any]any{
+		"a": true,
+		"b": "test",
+		"c": []any{
+			structMappedObjectSchema,
+		},
+		"d": structMappedObjectSchema,
+		"e": schema.NewStringSchema(nil, nil, nil),
+	}))
+	// any key type with integer key values
+	assert.NoError(t, s1.ValidateCompatibility(map[any]any{
+		int64(1): true,
+		int64(2): "test",
+		int64(3): []any{
+			structMappedObjectSchema,
+		},
+		int64(4): structMappedObjectSchema,
+		int64(5): schema.NewStringSchema(nil, nil, nil),
+	}))
+	// any key type with mixed key values
+	err = s1.ValidateCompatibility(map[any]any{
+		"a":      true,
+		int64(2): "test",
+		int64(3): []any{
+			structMappedObjectSchema,
+		},
+		int64(4): structMappedObjectSchema,
+		int64(5): schema.NewStringSchema(nil, nil, nil),
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mismatched")
+	assert.Contains(t, err.Error(), "string")
+	assert.Contains(t, err.Error(), "int64")
 }
