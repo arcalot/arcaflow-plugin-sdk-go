@@ -105,7 +105,7 @@ func (a *AnySchema) validateAnyMap(data map[any]any) error {
 		err := a.ValidateCompatibility(value)
 		if err != nil {
 			return &ConstraintError{
-				Message: fmt.Sprintf("validation error while validating map item item %q of map for 'any' type (%s)", key, err.Error()),
+				Message: fmt.Sprintf("validation error while validating any-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
 			}
 		}
 	}
@@ -136,7 +136,7 @@ func (a *AnySchema) validateAnyList(data []any) error {
 			if err != nil {
 				return &ConstraintError{
 					Message: fmt.Sprintf(
-						"validation error while validating for homogeneous list item `%T` in any type %s",
+						"validation error while validating for homogeneous list item of type `%T` in any type (%s)",
 						valToTest, err.Error()),
 				}
 			}
@@ -184,7 +184,7 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 			err := a.ValidateCompatibility(value)
 			if err != nil {
 				return &ConstraintError{
-					Message: fmt.Sprintf("validation error while validating map item item %q of map for 'any' type (%s)", key, err.Error()),
+					Message: fmt.Sprintf("validation error while validating string-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
 				}
 			}
 		}
@@ -195,7 +195,7 @@ func (a *AnySchema) ValidateCompatibility(typeOrData any) error {
 			err := a.ValidateCompatibility(value)
 			if err != nil {
 				return &ConstraintError{
-					Message: fmt.Sprintf("validation error while validating map item item %q of map for 'any' type (%s)", key, err.Error()),
+					Message: fmt.Sprintf("validation error while validating int-keyed map item item %q of map for 'any' type (%s)", key, err.Error()),
 				}
 			}
 		}

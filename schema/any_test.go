@@ -218,9 +218,21 @@ func TestAnyValidateCompatibilityLists(t *testing.T) {
 }
 
 func TestAnyValidateCompatibilityMaps(t *testing.T) {
+	// Test custom maps with schemas and data
 	s1 := schema.NewAnySchema()
 	assert.NoError(t, s1.ValidateCompatibility(map[string]any{}))
-	// Test custom maps with schemas and data
+	// Include invalid item within an any map
+	err := s1.ValidateCompatibility(map[any]any{
+		"b": someStruct{field1: 1},
+	})
+	assert.Error(t, err)
+	// Include invalid item within a string map
+	err = s1.ValidateCompatibility(map[string]any{
+		"b": someStruct{field1: 1},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `"b"`)        // Identifies the problematic key
+	assert.Contains(t, err.Error(), "someStruct") // Identifies the problematic type
 	// String key type
 	assert.NoError(t, s1.ValidateCompatibility(map[string]any{
 		"a": true,
@@ -262,7 +274,7 @@ func TestAnyValidateCompatibilityMaps(t *testing.T) {
 		int64(5): schema.NewStringSchema(nil, nil, nil),
 	}))
 	// any key type with mixed key values
-	err := s1.ValidateCompatibility(map[any]any{
+	err = s1.ValidateCompatibility(map[any]any{
 		"a":      true,
 		int64(2): "test",
 		int64(3): []any{
@@ -273,4 +285,6 @@ func TestAnyValidateCompatibilityMaps(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "mismatched")
+	assert.Contains(t, err.Error(), "string")
+	assert.Contains(t, err.Error(), "int64")
 }
