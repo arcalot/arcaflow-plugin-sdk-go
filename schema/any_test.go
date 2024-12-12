@@ -166,7 +166,6 @@ var properties = map[string]*schema.PropertySchema{
 }
 
 type someStruct struct {
-	//nolint:unused  // This is just for test purposes.
 	field1 int
 }
 
@@ -217,6 +216,7 @@ func TestAnyValidateCompatibilityLists(t *testing.T) {
 	}))
 }
 
+//nolint:funlen
 func TestAnyValidateCompatibilityMaps(t *testing.T) {
 	// Test custom maps with schemas and data
 	s1 := schema.NewAnySchema()
