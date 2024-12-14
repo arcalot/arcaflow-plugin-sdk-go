@@ -3,6 +3,8 @@ package schema_test
 import (
 	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema/testdata"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -687,4 +689,38 @@ func TestStructWithPrivateFields(t *testing.T) {
 	assert.InstanceOf[testdata.TestStructWithPrivateField](t, unserializedData)
 	// The unserialization will only be able to fill in the public fields.
 	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
+}
+
+func TestStructWithPublicAndPrivateFields(t *testing.T) {
+	var hook schema.UnserializeObjectHookFunction = func(rawData map[string]any) (any, error) {
+		return resource.ParseQuantity(rawData[""].(string))
+	}
+	resourceQuantity := schema.NewObjectSchemaWithUnserializeHook(
+		"Resource Quantity",
+		map[string]*schema.PropertySchema{
+			"": schema.NewPropertySchema(
+				schema.NewStringSchema(nil, nil, regexp.MustCompile(`^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$`)),
+				schema.NewDisplayValue(
+					schema.PointerTo("Quantity"),
+					schema.PointerTo("Quantity"),
+					nil,
+				),
+				true,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			),
+		},
+		hook,
+	)
+
+	inputQuantityObj := resource.MustParse("1.5Gi")
+	inputQuantityString := inputQuantityObj.String()
+	unserializedData, err := resourceQuantity.Unserialize(inputQuantityString)
+	assert.NoError(t, err)
+	assert.InstanceOf[resource.Quantity](t, unserializedData)
+	unserializedQuantity := unserializedData.(resource.Quantity)
+	assert.Equals(t, inputQuantityString, unserializedQuantity.String())
 }
