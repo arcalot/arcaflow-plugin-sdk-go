@@ -1,9 +1,9 @@
 package schema_test
 
 import (
+	"fmt"
 	"go.arcalot.io/assert"
 	"go.flow.arcalot.io/pluginsdk/schema/testdata"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"regexp"
 	"strconv"
 	"testing"
@@ -691,15 +691,42 @@ func TestStructWithPrivateFields(t *testing.T) {
 	assert.Equals(t, inputWithOnlyPublicField, unserializedData.(testdata.TestStructWithPrivateField))
 }
 
+type Quantity struct {
+	value int
+	unit  string
+}
+
+func NewStructWithConstructor(input string) (Quantity, error) {
+	r := regexp.MustCompile("^([0-9]+)([eEinumkKMGTP]+)$")
+	extracted := r.FindStringSubmatch(input)
+	if len(extracted) != 3 {
+		return Quantity{}, fmt.Errorf("invalid quantity format")
+	}
+
+	value, err := strconv.Atoi(extracted[1])
+	if err != nil {
+		return Quantity{}, fmt.Errorf("invalid quantity format")
+	}
+
+	return Quantity{
+		value: value,
+		unit:  extracted[2],
+	}, nil
+}
+
+func (q Quantity) String() string {
+	return fmt.Sprintf("%d%s", q.value, q.unit)
+}
+
 func TestStructWithPublicAndPrivateFields(t *testing.T) {
 	var hook schema.UnserializeObjectHookFunction = func(rawData map[string]any) (any, error) {
-		return resource.ParseQuantity(rawData[""].(string))
+		return NewStructWithConstructor(rawData[""].(string))
 	}
 	resourceQuantity := schema.NewObjectSchemaWithUnserializeHook(
-		"Resource Quantity",
+		"Test Unserialize Struct With Constructor",
 		map[string]*schema.PropertySchema{
 			"": schema.NewPropertySchema(
-				schema.NewStringSchema(nil, nil, regexp.MustCompile(`^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$`)),
+				schema.NewStringSchema(nil, nil, nil),
 				schema.NewDisplayValue(
 					schema.PointerTo("Quantity"),
 					schema.PointerTo("Quantity"),
@@ -716,11 +743,11 @@ func TestStructWithPublicAndPrivateFields(t *testing.T) {
 		hook,
 	)
 
-	inputQuantityObj := resource.MustParse("1.5Gi")
+	inputQuantityObj := Quantity{unit: "G", value: 12}
 	inputQuantityString := inputQuantityObj.String()
 	unserializedData, err := resourceQuantity.Unserialize(inputQuantityString)
 	assert.NoError(t, err)
-	assert.InstanceOf[resource.Quantity](t, unserializedData)
-	unserializedQuantity := unserializedData.(resource.Quantity)
+	assert.InstanceOf[Quantity](t, unserializedData)
+	unserializedQuantity := unserializedData.(Quantity)
 	assert.Equals(t, inputQuantityString, unserializedQuantity.String())
 }
