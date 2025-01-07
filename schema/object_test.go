@@ -718,7 +718,7 @@ func (q Quantity) String() string {
 	return fmt.Sprintf("%d%s", q.value, q.unit)
 }
 
-func TestStructWithPublicAndPrivateFields(t *testing.T) {
+func TestStructWithConstructor(t *testing.T) {
 	var hook schema.UnserializeObjectHookFunction = func(rawData map[string]any) (any, error) {
 		return NewStructWithConstructor(rawData[""].(string))
 	}
@@ -750,4 +750,50 @@ func TestStructWithPublicAndPrivateFields(t *testing.T) {
 	assert.InstanceOf[Quantity](t, unserializedData)
 	unserializedQuantity := unserializedData.(Quantity)
 	assert.Equals(t, inputQuantityString, unserializedQuantity.String())
+}
+
+// Re-use the properties for testStructSchema
+var testStructSchemaHook = schema.NewObjectSchemaWithUnserializeHook(
+	"testStrcut",
+	testStructProperties,
+	func(rawData map[string]any) (any, error) {
+		return nil, nil
+	},
+)
+
+func TestStructWithConstructor_MissingFields(t *testing.T) {
+	dataMissing := map[string]any{
+		"field3": 42,
+	}
+	_, err := testStructSchemaHook.Unserialize(dataMissing)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "field is required")
+
+	dataMissing2 := map[string]any{
+		"Field1": 42,
+	}
+	_, err = testStructSchemaHook.Unserialize(dataMissing2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "field is required")
+}
+
+func TestStructWithConstructor_IncorrectType(t *testing.T) {
+	dataMissing1 := map[string]any{
+		"Field1": "this cannot be represented as an integer",
+		"field3": "Hello world!",
+	}
+	_, err := testStructSchema.Unserialize(dataMissing1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing")
+}
+
+func TestStructWithConstructor_ExtraField(t *testing.T) {
+	dataMissing1 := map[string]any{
+		"Field1": 42,
+		"wrong":  "wrong",
+		"field3": "Hello world!",
+	}
+	_, err := testStructSchema.Unserialize(dataMissing1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid parameter 'wrong'")
 }
