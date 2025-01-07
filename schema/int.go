@@ -170,6 +170,9 @@ func intInputMapper(data any, u *UnitsDefinition) (int64, error) {
 	case int:
 		return int64(v), nil
 	case uint:
+		if v > math.MaxInt64 {
+			return 0, fmt.Errorf("number is too large for an int64: %d", v)
+		}
 		return int64(v), nil
 	case int32:
 		return int64(v), nil
