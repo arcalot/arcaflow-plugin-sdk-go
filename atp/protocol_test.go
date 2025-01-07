@@ -257,7 +257,6 @@ func testExecuteWithChannels(closeChannel bool, t *testing.T) {
 	wg.Wait()
 }
 
-//nolint:funlen
 func TestProtocol_Client_ATP_v1(t *testing.T) {
 	// Client ReadSchema and Execute atp v1 happy path.
 	// This is not a fragile test because the ATP v1 is not changing. It is the legacy supported version.
@@ -741,7 +740,6 @@ func TestProtocol_Error_Server_WorkStart(t *testing.T) {
 	time.Sleep(time.Millisecond * 2)
 }
 
-//nolint:funlen
 func TestProtocol_Error_Client_WorkStart(t *testing.T) {
 	// Induce error on client's (and server incidentally)
 	// start work message by closing the client's cbor
