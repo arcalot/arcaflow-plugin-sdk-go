@@ -216,7 +216,6 @@ func TestAnyValidateCompatibilityLists(t *testing.T) {
 	}))
 }
 
-//nolint:funlen
 func TestAnyValidateCompatibilityMaps(t *testing.T) {
 	// Test custom maps with schemas and data
 	s1 := schema.NewAnySchema()

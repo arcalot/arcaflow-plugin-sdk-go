@@ -43,10 +43,12 @@ func (b BoolSchema) Unserialize(data any) (any, error) {
 	case int:
 		return intConverter(int64(v))
 	case uint:
+		//nolint:gosec // Not a security problem. It's only checking for 0 or 1 values.
 		return intConverter(int64(v))
 	case int64:
 		return intConverter(v)
 	case uint64:
+		//nolint:gosec // Not a security problem. It's only checking for 0 or 1 values.
 		return intConverter(int64(v))
 	case int32:
 		return intConverter(int64(v))
