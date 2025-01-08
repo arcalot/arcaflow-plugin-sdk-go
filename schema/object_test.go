@@ -757,7 +757,7 @@ var testStructSchemaHook = schema.NewObjectSchemaWithUnserializeHook(
 	"testStrcut",
 	testStructProperties,
 	func(rawData map[string]any) (any, error) {
-		return nil, nil
+		panic("This constructor should never be reached.")
 	},
 )
 
@@ -782,7 +782,7 @@ func TestStructWithConstructor_IncorrectType(t *testing.T) {
 		"Field1": "this cannot be represented as an integer",
 		"field3": "Hello world!",
 	}
-	_, err := testStructSchema.Unserialize(dataMissing1)
+	_, err := testStructSchemaHook.Unserialize(dataMissing1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "parsing")
 }
@@ -793,7 +793,7 @@ func TestStructWithConstructor_ExtraField(t *testing.T) {
 		"wrong":  "wrong",
 		"field3": "Hello world!",
 	}
-	_, err := testStructSchema.Unserialize(dataMissing1)
+	_, err := testStructSchemaHook.Unserialize(dataMissing1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Invalid parameter 'wrong'")
 }
