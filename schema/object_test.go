@@ -752,7 +752,7 @@ func TestStructWithConstructor(t *testing.T) {
 	assert.Equals(t, inputQuantityString, unserializedQuantity.String())
 }
 
-// Re-use the properties for testStructSchema
+// Re-use the properties for testStructSchema.
 var testStructSchemaHook = schema.NewObjectSchemaWithUnserializeHook(
 	"testStrcut",
 	testStructProperties,
