@@ -69,7 +69,7 @@ var testStructSchemaPtr = schema.NewTypedObject[*testStructPtr]("testStruct", ma
 	),
 })
 
-func TestObjectUnserialization(t *testing.T) {
+func TestObjectUnserialization_Success(t *testing.T) {
 	data := map[string]any{
 		"Field1": 42,
 		"field3": "Hello world!",
@@ -92,6 +92,44 @@ func TestObjectUnserialization(t *testing.T) {
 		assert.Equals(t, *unserializedDataPtr.Field1, int64(42))
 		assert.Equals(t, *unserializedDataPtr.Field2, "Hello world!")
 	})
+}
+
+func TestObjectUnserialization_MissingFields(t *testing.T) {
+	dataMissing1 := map[string]any{
+		"field3": "Hello world!",
+	}
+	_, err := testStructSchema.Unserialize(dataMissing1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "'Field1': This field is required")
+
+	dataMissing3 := map[string]any{
+		"Field1": 42,
+	}
+	_, err = testStructSchema.Unserialize(dataMissing3)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "'field3': This field is required")
+}
+
+func TestObjectUnserialization_IncorrectType(t *testing.T) {
+	dataMissing1 := map[string]any{
+		"Field1": "this cannot be represented as an integer",
+		"field3": "Hello world!",
+	}
+	_, err := testStructSchema.Unserialize(dataMissing1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing")
+	assert.Contains(t, err.Error(), `"this cannot be represented as an integer"`)
+}
+
+func TestObjectUnserialization_ExtraField(t *testing.T) {
+	dataMissing1 := map[string]any{
+		"Field1": 42,
+		"wrong":  "wrong",
+		"field3": "Hello world!",
+	}
+	_, err := testStructSchema.Unserialize(dataMissing1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid parameter 'wrong'")
 }
 
 type embeddedTestStruct struct {
