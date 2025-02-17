@@ -2,7 +2,7 @@ module codegen
 
 go 1.23.0
 
-toolchain go1.23.5
+toolchain go1.24.0
 
 require (
 	go.arcalot.io/assert v1.8.0
