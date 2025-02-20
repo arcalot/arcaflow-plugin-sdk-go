@@ -23,17 +23,22 @@ type Object interface {
 // NewObjectSchema creates a new object definition.
 // If you need it tied to a struct, use NewStructMappedObjectSchema instead.
 func NewObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
-	return newObjectSchema(id, properties, false)
+	return newObjectSchema(id, properties, false, nil)
+}
+
+// NewObjectSchemaWithUnserializeHook creates a new object definition with an unserialize hook to instantiate it from properties.
+func NewObjectSchemaWithUnserializeHook(id string, properties map[string]*PropertySchema, hook UnserializeObjectHookFunction) *ObjectSchema {
+	return newObjectSchema(id, properties, false, hook)
 }
 
 // NewUnenforcedIDObjectSchema creates a new object definition with the ID not enforced.
 // The unenforced ID checking is useful for generated schemas, where the ID may be insignificant,
 // or could burden workflow development.
 func NewUnenforcedIDObjectSchema(id string, properties map[string]*PropertySchema) *ObjectSchema {
-	return newObjectSchema(id, properties, true)
+	return newObjectSchema(id, properties, true, nil)
 }
 
-func newObjectSchema(id string, properties map[string]*PropertySchema, unenforcedIDMatch bool) *ObjectSchema {
+func newObjectSchema(id string, properties map[string]*PropertySchema, unenforcedIDMatch bool, hook UnserializeObjectHookFunction) *ObjectSchema {
 	var anyValue any
 	return &ObjectSchema{
 		id,
@@ -43,8 +48,11 @@ func newObjectSchema(id string, properties map[string]*PropertySchema, unenforce
 		nil,
 		reflect.TypeOf(anyValue),
 		nil,
+		hook,
 	}
 }
+
+type UnserializeObjectHookFunction func(rawData map[string]any) (any, error)
 
 // ObjectSchema is the implementation of the object schema type.
 type ObjectSchema struct {
@@ -57,6 +65,7 @@ type ObjectSchema struct {
 	defaultValue     any
 	defaultValueType reflect.Type
 	fieldCache       map[string]reflect.StructField
+	unserializeHook  UnserializeObjectHookFunction
 }
 
 func (o *ObjectSchema) ReflectedType() reflect.Type {
@@ -124,6 +133,10 @@ func (o *ObjectSchema) Unserialize(data any) (result any, err error) {
 	}
 	if err := o.validateFieldInterdependencies(rawData); err != nil {
 		return nil, err
+	}
+
+	if o.unserializeHook != nil {
+		return o.unserializeHook(rawData)
 	}
 
 	if o.fieldCache != nil {
