@@ -50,8 +50,8 @@ linters:
     # Check for duplicate code. You may want to disable this with // nolint:dupl if the source code is the same, but
     # legitimately exists for different reasons.
     - dupl
-    # Check for pointers in loops. This is a typical bug source.
-    - exportloopref
+    # Detect places where loop variables are (unnecessarily) copied.
+    - copyloopvar
     # Enforce a reasonable function length of 60 lines or 40 instructions. In very rare cases you may want to disable
     # this with // nolint:funlen if there is absolutely no way to split the function in question.
     - funlen
