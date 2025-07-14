@@ -6,7 +6,7 @@ toolchain go1.23.5
 
 require (
 	go.arcalot.io/assert v1.8.0
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.27.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
