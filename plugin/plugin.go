@@ -53,7 +53,7 @@ func Run(s *schema.CallableSchema) {
 		_, _ = os.Stderr.WriteString("Json schema currently isn't supported by the Go SDK plugins.\n")
 		os.Exit(1)
 	default:
-		_, _ = os.Stderr.WriteString(fmt.Sprintf("\"%s\" is not a supported input.\n", os.Args[1]))
+		_, _ = fmt.Fprintf(os.Stderr, "%q is not a supported input.\n", os.Args[1])
 		printUsage()
 		os.Exit(1)
 	}

@@ -154,6 +154,7 @@ func (c channel) Close() error {
 func TestProtocol_Client_Execute(t *testing.T) {
 	// Client ReadSchema and Execute happy path.
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	stdinReader, stdinWriter := io.Pipe()
@@ -209,6 +210,7 @@ func testExecuteWithChannels(closeChannel bool, t *testing.T) {
 	// Client ReadSchema and Execute happy path with signal handlers passed
 	// into the Execute call.
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	stdinReader, stdinWriter := io.Pipe()
@@ -328,6 +330,7 @@ func TestProtocol_Client_ATP_v1(t *testing.T) {
 func TestProtocol_Client_Execute_Panicking(t *testing.T) {
 	// Client ReadSchema and Execute happy path.
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	stdinReader, stdinWriter := io.Pipe()
@@ -376,6 +379,7 @@ func TestProtocol_Client_Execute_Panicking(t *testing.T) {
 func TestProtocol_Client_Execute_Multi_Step_Parallel(t *testing.T) {
 	// Runs several steps on one client instance at the same time
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	stdinReader, stdinWriter := io.Pipe()
@@ -430,8 +434,9 @@ func TestProtocol_Client_Execute_Multi_Step_Parallel(t *testing.T) {
 }
 func TestProtocol_Client_Execute_Multi_Step_Serial(t *testing.T) {
 	// Runs several steps in one client, but with a long enough delay for each one to finish up
-	// before the next one runs
+	// before the next one runs.
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	stdinReader, stdinWriter := io.Pipe()

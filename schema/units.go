@@ -217,7 +217,7 @@ func (u *UnitsDefinition) FormatLongFloat(data float64) string {
 
 func (u *UnitsDefinition) getSortedMultipliersCache() []int64 {
 	if u.sortedMultipliersCache == nil {
-		var multipliers []int64
+		multipliers := make([]int64, 0, len(u.MultipliersValue))
 		for multiplier := range u.MultipliersValue {
 			multipliers = append(multipliers, multiplier)
 		}
@@ -345,12 +345,13 @@ func (u *UnitsDefinition) updateReCache() {
 }
 
 func (u *UnitsDefinition) buildUnitParseError(data string) (any, error) {
-	validUnits := []string{
+	validUnits := make([]string, 0, 4+4*len(u.getSortedMultipliersCache()))
+	validUnits = append(validUnits,
 		u.BaseUnitValue.NameShortSingular(),
 		u.BaseUnitValue.NameShortPlural(),
 		u.BaseUnitValue.NameLongSingular(),
 		u.BaseUnitValue.NameLongPlural(),
-	}
+	)
 	for _, multiplier := range u.getSortedMultipliersCache() {
 		validUnits = append(
 			validUnits,

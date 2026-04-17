@@ -655,7 +655,7 @@ type TypedObjectSchema[T any] struct {
 }
 
 func (t TypedObjectSchema[T]) UnserializeType(data any) (T, error) {
-	data, err := t.ObjectSchema.Unserialize(data)
+	data, err := t.Unserialize(data)
 	if err != nil {
 		var defaultValue T
 		return defaultValue, err
@@ -664,11 +664,11 @@ func (t TypedObjectSchema[T]) UnserializeType(data any) (T, error) {
 }
 
 func (t TypedObjectSchema[T]) ValidateType(data T) error {
-	return t.ObjectSchema.Validate(data)
+	return t.Validate(data)
 }
 
 func (t TypedObjectSchema[T]) SerializeType(data T) (any, error) {
-	return t.ObjectSchema.Serialize(data)
+	return t.Serialize(data)
 }
 
 func (t TypedObjectSchema[T]) Any() TypedObject[any] {
@@ -683,15 +683,15 @@ type AnyTypedObject[T any] struct {
 }
 
 func (a *AnyTypedObject[T]) UnserializeType(data any) (any, error) {
-	return a.ObjectSchema.Unserialize(data)
+	return a.Unserialize(data)
 }
 
 func (a *AnyTypedObject[T]) ValidateType(data any) error {
-	return a.ObjectSchema.Validate(data)
+	return a.Validate(data)
 }
 
 func (a *AnyTypedObject[T]) SerializeType(data any) (any, error) {
-	return a.ObjectSchema.Serialize(data)
+	return a.Serialize(data)
 }
 
 func (a *AnyTypedObject[T]) Any() TypedObject[any] {
