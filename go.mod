@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/fxamacker/cbor/v2 v2.9.1
 	go.arcalot.io/assert v1.9.0
-	go.arcalot.io/log/v2 v2.3.0
+	go.arcalot.io/log/v2 v2.3.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
