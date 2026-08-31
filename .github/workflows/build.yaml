@@ -9,11 +9,11 @@ on:
 jobs:
   lint_and_test:
     name: lint and test
-    uses: arcalot/arcaflow-reusable-workflows/.github/workflows/go_lint_and_test.yaml@main
+    uses: arcalot/arcaflow-reusable-workflows/.github/workflows/go_lint_and_test.yaml@a7dd316ed5085681cc8111d0f188428deb69b05d # main
     with:
       go_version: ${{ vars.ARCALOT_GO_VERSION }}
   generate:
     name: go generate
-    uses: arcalot/arcaflow-reusable-workflows/.github/workflows/go_generate.yaml@main
+    uses: arcalot/arcaflow-reusable-workflows/.github/workflows/go_generate.yaml@a7dd316ed5085681cc8111d0f188428deb69b05d # main
     with:
       go_version: ${{ vars.ARCALOT_GO_VERSION }}
